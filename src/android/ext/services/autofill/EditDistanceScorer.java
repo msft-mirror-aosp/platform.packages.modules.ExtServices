@@ -25,8 +25,7 @@ final class EditDistanceScorer {
 
     private static final String TAG = "EditDistanceScorer";
 
-    // TODO(b/70291841): STOPSHIP - set to false before launching
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     /**
      * Gets the field classification score of 2 values based on the edit distance between them.
