@@ -17,8 +17,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:androidprv="http://schemas.android.com/apk/prv/res/android"
     package="android.ext.services"
-    android:versionCode="291501300"
-    android:versionName="q_release_aml_291501300"
+    android:versionCode="291501400"
+    android:versionName="q_release_aml_291501400"
     coreApp="true">
 
     <uses-permission android:name="android.permission.PROVIDE_RESOLVER_RANKER_SERVICE" />
@@ -29,7 +29,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <uses-sdk
-        android:targetSdkVersion="28"
+        android:minSdkVersion="29"
+        android:targetSdkVersion="29"
     />
 
     <application android:label="@string/app_name"
