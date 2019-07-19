@@ -22,6 +22,8 @@ android_library {
      ],
 
      manifest: "AndroidManifest.xml",
+
+     plugins: ["java_api_finder"],
 }
 
 android_app {
