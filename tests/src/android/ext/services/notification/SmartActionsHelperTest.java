@@ -318,6 +318,21 @@ public class SmartActionsHelperTest {
     }
 
     @Test
+    public void testSuggest_notificationKeyisAddedToRequest() {
+        Notification notification =
+                mNotificationBuilder
+                        .setContentText(MESSAGE)
+                        .setCategory(Notification.CATEGORY_MESSAGE)
+                        .build();
+        setStatusBarNotification(notification);
+
+        ConversationActions.Request request = runSuggestAndCaptureRequest();
+
+        Bundle bundle = request.getExtras();
+        assertThat(bundle.containsKey(SmartActionsHelper.NOTIFICATION_KEY)).isTrue();
+    }
+
+    @Test
     public void testOnSuggestedReplySent() {
         Notification notification = createMessageNotification();
         setStatusBarNotification(notification);
