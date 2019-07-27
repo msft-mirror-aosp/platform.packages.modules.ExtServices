@@ -63,6 +63,7 @@ public class SmartActionsHelper {
     static final String KEY_ACTION_TYPE = "action_type";
     static final String KEY_ACTION_SCORE = "action_score";
     static final String KEY_TEXT = "text";
+    static final String NOTIFICATION_KEY = "notificationKey";
     // If a notification has any of these flags set, it's inelgibile for actions being added.
     private static final int FLAG_MASK_INELGIBILE_FOR_ACTIONS =
             Notification.FLAG_ONGOING_EVENT
@@ -277,12 +278,18 @@ public class SmartActionsHelper {
                             Collections.singletonList(ConversationAction.TYPE_TEXT_REPLY))
                     .includeTypesFromTextClassifier(false);
         }
+
+        // Put the notification key into the request extras
+        Bundle extra = new Bundle();
+        extra.putString(NOTIFICATION_KEY, entry.getSbn().getKey());
         ConversationActions.Request request =
                 new ConversationActions.Request.Builder(messages)
                         .setMaxSuggestions(mSettings.mMaxSuggestions)
                         .setHints(HINTS)
+                        .setExtras(extra)
                         .setTypeConfig(typeConfigBuilder.build())
                         .build();
+
         ConversationActions conversationActions =
                 getTextClassifier().suggestConversationActions(request);
         reportActionsGenerated(
