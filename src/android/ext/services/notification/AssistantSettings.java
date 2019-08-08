@@ -24,7 +24,8 @@ import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.util.Log;
 
-import com.android.internal.annotations.VisibleForTesting;
+import androidx.annotation.VisibleForTesting;
+
 import com.android.internal.config.sysui.SystemUiDeviceConfigFlags;
 
 /**

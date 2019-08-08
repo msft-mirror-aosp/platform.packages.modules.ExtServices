@@ -15,11 +15,11 @@
  */
 package android.ext.services.autofill;
 
-import android.annotation.NonNull;
-import android.annotation.Nullable;
 import android.view.autofill.AutofillValue;
 
-import com.android.internal.annotations.VisibleForTesting;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 final class EditDistanceScorer {
 

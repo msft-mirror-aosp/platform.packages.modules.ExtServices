@@ -23,6 +23,10 @@ android_library {
 
      manifest: "AndroidManifest.xml",
 
+     static_libs: [
+         "androidx.annotation_annotation"
+     ],
+
      plugins: ["java_api_finder"],
 }
 
@@ -36,4 +40,8 @@ android_app {
     },
     privileged: true,
     min_sdk_version: "28",
+
+    static_libs: [
+        "androidx.annotation_annotation"
+    ]
 }
