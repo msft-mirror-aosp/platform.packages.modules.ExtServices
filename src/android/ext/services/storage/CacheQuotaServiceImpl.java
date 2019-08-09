@@ -69,7 +69,7 @@ public class CacheQuotaServiceImpl extends CacheQuotaService {
                                      UIDs may span multiple packages and usage stats adding has
                                      matching package names as a precondition. */
                             first.getUsageStats().mTotalTimeInForeground +=
-                                    uidGroupedList.get(i).getUsageStats().mTotalTimeInForeground;
+                                    uidGroupedList.get(i).getUsageStats().getTotalTimeInForeground();
                         }
                     });
 
@@ -79,7 +79,8 @@ public class CacheQuotaServiceImpl extends CacheQuotaService {
                             byUid.values()
                                  .stream()
                                  .map(entryList -> entryList.get(0))
-                                 .filter(entry -> entry.getUsageStats().mTotalTimeInForeground != 0)
+                                 .filter(entry ->
+                                     entry.getUsageStats().getTotalTimeInForeground() != 0)
                                  .sorted(sCacheQuotaRequestComparator)
                                  .collect(Collectors.toList());
 

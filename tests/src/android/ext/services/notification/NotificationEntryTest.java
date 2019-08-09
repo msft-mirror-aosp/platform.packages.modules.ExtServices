@@ -104,8 +104,7 @@ public class NotificationEntryTest {
         when(mPackageManager.getApplicationInfo(anyString(), anyInt(), anyInt()))
                 .thenReturn(mAppInfo);
         mAppInfo.targetSdkVersion = Build.VERSION_CODES.P;
-        when(mSmsHelper.getDefaultSmsApplication())
-                .thenReturn(new ComponentName(DEFAULT_SMS_PACKAGE_NAME, "bar"));
+        when(mSmsHelper.getDefaultSmsPackage()).thenReturn(DEFAULT_SMS_PACKAGE_NAME);
     }
 
     @Test

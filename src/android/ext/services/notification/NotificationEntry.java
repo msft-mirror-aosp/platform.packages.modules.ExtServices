@@ -271,11 +271,11 @@ public class NotificationEntry {
     }
 
     private boolean isDefaultSmsApp() {
-        ComponentName defaultSmsApp = mSmsHelper.getDefaultSmsApplication();
+        String defaultSmsApp = mSmsHelper.getDefaultSmsPackage();
         if (defaultSmsApp == null) {
             return false;
         }
-        return mSbn.getPackageName().equals(defaultSmsApp.getPackageName());
+        return mSbn.getPackageName().equals(defaultSmsApp);
     }
 
     protected boolean isMessaging() {

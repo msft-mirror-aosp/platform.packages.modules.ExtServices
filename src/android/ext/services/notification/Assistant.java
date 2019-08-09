@@ -40,7 +40,6 @@ import android.service.notification.StatusBarNotification;
 import android.util.ArrayMap;
 import android.util.AtomicFile;
 import android.util.Log;
-import android.util.Slog;
 import android.util.Xml;
 
 import androidx.annotation.NonNull;
@@ -49,8 +48,6 @@ import androidx.annotation.VisibleForTesting;
 
 import com.android.internal.util.FastXmlSerializer;
 import com.android.internal.util.XmlUtils;
-
-import libcore.io.IoUtils;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -136,11 +133,9 @@ public class Assistant extends NotificationAssistantService {
     }
 
     private void loadFile() {
-        if (DEBUG) Slog.d(TAG, "loadFile");
+        if (DEBUG) Log.d(TAG, "loadFile");
         AsyncTask.execute(() -> {
-            InputStream infile = null;
-            try {
-                infile = mFile.openRead();
+            try (InputStream infile = mFile.openRead()) {
                 readXml(infile);
             } catch (FileNotFoundException e) {
                 Log.d(TAG, "File doesn't exist or isn't readable yet");
@@ -148,8 +143,6 @@ public class Assistant extends NotificationAssistantService {
                 Log.e(TAG, "Unable to read channel impressions", e);
             } catch (NumberFormatException | XmlPullParserException e) {
                 Log.e(TAG, "Unable to parse channel impressions", e);
-            } finally {
-                IoUtils.closeQuietly(infile);
             }
         });
     }
@@ -185,7 +178,7 @@ public class Assistant extends NotificationAssistantService {
             try {
                 stream = mFile.startWrite();
             } catch (IOException e) {
-                Slog.w(TAG, "Failed to save policy file", e);
+                Log.w(TAG, "Failed to save policy file", e);
                 return;
             }
             try {
@@ -194,7 +187,7 @@ public class Assistant extends NotificationAssistantService {
                 writeXml(out);
                 mFile.finishWrite(stream);
             } catch (IOException e) {
-                Slog.w(TAG, "Failed to save impressions file, restoring backup", e);
+                Log.w(TAG, "Failed to save impressions file, restoring backup", e);
                 mFile.failWrite(stream);
             }
         });
@@ -340,7 +333,7 @@ public class Assistant extends NotificationAssistantService {
                         ci.incrementDismissals();
                         updatedImpressions = true;
                     } else {
-                        if (DEBUG) Slog.i(TAG, "reset streak " + key);
+                        if (DEBUG) Log.i(TAG, "reset streak " + key);
                         if (ci.getStreak() > 0) {
                             updatedImpressions = true;
                         }
@@ -353,7 +346,7 @@ public class Assistant extends NotificationAssistantService {
                 saveFile();
             }
         } catch (Throwable e) {
-            Slog.e(TAG, "Error occurred processing removal of " + sbn, e);
+            Log.e(TAG, "Error occurred processing removal of " + sbn, e);
         }
     }
 
