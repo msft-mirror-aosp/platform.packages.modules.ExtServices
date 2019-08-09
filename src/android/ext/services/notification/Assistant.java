@@ -415,10 +415,13 @@ public class Assistant extends NotificationAssistantService {
     public void onListenerConnected() {
         if (DEBUG) Log.i(TAG, "CONNECTED");
         try {
-            mFile = new AtomicFile(new File(new File(
-                    Environment.getDataUserCePackageDirectory(
-                            StorageManager.UUID_PRIVATE_INTERNAL, getUserId(), getPackageName()),
-                    "assistant"), "blocking_helper_stats.xml"));
+            Context ceContext = createCredentialProtectedStorageContext();
+            File assistantDir = new File(ceContext.getFilesDir(), "assistant");
+            if (!assistantDir.exists() && !assistantDir.mkdirs()) {
+                throw new IllegalStateException("Unable to create assistant directory");
+            }
+
+            mFile = new AtomicFile(new File(assistantDir, "blocking_helper_stats.xml"));
             loadFile();
             for (StatusBarNotification sbn : getActiveNotifications()) {
                 onNotificationPosted(sbn);
