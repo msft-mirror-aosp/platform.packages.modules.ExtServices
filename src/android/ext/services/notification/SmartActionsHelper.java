@@ -15,7 +15,6 @@
  */
 package android.ext.services.notification;
 
-import android.annotation.Nullable;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Person;
@@ -39,6 +38,8 @@ import android.view.textclassifier.TextClassificationContext;
 import android.view.textclassifier.TextClassificationManager;
 import android.view.textclassifier.TextClassifier;
 import android.view.textclassifier.TextClassifierEvent;
+
+import androidx.annotation.Nullable;
 
 import com.android.internal.util.ArrayUtils;
 

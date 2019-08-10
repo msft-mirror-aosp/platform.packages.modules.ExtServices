@@ -17,13 +17,14 @@ package android.ext.services.notification;
 
 import static android.provider.Telephony.Sms.Intents.ACTION_DEFAULT_SMS_PACKAGE_CHANGED_INTERNAL;
 
-import android.annotation.Nullable;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 import com.android.internal.telephony.SmsApplication;
 

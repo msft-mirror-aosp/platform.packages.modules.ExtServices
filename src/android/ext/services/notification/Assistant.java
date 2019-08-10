@@ -21,8 +21,6 @@ import static android.app.NotificationManager.IMPORTANCE_MIN;
 import static android.service.notification.Adjustment.KEY_IMPORTANCE;
 import static android.service.notification.NotificationListenerService.Ranking.USER_SENTIMENT_NEGATIVE;
 
-import android.annotation.NonNull;
-import android.annotation.Nullable;
 import android.annotation.SuppressLint;
 import android.app.ActivityThread;
 import android.app.INotificationManager;
@@ -45,7 +43,10 @@ import android.util.Log;
 import android.util.Slog;
 import android.util.Xml;
 
-import com.android.internal.annotations.VisibleForTesting;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
+
 import com.android.internal.util.FastXmlSerializer;
 import com.android.internal.util.XmlUtils;
 

@@ -15,11 +15,12 @@
  */
 package android.ext.services.sms;
 
-import android.annotation.NonNull;
-import android.annotation.Nullable;
 import android.database.CursorWindow;
 import android.os.Bundle;
 import android.service.sms.FinancialSmsService;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * Service to provide financial apps access to sms messages.

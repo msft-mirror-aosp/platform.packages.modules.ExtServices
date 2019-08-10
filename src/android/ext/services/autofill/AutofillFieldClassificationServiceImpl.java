@@ -15,12 +15,13 @@
  */
 package android.ext.services.autofill;
 
-import android.annotation.NonNull;
-import android.annotation.Nullable;
 import android.os.Bundle;
 import android.service.autofill.AutofillFieldClassificationService;
 import android.util.Log;
 import android.view.autofill.AutofillValue;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.android.internal.util.ArrayUtils;
 

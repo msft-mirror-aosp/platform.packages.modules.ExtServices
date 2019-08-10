@@ -15,11 +15,11 @@
  */
 package android.ext.services.autofill;
 
-import android.annotation.Nullable;
 import android.os.Bundle;
 import android.view.autofill.AutofillValue;
 
-import com.android.internal.annotations.VisibleForTesting;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 final class ExactMatch {
 
