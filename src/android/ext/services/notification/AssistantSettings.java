@@ -26,8 +26,6 @@ import android.util.Log;
 
 import androidx.annotation.VisibleForTesting;
 
-import com.android.internal.config.sysui.SystemUiDeviceConfigFlags;
-
 /**
  * Observes the settings for {@link Assistant}.
  */
@@ -36,21 +34,60 @@ final class AssistantSettings extends ContentObserver {
     public static Factory FACTORY = AssistantSettings::createAndRegister;
     private static final boolean DEFAULT_GENERATE_REPLIES = true;
     private static final boolean DEFAULT_GENERATE_ACTIONS = true;
-    private static final int DEFAULT_NEW_INTERRUPTION_MODEL_INT = 1;
     private static final int DEFAULT_MAX_MESSAGES_TO_EXTRACT = 5;
     @VisibleForTesting
     static final int DEFAULT_MAX_SUGGESTIONS = 3;
 
+
+    // Copied from SystemUiDeviceConfigFlags.java
+    /**
+     * Whether the Notification Assistant should generate replies for notifications.
+     */
+    static final String NAS_GENERATE_REPLIES = "nas_generate_replies";
+
+    /**
+     * Whether the Notification Assistant should generate contextual actions for notifications.
+     */
+    static final String NAS_GENERATE_ACTIONS = "nas_generate_actions";
+
+    /**
+     * The maximum number of messages the Notification Assistant should extract from a
+     * conversation when constructing responses for that conversation.
+     */
+    static final String NAS_MAX_MESSAGES_TO_EXTRACT = "nas_max_messages_to_extract";
+
+    /**
+     * The maximum number of suggestions the Notification Assistant should provide for a
+     * messaging conversation.
+     */
+    static final String NAS_MAX_SUGGESTIONS = "nas_max_suggestions";
+    // Copied from Settings.Global
+    /**
+     * Settings key for the ratio of notification dismissals to notification views - one of the
+     * criteria for showing the notification blocking helper.
+     *
+     * <p>The value is a float ranging from 0.0 to 1.0 (the closer to 0.0, the more intrusive
+     * the blocking helper will be).
+     *
+     * @hide
+     */
+    static final String BLOCKING_HELPER_DISMISS_TO_VIEW_RATIO_LIMIT =
+            "blocking_helper_dismiss_to_view_ratio";
+
+    /**
+     * Settings key for the longest streak of dismissals  - one of the criteria for showing the
+     * notification blocking helper.
+     *
+     * <p>The value is an integer greater than 0.
+     */
+    static final String BLOCKING_HELPER_STREAK_LIMIT = "blocking_helper_streak_limit";
+
     private static final Uri STREAK_LIMIT_URI =
-            Settings.Global.getUriFor(Settings.Global.BLOCKING_HELPER_STREAK_LIMIT);
+            Settings.Global.getUriFor(BLOCKING_HELPER_STREAK_LIMIT);
     private static final Uri DISMISS_TO_VIEW_RATIO_LIMIT_URI =
-            Settings.Global.getUriFor(
-                    Settings.Global.BLOCKING_HELPER_DISMISS_TO_VIEW_RATIO_LIMIT);
-    private static final Uri NOTIFICATION_NEW_INTERRUPTION_MODEL_URI =
-            Settings.Secure.getUriFor(Settings.Secure.NOTIFICATION_NEW_INTERRUPTION_MODEL);
+            Settings.Global.getUriFor(BLOCKING_HELPER_DISMISS_TO_VIEW_RATIO_LIMIT);
 
     private final ContentResolver mResolver;
-    private final int mUserId;
 
     private final Handler mHandler;
 
@@ -62,23 +99,21 @@ final class AssistantSettings extends ContentObserver {
     int mStreakLimit;
     boolean mGenerateReplies = DEFAULT_GENERATE_REPLIES;
     boolean mGenerateActions = DEFAULT_GENERATE_ACTIONS;
-    boolean mNewInterruptionModel;
     int mMaxMessagesToExtract = DEFAULT_MAX_MESSAGES_TO_EXTRACT;
     int mMaxSuggestions = DEFAULT_MAX_SUGGESTIONS;
 
-    private AssistantSettings(Handler handler, ContentResolver resolver, int userId,
+    private AssistantSettings(Handler handler, ContentResolver resolver,
             Runnable onUpdateRunnable) {
         super(handler);
         mHandler = handler;
         mResolver = resolver;
-        mUserId = userId;
         mOnUpdateRunnable = onUpdateRunnable;
     }
 
     private static AssistantSettings createAndRegister(
-            Handler handler, ContentResolver resolver, int userId, Runnable onUpdateRunnable) {
+            Handler handler, ContentResolver resolver, Runnable onUpdateRunnable) {
         AssistantSettings assistantSettings =
-                new AssistantSettings(handler, resolver, userId, onUpdateRunnable);
+                new AssistantSettings(handler, resolver, onUpdateRunnable);
         assistantSettings.register();
         assistantSettings.registerDeviceConfigs();
         return assistantSettings;
@@ -89,14 +124,13 @@ final class AssistantSettings extends ContentObserver {
      */
     @VisibleForTesting
     protected static AssistantSettings createForTesting(
-            Handler handler, ContentResolver resolver, int userId, Runnable onUpdateRunnable) {
-        return new AssistantSettings(handler, resolver, userId, onUpdateRunnable);
+            Handler handler, ContentResolver resolver, Runnable onUpdateRunnable) {
+        return new AssistantSettings(handler, resolver, onUpdateRunnable);
     }
 
     private void register() {
-        mResolver.registerContentObserver(
-                DISMISS_TO_VIEW_RATIO_LIMIT_URI, false, this, mUserId);
-        mResolver.registerContentObserver(STREAK_LIMIT_URI, false, this, mUserId);
+        mResolver.registerContentObserver(DISMISS_TO_VIEW_RATIO_LIMIT_URI, false, this);
+        mResolver.registerContentObserver(STREAK_LIMIT_URI, false, this);
 
         // Update all uris on creation.
         update(null);
@@ -129,17 +163,17 @@ final class AssistantSettings extends ContentObserver {
 
     private void updateFromDeviceConfigFlags() {
         mGenerateReplies = DeviceConfig.getBoolean(DeviceConfig.NAMESPACE_SYSTEMUI,
-                SystemUiDeviceConfigFlags.NAS_GENERATE_REPLIES, DEFAULT_GENERATE_REPLIES);
+                NAS_GENERATE_REPLIES, DEFAULT_GENERATE_REPLIES);
 
         mGenerateActions = DeviceConfig.getBoolean(DeviceConfig.NAMESPACE_SYSTEMUI,
-                SystemUiDeviceConfigFlags.NAS_GENERATE_ACTIONS, DEFAULT_GENERATE_ACTIONS);
+                NAS_GENERATE_ACTIONS, DEFAULT_GENERATE_ACTIONS);
 
         mMaxMessagesToExtract = DeviceConfig.getInt(DeviceConfig.NAMESPACE_SYSTEMUI,
-                SystemUiDeviceConfigFlags.NAS_MAX_MESSAGES_TO_EXTRACT,
+                NAS_MAX_MESSAGES_TO_EXTRACT,
                 DEFAULT_MAX_MESSAGES_TO_EXTRACT);
 
         mMaxSuggestions = DeviceConfig.getInt(DeviceConfig.NAMESPACE_SYSTEMUI,
-                SystemUiDeviceConfigFlags.NAS_MAX_SUGGESTIONS, DEFAULT_MAX_SUGGESTIONS);
+                NAS_MAX_SUGGESTIONS, DEFAULT_MAX_SUGGESTIONS);
 
         mOnUpdateRunnable.run();
     }
@@ -152,26 +186,20 @@ final class AssistantSettings extends ContentObserver {
     private void update(Uri uri) {
         if (uri == null || DISMISS_TO_VIEW_RATIO_LIMIT_URI.equals(uri)) {
             mDismissToViewRatioLimit = Settings.Global.getFloat(
-                    mResolver, Settings.Global.BLOCKING_HELPER_DISMISS_TO_VIEW_RATIO_LIMIT,
+                    mResolver, BLOCKING_HELPER_DISMISS_TO_VIEW_RATIO_LIMIT,
                     ChannelImpressions.DEFAULT_DISMISS_TO_VIEW_RATIO_LIMIT);
         }
         if (uri == null || STREAK_LIMIT_URI.equals(uri)) {
             mStreakLimit = Settings.Global.getInt(
-                    mResolver, Settings.Global.BLOCKING_HELPER_STREAK_LIMIT,
+                    mResolver, BLOCKING_HELPER_STREAK_LIMIT,
                     ChannelImpressions.DEFAULT_STREAK_LIMIT);
-        }
-        if (uri == null || NOTIFICATION_NEW_INTERRUPTION_MODEL_URI.equals(uri)) {
-            int mNewInterruptionModelInt = Settings.Secure.getInt(
-                    mResolver, Settings.Secure.NOTIFICATION_NEW_INTERRUPTION_MODEL,
-                    DEFAULT_NEW_INTERRUPTION_MODEL_INT);
-            mNewInterruptionModel = mNewInterruptionModelInt == 1;
         }
 
         mOnUpdateRunnable.run();
     }
 
     public interface Factory {
-        AssistantSettings createAndRegister(Handler handler, ContentResolver resolver, int userId,
+        AssistantSettings createAndRegister(Handler handler, ContentResolver resolver,
                 Runnable onUpdateRunnable);
     }
 }

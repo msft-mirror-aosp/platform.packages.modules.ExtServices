@@ -33,7 +33,6 @@ import java.lang.annotation.RetentionPolicy;
  * Default categorizer for incoming notifications; used to determine what notifications
  * should be silenced.
  */
-// TODO: stop using @hide methods
 public class NotificationCategorizer {
 
     protected static final int CATEGORY_MIN = -3;

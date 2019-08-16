@@ -15,10 +15,7 @@
  */
 package android.ext.services.notification;
 
-import static android.provider.Telephony.Sms.Intents.ACTION_DEFAULT_SMS_PACKAGE_CHANGED_INTERNAL;
-
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -32,6 +29,10 @@ import androidx.annotation.Nullable;
  */
 public class SmsHelper {
     private static final String TAG = "SmsHelper";
+
+    // TODO: user RoleManager instead of copying this constant
+    private static String ACTION_DEFAULT_SMS_PACKAGE_CHANGED_INTERNAL
+            = "android.provider.action.DEFAULT_SMS_PACKAGE_CHANGED_INTERNAL";
 
     private final Context mContext;
     private String mDefaultSmsPackage;
