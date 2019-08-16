@@ -41,8 +41,6 @@ import android.view.textclassifier.TextClassifierEvent;
 
 import androidx.annotation.Nullable;
 
-import com.android.internal.util.ArrayUtils;
-
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -221,7 +219,8 @@ public class SmartActionsHelper {
         if (freeformRemoteInputAndAction != null) {
             RemoteInput freeformRemoteInput = freeformRemoteInputAndAction.first;
             Notification.Action actionWithFreeformRemoteInput = freeformRemoteInputAndAction.second;
-            hasAppGeneratedReplies = !ArrayUtils.isEmpty(freeformRemoteInput.getChoices());
+            CharSequence[] choices = freeformRemoteInput.getChoices();
+            hasAppGeneratedReplies = (choices != null && choices.length > 0);
             allowGeneratedReplies = actionWithFreeformRemoteInput.getAllowGeneratedReplies();
         }
 
