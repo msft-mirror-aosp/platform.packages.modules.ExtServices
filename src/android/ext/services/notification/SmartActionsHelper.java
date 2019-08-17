@@ -41,8 +41,6 @@ import android.view.textclassifier.TextClassifierEvent;
 
 import androidx.annotation.Nullable;
 
-import com.android.internal.util.ArrayUtils;
-
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -181,9 +179,8 @@ public class SmartActionsHelper {
         Intent intent = new Intent(mContext, CopyCodeActivity.class);
         intent.putExtra(Intent.EXTRA_TEXT, code);
 
-        RemoteAction remoteAction = new RemoteAction(Icon.createWithResource(
-                mContext.getResources(),
-                com.android.internal.R.drawable.ic_menu_copy_material),
+        RemoteAction remoteAction = new RemoteAction(
+                Icon.createWithResource(mContext, R.drawable.ic_menu_copy_material),
                 code,
                 contentDescription,
                 PendingIntent.getActivity(
@@ -221,7 +218,8 @@ public class SmartActionsHelper {
         if (freeformRemoteInputAndAction != null) {
             RemoteInput freeformRemoteInput = freeformRemoteInputAndAction.first;
             Notification.Action actionWithFreeformRemoteInput = freeformRemoteInputAndAction.second;
-            hasAppGeneratedReplies = !ArrayUtils.isEmpty(freeformRemoteInput.getChoices());
+            CharSequence[] choices = freeformRemoteInput.getChoices();
+            hasAppGeneratedReplies = (choices != null && choices.length > 0);
             allowGeneratedReplies = actionWithFreeformRemoteInput.getAllowGeneratedReplies();
         }
 
@@ -374,7 +372,7 @@ public class SmartActionsHelper {
             RemoteAction remoteAction, String actionType, float score) {
         Icon icon = remoteAction.shouldShowIcon()
                 ? remoteAction.getIcon()
-                : Icon.createWithResource(mContext, com.android.internal.R.drawable.ic_action_open);
+                : Icon.createWithResource(mContext, R.drawable.ic_action_open);
         Bundle extras = new Bundle();
         extras.putString(KEY_ACTION_TYPE, actionType);
         extras.putFloat(KEY_ACTION_SCORE, score);

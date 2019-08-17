@@ -183,17 +183,9 @@ public final class LRResolverRankerService extends ResolverRankerService {
     }
 
     private SharedPreferences getParamSharedPref() {
-        // The package info in the context isn't initialized in the way it is for normal apps,
-        // so the standard, name-based context.getSharedPreferences doesn't work. Instead, we
-        // build the path manually below using the same policy that appears in ContextImpl.
-        if (DEBUG) {
-            Log.d(TAG, "Context Package Name: " + getPackageName());
-        }
-        final File prefsFile = new File(new File(
-                Environment.getDataUserCePackageDirectory(
-                        StorageManager.UUID_PRIVATE_INTERNAL, getUserId(), getPackageName()),
-                "shared_prefs"),
-                PARAM_SHARED_PREF_NAME + ".xml");
-        return getSharedPreferences(prefsFile, Context.MODE_PRIVATE);
+        // NOTE: EXtServices sets android:defaultToDeviceProtectedStorage="true" so we need this
+        // to make sure we're upgrading these preferences correctly.
+        return createCredentialProtectedStorageContext()
+                .getSharedPreferences(PARAM_SHARED_PREF_NAME + ".xml", Context.MODE_PRIVATE);
     }
 }

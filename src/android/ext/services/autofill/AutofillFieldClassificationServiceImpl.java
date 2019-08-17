@@ -23,8 +23,6 @@ import android.view.autofill.AutofillValue;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.android.internal.util.ArrayUtils;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +40,7 @@ public class AutofillFieldClassificationServiceImpl extends AutofillFieldClassif
             @NonNull List<String> userDataValues, @NonNull List<String> categoryIds,
             @Nullable String defaultAlgorithm, @Nullable Bundle defaultArgs,
             @Nullable Map algorithms, @Nullable Map args) {
-        if (ArrayUtils.isEmpty(actualValues) || ArrayUtils.isEmpty(userDataValues)) {
+        if (actualValues.isEmpty() || userDataValues.isEmpty()) {
             Log.w(TAG, "calculateScores(): empty currentvalues (" + actualValues
                     + ") or userValues (" + userDataValues + ")");
             return null;
