@@ -36,11 +36,12 @@ public class AutofillFieldClassificationServiceImpl extends AutofillFieldClassif
     @Nullable
     @Override
     /** @hide */
-    public float[][] onCalculateScores(@NonNull List<AutofillValue> actualValues,
-            @NonNull List<String> userDataValues, @NonNull List<String> categoryIds,
+    public float[][] onCalculateScores(@Nullable List<AutofillValue> actualValues,
+            @Nullable List<String> userDataValues, @NonNull List<String> categoryIds,
             @Nullable String defaultAlgorithm, @Nullable Bundle defaultArgs,
             @Nullable Map algorithms, @Nullable Map args) {
-        if (actualValues.isEmpty() || userDataValues.isEmpty()) {
+        if (actualValues == null || userDataValues == null ||
+            actualValues.isEmpty() || userDataValues.isEmpty()) {
             Log.w(TAG, "calculateScores(): empty currentvalues (" + actualValues
                     + ") or userValues (" + userDataValues + ")");
             return null;
