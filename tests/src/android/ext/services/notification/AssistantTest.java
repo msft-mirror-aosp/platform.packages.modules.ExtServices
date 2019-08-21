@@ -36,6 +36,7 @@ import android.app.NotificationChannel;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.IPackageManager;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.UserHandle;
 import android.service.notification.Adjustment;
@@ -85,7 +86,8 @@ public class AssistantTest extends ServiceTestCase<Assistant> {
 
     @Mock INotificationManager mNoMan;
     @Mock AtomicFile mFile;
-    @Mock IPackageManager mPackageManager;
+    @Mock
+    PackageManager mPackageManager;
     @Mock SmsHelper mSmsHelper;
 
     Assistant mAssistant;
@@ -122,13 +124,12 @@ public class AssistantTest extends ServiceTestCase<Assistant> {
 
         mAssistant.mSettings.mDismissToViewRatioLimit = 0.8f;
         mAssistant.mSettings.mStreakLimit = 2;
-        mAssistant.mSettings.mNewInterruptionModel = true;
         mAssistant.setNoMan(mNoMan);
         mAssistant.setFile(mFile);
         mAssistant.setPackageManager(mPackageManager);
 
         ApplicationInfo info = mock(ApplicationInfo.class);
-        when(mPackageManager.getApplicationInfo(anyString(), anyInt(), anyInt()))
+        when(mPackageManager.getApplicationInfoAsUser(anyString(), anyInt(), any()))
                 .thenReturn(info);
         info.targetSdkVersion = Build.VERSION_CODES.P;
         when(mFile.startWrite()).thenReturn(mock(FileOutputStream.class));

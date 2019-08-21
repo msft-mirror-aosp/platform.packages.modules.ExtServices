@@ -56,8 +56,6 @@ public class AssistantSettingsTest {
     private static final String CLEAR_DEVICE_CONFIG_KEY_CMD =
             "device_config delete " + DeviceConfig.NAMESPACE_SYSTEMUI;
 
-    private static final int USER_ID = 5;
-
     @Rule
     public final TestableContext mContext =
             new TestableContext(InstrumentationRegistry.getContext(), null);
@@ -81,7 +79,7 @@ public class AssistantSettingsTest {
         Settings.Secure.putInt(mResolver, Settings.Secure.NOTIFICATION_NEW_INTERRUPTION_MODEL, 1);
 
         mAssistantSettings = AssistantSettings.createForTesting(
-                handler, mResolver, USER_ID, mOnUpdateRunnable);
+                handler, mResolver, mOnUpdateRunnable);
     }
 
     @After

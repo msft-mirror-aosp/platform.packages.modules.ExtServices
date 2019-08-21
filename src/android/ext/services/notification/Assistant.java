@@ -22,17 +22,14 @@ import static android.service.notification.Adjustment.KEY_IMPORTANCE;
 import static android.service.notification.NotificationListenerService.Ranking.USER_SENTIMENT_NEGATIVE;
 
 import android.annotation.SuppressLint;
-import android.app.ActivityThread;
 import android.app.INotificationManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.content.Context;
-import android.content.pm.IPackageManager;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.UserHandle;
-import android.os.storage.StorageManager;
 import android.service.notification.Adjustment;
 import android.service.notification.NotificationAssistantService;
 import android.service.notification.NotificationStats;
@@ -97,7 +94,7 @@ public class Assistant extends NotificationAssistantService {
 
     private Ranking mFakeRanking = null;
     private AtomicFile mFile = null;
-    private IPackageManager mPackageManager;
+    private PackageManager mPackageManager;
 
     @VisibleForTesting
     protected AssistantSettings.Factory mSettingsFactory = AssistantSettings.FACTORY;
@@ -113,9 +110,9 @@ public class Assistant extends NotificationAssistantService {
         super.onCreate();
         // Contexts are correctly hooked up by the creation step, which is required for the observer
         // to be hooked up/initialized.
-        mPackageManager = ActivityThread.getPackageManager();
+        mPackageManager = getContext().getSystemService(PackageManager.class);
         mSettings = mSettingsFactory.createAndRegister(mHandler,
-                getApplicationContext().getContentResolver(), getUserId(), this::updateThresholds);
+                getApplicationContext().getContentResolver(), this::updateThresholds);
         mSmartActionsHelper = new SmartActionsHelper(getContext(), mSettings);
         mNotificationCategorizer = new NotificationCategorizer();
         mSmsHelper = new SmsHelper(this);
@@ -255,15 +252,13 @@ public class Assistant extends NotificationAssistantService {
         if (!smartReplies.isEmpty()) {
             signals.putCharSequenceArrayList(Adjustment.KEY_TEXT_REPLIES, smartReplies);
         }
-        if (mSettings.mNewInterruptionModel) {
-            if (mNotificationCategorizer.shouldSilence(entry)) {
-                final int importance = entry.getImportance() < IMPORTANCE_LOW
-                        ? entry.getImportance() : IMPORTANCE_LOW;
-                signals.putInt(KEY_IMPORTANCE, importance);
-            } else {
-                // Even if no change is made, send an identity adjustment for metric logging.
-                signals.putInt(KEY_IMPORTANCE, entry.getImportance());
-            }
+        if (mNotificationCategorizer.shouldSilence(entry)) {
+            final int importance = entry.getImportance() < IMPORTANCE_LOW
+                    ? entry.getImportance() : IMPORTANCE_LOW;
+            signals.putInt(KEY_IMPORTANCE, importance);
+        } else {
+            // Even if no change is made, send an identity adjustment for metric logging.
+            signals.putInt(KEY_IMPORTANCE, entry.getImportance());
         }
 
         return new Adjustment(
@@ -383,7 +378,7 @@ public class Assistant extends NotificationAssistantService {
 
     @Override
     public void onSuggestedReplySent(@NonNull String key, @NonNull CharSequence reply,
-            @Source int source) {
+            int source) {
         if (DEBUG) {
             Log.d(TAG, "onSuggestedReplySent() called with: key = [" + key + "], reply = [" + reply
                     + "], source = [" + source + "]");
@@ -394,7 +389,7 @@ public class Assistant extends NotificationAssistantService {
 
     @Override
     public void onActionInvoked(@NonNull String key, @NonNull Notification.Action action,
-            @Source int source) {
+            int source) {
         if (DEBUG) {
             Log.d(TAG,
                     "onActionInvoked() called with: key = [" + key + "], action = [" + action.title
@@ -475,7 +470,7 @@ public class Assistant extends NotificationAssistantService {
     }
 
     @VisibleForTesting
-    public void setPackageManager(IPackageManager pm) {
+    public void setPackageManager(PackageManager pm) {
         mPackageManager = pm;
     }
 

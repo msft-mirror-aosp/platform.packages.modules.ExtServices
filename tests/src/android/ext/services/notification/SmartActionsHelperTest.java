@@ -33,7 +33,7 @@ import android.app.Person;
 import android.app.RemoteInput;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.IPackageManager;
+import android.content.pm.PackageManager;
 import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.os.Process;
@@ -70,9 +70,6 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
-
 @RunWith(AndroidJUnit4.class)
 public class SmartActionsHelperTest {
     private static final String RESULT_ID = "id";
@@ -86,7 +83,7 @@ public class SmartActionsHelperTest {
     private static final String MESSAGE = "Where are you?";
 
     @Mock
-    IPackageManager mIPackageManager;
+    PackageManager mPackageManager;
     @Mock
     private TextClassifier mTextClassifier;
     private StatusBarNotification mStatusBarNotification;
@@ -109,8 +106,7 @@ public class SmartActionsHelperTest {
                 .thenReturn(new ConversationActions(Arrays.asList(REPLY_ACTION), RESULT_ID));
 
         mNotificationBuilder = new Notification.Builder(mContext, "channel");
-        mSettings = AssistantSettings.createForTesting(
-                null, null, Process.myUserHandle().getIdentifier(), null);
+        mSettings = AssistantSettings.createForTesting(null, null, null);
         mSettings.mGenerateActions = true;
         mSettings.mGenerateReplies = true;
         mSmartActionsHelper = new SmartActionsHelper(mContext, mSettings);
@@ -495,7 +491,7 @@ public class SmartActionsHelperTest {
         NotificationChannel channel =
                 new NotificationChannel("id", "name", NotificationManager.IMPORTANCE_DEFAULT);
         return new NotificationEntry(
-                mContext, mIPackageManager, mStatusBarNotification, channel, mSmsHelper);
+                mContext, mPackageManager, mStatusBarNotification, channel, mSmsHelper);
     }
 
     private Notification createMessageNotification() {

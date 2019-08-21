@@ -71,6 +71,9 @@ public class SmartActionsHelper {
                     | Notification.FLAG_NO_CLEAR;
     private static final int MAX_RESULT_ID_TO_CACHE = 20;
 
+    // Copied from ConversationAction.java
+    private static final String TYPE_COPY = "copy";
+
     private static final List<String> HINTS =
             Collections.singletonList(ConversationActions.Request.HINT_FOR_NOTIFICATION);
     private static final ConversationActions EMPTY_CONVERSATION_ACTIONS =
@@ -155,7 +158,7 @@ public class SmartActionsHelper {
     @Nullable
     private Notification.Action createNotificationActionWithoutRemoteAction(
             ConversationAction conversationAction) {
-        if (ConversationAction.TYPE_COPY.equals(conversationAction.getType())) {
+        if (TYPE_COPY.equals(conversationAction.getType())) {
             return createCopyCodeAction(conversationAction);
         }
         return null;
@@ -192,7 +195,7 @@ public class SmartActionsHelper {
 
         return createNotificationActionFromRemoteAction(
                 remoteAction,
-                ConversationAction.TYPE_COPY,
+                TYPE_COPY,
                 conversationAction.getConfidenceScore());
     }
 
@@ -330,7 +333,7 @@ public class SmartActionsHelper {
     }
 
     void onSuggestedReplySent(String key, CharSequence reply,
-            @NotificationAssistantService.Source int source) {
+            int source) {
         if (source != NotificationAssistantService.SOURCE_FROM_ASSISTANT) {
             return;
         }
@@ -348,7 +351,7 @@ public class SmartActionsHelper {
     }
 
     void onActionClicked(String key, Notification.Action action,
-            @NotificationAssistantService.Source int source) {
+            int source) {
         if (source != NotificationAssistantService.SOURCE_FROM_ASSISTANT) {
             return;
         }
