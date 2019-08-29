@@ -110,7 +110,7 @@ public class Assistant extends NotificationAssistantService {
         super.onCreate();
         // Contexts are correctly hooked up by the creation step, which is required for the observer
         // to be hooked up/initialized.
-        mPackageManager = getContext().getSystemService(PackageManager.class);
+        mPackageManager = getContext().getPackageManager();
         mSettings = mSettingsFactory.createAndRegister(mHandler,
                 getApplicationContext().getContentResolver(), this::updateThresholds);
         mSmartActionsHelper = new SmartActionsHelper(getContext(), mSettings);
