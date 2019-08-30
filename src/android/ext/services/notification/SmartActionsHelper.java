@@ -16,6 +16,7 @@
 package android.ext.services.notification;
 
 import android.app.Notification;
+import android.app.Notification.MessagingStyle.Message;
 import android.app.PendingIntent;
 import android.app.Person;
 import android.app.RemoteAction;
@@ -25,7 +26,6 @@ import android.content.Intent;
 import android.ext.services.R;
 import android.graphics.drawable.Icon;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.os.Process;
 import android.service.notification.NotificationAssistantService;
 import android.text.TextUtils;
@@ -443,8 +443,9 @@ public class SmartActionsHelper {
 
     /** Returns the text most salient for action extraction in a notification. */
     private List<ConversationActions.Message> extractMessages(Notification notification) {
-        Parcelable[] messages = notification.extras.getParcelableArray(Notification.EXTRA_MESSAGES);
-        if (messages == null || messages.length == 0) {
+        List<Message> messages = Message.getMessagesFromBundleArray(
+                notification.extras.getParcelableArray(Notification.EXTRA_MESSAGES));
+        if (messages == null || messages.isEmpty()) {
             return Collections.singletonList(new ConversationActions.Message.Builder(
                     ConversationActions.Message.PERSON_USER_OTHERS)
                     .setText(notification.extras.getCharSequence(Notification.EXTRA_TEXT))
@@ -452,9 +453,7 @@ public class SmartActionsHelper {
         }
         Person localUser = notification.extras.getParcelable(Notification.EXTRA_MESSAGING_PERSON);
         Deque<ConversationActions.Message> extractMessages = new ArrayDeque<>();
-        for (int i = messages.length - 1; i >= 0; i--) {
-            Notification.MessagingStyle.Message message =
-                    Notification.MessagingStyle.Message.getMessageFromBundle((Bundle) messages[i]);
+        for (Message message : messages) {
             if (message == null) {
                 continue;
             }
