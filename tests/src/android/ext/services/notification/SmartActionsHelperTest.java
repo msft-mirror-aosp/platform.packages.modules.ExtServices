@@ -106,7 +106,7 @@ public class SmartActionsHelperTest {
                 .thenReturn(new ConversationActions(Arrays.asList(REPLY_ACTION), RESULT_ID));
 
         mNotificationBuilder = new Notification.Builder(mContext, "channel");
-        mSettings = AssistantSettings.createForTesting(null, null, null);
+        mSettings = new AssistantSettings();
         mSettings.mGenerateActions = true;
         mSettings.mGenerateReplies = true;
         mSmartActionsHelper = new SmartActionsHelper(mContext, mSettings);
