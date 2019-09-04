@@ -453,7 +453,8 @@ public class SmartActionsHelper {
         }
         Person localUser = notification.extras.getParcelable(Notification.EXTRA_MESSAGING_PERSON);
         Deque<ConversationActions.Message> extractMessages = new ArrayDeque<>();
-        for (Message message : messages) {
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            Message message = messages.get(i);
             if (message == null) {
                 continue;
             }
