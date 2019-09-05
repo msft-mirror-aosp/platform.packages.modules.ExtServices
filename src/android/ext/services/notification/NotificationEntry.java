@@ -162,9 +162,7 @@ public class NotificationEntry {
             attributes = Notification.AUDIO_ATTRIBUTES_DEFAULT;
         }
 
-        if (mPreChannelsNotification
-                && (getChannel().getUserLockedFields()
-                & NotificationChannel.USER_LOCKED_SOUND) == 0) {
+        if (mPreChannelsNotification && !getChannel().hasUserSetSound()) {
             if (n.audioAttributes != null) {
                 // prefer audio attributes to stream type
                 attributes = n.audioAttributes;
