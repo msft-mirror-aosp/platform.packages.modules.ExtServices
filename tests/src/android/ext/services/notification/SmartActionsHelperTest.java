@@ -15,6 +15,8 @@
  */
 package android.ext.services.notification;
 
+import static android.view.textclassifier.ConversationActions.Message.PERSON_USER_SELF;
+
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.common.truth.Truth.assertThat;
 
@@ -39,6 +41,7 @@ import android.os.Bundle;
 import android.os.Process;
 import android.service.notification.NotificationAssistantService;
 import android.service.notification.StatusBarNotification;
+import android.util.Slog;
 import android.view.textclassifier.ConversationAction;
 import android.view.textclassifier.ConversationActions;
 import android.view.textclassifier.TextClassificationManager;
@@ -240,14 +243,14 @@ public class SmartActionsHelperTest {
         ConversationActions.Message firstMessage = messages.get(0);
         MessageSubject.assertThat(firstMessage).hasText("firstMessage");
         MessageSubject.assertThat(firstMessage)
-                .hasPerson(ConversationActions.Message.PERSON_USER_SELF);
+                .hasPerson(PERSON_USER_SELF);
         MessageSubject.assertThat(firstMessage)
                 .hasReferenceTime(createZonedDateTimeFromMsUtc(1000));
 
         ConversationActions.Message secondMessage = messages.get(1);
         MessageSubject.assertThat(secondMessage).hasText("secondMessage");
         MessageSubject.assertThat(secondMessage)
-                .hasPerson(ConversationActions.Message.PERSON_USER_SELF);
+                .hasPerson(PERSON_USER_SELF);
         MessageSubject.assertThat(secondMessage)
                 .hasReferenceTime(createZonedDateTimeFromMsUtc(2000));
 
@@ -286,6 +289,9 @@ public class SmartActionsHelperTest {
                         .setStyle(style)
                         .setActions(createReplyAction())
                         .build();
+        List<Notification.MessagingStyle.Message> messages = Notification.MessagingStyle.Message.getMessagesFromBundleArray(
+                notification.extras.getParcelableArray(Notification.EXTRA_MESSAGES));
+        Slog.d("julia", "" + messages);
         setStatusBarNotification(notification);
 
         mSmartActionsHelper.suggest(createNotificationEntry());

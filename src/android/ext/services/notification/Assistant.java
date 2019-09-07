@@ -71,7 +71,7 @@ public class Assistant extends NotificationAssistantService {
         super.onCreate();
         // Contexts are correctly hooked up by the creation step, which is required for the observer
         // to be hooked up/initialized.
-        mPackageManager = getContext().getPackageManager();
+        mPackageManager = getPackageManager();
         mSettings = mSettingsFactory.createAndRegister();
         mSmartActionsHelper = new SmartActionsHelper(this, mSettings);
         mNotificationCategorizer = new NotificationCategorizer();
@@ -104,7 +104,7 @@ public class Assistant extends NotificationAssistantService {
         }
         mSingleThreadExecutor.submit(() -> {
             NotificationEntry entry =
-                    new NotificationEntry(getContext(), mPackageManager, sbn, channel, mSmsHelper);
+                    new NotificationEntry(this, mPackageManager, sbn, channel, mSmsHelper);
             SmartActionsHelper.SmartSuggestions suggestions = mSmartActionsHelper.suggest(entry);
             if (DEBUG) {
                 Log.d(TAG, String.format(
@@ -160,7 +160,7 @@ public class Assistant extends NotificationAssistantService {
             Ranking ranking = new Ranking();
             rankingMap.getRanking(sbn.getKey(), ranking);
             if (ranking != null && ranking.getChannel() != null) {
-                NotificationEntry entry = new NotificationEntry(getContext(), mPackageManager,
+                NotificationEntry entry = new NotificationEntry(this, mPackageManager,
                         sbn, ranking.getChannel(), mSmsHelper);
                 mLiveNotifications.put(sbn.getKey(), entry);
             }
