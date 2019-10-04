@@ -73,19 +73,23 @@ public class AutofillFieldClassificationServiceImpl extends AutofillFieldClassif
                 arg = args.get(categoryId);
             }
 
-            if (algorithmName == null || (!algorithmName.equals(DEFAULT_ALGORITHM)
-                    && !algorithmName.equals(REQUIRED_ALGORITHM_EXACT_MATCH))) {
+            if (algorithmName == null || !(algorithmName.equals(DEFAULT_ALGORITHM)
+                    || algorithmName.equals(REQUIRED_ALGORITHM_EXACT_MATCH)
+                    || algorithmName.equals(REQUIRED_ALGORITHM_CREDIT_CARD))) {
                 Log.w(TAG, "algorithmName is " + algorithmName + ", defaulting to "
                         + DEFAULT_ALGORITHM);
                 algorithmName = DEFAULT_ALGORITHM;
             }
 
             for (int i = 0; i < actualValuesSize; i++) {
-                if (algorithmName.equals(DEFAULT_ALGORITHM)) {
+                if (algorithmName.equals(REQUIRED_ALGORITHM_EDIT_DISTANCE)) {
                     scores[i][j] = EditDistanceScorer.calculateScore(actualValues.get(i),
-                            userDataValues.get(j));
-                } else {
+                            userDataValues.get(j), arg);
+                } else if (algorithmName.equals(REQUIRED_ALGORITHM_EXACT_MATCH)) {
                     scores[i][j] = ExactMatch.calculateScore(actualValues.get(i),
+                            userDataValues.get(j), arg);
+                } else {
+                    scores[i][j] = CreditCardMatcher.calculateScore(actualValues.get(i),
                             userDataValues.get(j), arg);
                 }
             }

@@ -23,6 +23,7 @@
     <string-array name="autofill_field_classification_available_algorithms">
         <item>EDIT_DISTANCE</item>
         <item>EXACT_MATCH</item>
+        <item>CREDIT_CARD</item>
     </string-array>
 
     <!-- Action chip to copy a one time code to the user's clipboard [CHAR LIMIT=NONE]-->
