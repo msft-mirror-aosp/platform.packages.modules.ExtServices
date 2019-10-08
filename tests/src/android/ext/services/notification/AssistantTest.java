@@ -20,9 +20,9 @@ import static android.app.NotificationManager.IMPORTANCE_DEFAULT;
 import static android.app.NotificationManager.IMPORTANCE_LOW;
 import static android.app.NotificationManager.IMPORTANCE_MIN;
 
-import static junit.framework.Assert.assertEquals;
-
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -33,10 +33,11 @@ import android.app.Application;
 import android.app.INotificationManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
-import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.IPackageManager;
+import android.os.Build;
 import android.os.UserHandle;
-import android.provider.Settings;
 import android.service.notification.Adjustment;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.NotificationListenerService.Ranking;
@@ -64,6 +65,7 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
 
 public class AssistantTest extends ServiceTestCase<Assistant> {
 
@@ -83,6 +85,8 @@ public class AssistantTest extends ServiceTestCase<Assistant> {
 
     @Mock INotificationManager mNoMan;
     @Mock AtomicFile mFile;
+    @Mock IPackageManager mPackageManager;
+    @Mock SmsHelper mSmsHelper;
 
     Assistant mAssistant;
     Application mApplication;
@@ -103,19 +107,30 @@ public class AssistantTest extends ServiceTestCase<Assistant> {
                 new Intent("android.service.notification.NotificationAssistantService");
         startIntent.setPackage("android.ext.services");
 
-        // To bypass real calls to global settings values, set the Settings values here.
-        Settings.Global.putFloat(mContext.getContentResolver(),
-                Settings.Global.BLOCKING_HELPER_DISMISS_TO_VIEW_RATIO_LIMIT, 0.8f);
-        Settings.Global.putInt(mContext.getContentResolver(),
-                Settings.Global.BLOCKING_HELPER_STREAK_LIMIT, 2);
         mApplication = (Application) InstrumentationRegistry.getInstrumentation().
                 getTargetContext().getApplicationContext();
         // Force the test to use the correct application instead of trying to use a mock application
         setApplication(mApplication);
-        bindService(startIntent);
+
+        setupService();
         mAssistant = getService();
+
+        // Override the AssistantSettings factory.
+        mAssistant.mSettingsFactory = AssistantSettings::createForTesting;
+
+        bindService(startIntent);
+
+        mAssistant.mSettings.mDismissToViewRatioLimit = 0.8f;
+        mAssistant.mSettings.mStreakLimit = 2;
+        mAssistant.mSettings.mNewInterruptionModel = true;
         mAssistant.setNoMan(mNoMan);
         mAssistant.setFile(mFile);
+        mAssistant.setPackageManager(mPackageManager);
+
+        ApplicationInfo info = mock(ApplicationInfo.class);
+        when(mPackageManager.getApplicationInfo(anyString(), anyInt(), anyInt()))
+                .thenReturn(info);
+        info.targetSdkVersion = Build.VERSION_CODES.P;
         when(mFile.startWrite()).thenReturn(mock(FileOutputStream.class));
     }
 
@@ -167,7 +182,7 @@ public class AssistantTest extends ServiceTestCase<Assistant> {
         mAssistant.setFakeRanking(generateRanking(sbn, P1C1));
         mAssistant.onNotificationPosted(sbn, mock(RankingMap.class));
 
-        verify(mNoMan, never()).applyAdjustmentFromAssistant(any(), any());
+        verify(mNoMan, never()).applyEnqueuedAdjustmentFromAssistant(any(), any());
     }
 
     @Test
@@ -180,7 +195,7 @@ public class AssistantTest extends ServiceTestCase<Assistant> {
         mAssistant.onNotificationPosted(sbn, mock(RankingMap.class));
 
         ArgumentCaptor<Adjustment> captor = ArgumentCaptor.forClass(Adjustment.class);
-        verify(mNoMan, times(1)).applyAdjustmentFromAssistant(any(), captor.capture());
+        verify(mNoMan, times(1)).applyEnqueuedAdjustmentFromAssistant(any(), captor.capture());
         assertEquals(sbn.getKey(), captor.getValue().getKey());
         assertEquals(Ranking.USER_SENTIMENT_NEGATIVE,
                 captor.getValue().getSignals().getInt(Adjustment.KEY_USER_SENTIMENT));
@@ -195,7 +210,7 @@ public class AssistantTest extends ServiceTestCase<Assistant> {
         mAssistant.setFakeRanking(generateRanking(sbn, P1C3));
         mAssistant.onNotificationPosted(sbn, mock(RankingMap.class));
 
-        verify(mNoMan, never()).applyAdjustmentFromAssistant(any(), any());
+        verify(mNoMan, never()).applyEnqueuedAdjustmentFromAssistant(any(), any());
     }
 
     @Test
@@ -215,7 +230,7 @@ public class AssistantTest extends ServiceTestCase<Assistant> {
         mAssistant.onNotificationPosted(sbn, mock(RankingMap.class));
 
         ArgumentCaptor<Adjustment> captor = ArgumentCaptor.forClass(Adjustment.class);
-        verify(mNoMan, times(1)).applyAdjustmentFromAssistant(any(), captor.capture());
+        verify(mNoMan, times(1)).applyEnqueuedAdjustmentFromAssistant(any(), captor.capture());
         assertEquals(sbn.getKey(), captor.getValue().getKey());
         assertEquals(Ranking.USER_SENTIMENT_NEGATIVE,
                 captor.getValue().getSignals().getInt(Adjustment.KEY_USER_SENTIMENT));
@@ -238,7 +253,7 @@ public class AssistantTest extends ServiceTestCase<Assistant> {
         sbn = generateSbn(PKG1, UID1, P1C1, "new one!", "group");
         mAssistant.onNotificationPosted(sbn, mock(RankingMap.class));
 
-        verify(mNoMan, never()).applyAdjustmentFromAssistant(any(), any());
+        verify(mNoMan, never()).applyEnqueuedAdjustmentFromAssistant(any(), any());
     }
 
     @Test
@@ -257,7 +272,7 @@ public class AssistantTest extends ServiceTestCase<Assistant> {
         sbn = generateSbn(PKG1, UID1, P1C1, "new one!", null);
         mAssistant.onNotificationPosted(sbn, mock(RankingMap.class));
 
-        verify(mNoMan, never()).applyAdjustmentFromAssistant(any(), any());
+        verify(mNoMan, never()).applyEnqueuedAdjustmentFromAssistant(any(), any());
     }
 
     @Test
@@ -276,7 +291,7 @@ public class AssistantTest extends ServiceTestCase<Assistant> {
         sbn = generateSbn(PKG1, UID1, P1C1, "new one!", null);
         mAssistant.onNotificationPosted(sbn, mock(RankingMap.class));
 
-        verify(mNoMan, never()).applyAdjustmentFromAssistant(any(), any());
+        verify(mNoMan, never()).applyEnqueuedAdjustmentFromAssistant(any(), any());
     }
 
     @Test
@@ -295,7 +310,7 @@ public class AssistantTest extends ServiceTestCase<Assistant> {
         sbn = generateSbn(PKG1, UID1, P1C1, "new one!", null);
         mAssistant.onNotificationPosted(sbn, mock(RankingMap.class));
 
-        verify(mNoMan, never()).applyAdjustmentFromAssistant(any(), any());
+        verify(mNoMan, never()).applyEnqueuedAdjustmentFromAssistant(any(), any());
     }
 
     @Test
@@ -307,7 +322,7 @@ public class AssistantTest extends ServiceTestCase<Assistant> {
         mAssistant.setFakeRanking(generateRanking(sbn, P2C1));
         mAssistant.onNotificationPosted(sbn, mock(RankingMap.class));
 
-        verify(mNoMan, never()).applyAdjustmentFromAssistant(any(), any());
+        verify(mNoMan, never()).applyEnqueuedAdjustmentFromAssistant(any(), any());
     }
 
     @Test
@@ -319,7 +334,7 @@ public class AssistantTest extends ServiceTestCase<Assistant> {
         mAssistant.setFakeRanking(generateRanking(sbn, P1C2));
         mAssistant.onNotificationPosted(sbn, mock(RankingMap.class));
 
-        verify(mNoMan, never()).applyAdjustmentFromAssistant(any(), any());
+        verify(mNoMan, never()).applyEnqueuedAdjustmentFromAssistant(any(), any());
     }
 
     @Test
@@ -398,6 +413,8 @@ public class AssistantTest extends ServiceTestCase<Assistant> {
         mAssistant.writeXml(serializer);
 
         Assistant assistant = new Assistant();
+        // onCreate is not invoked, so settings won't be initialised, unless we do it here.
+        assistant.mSettings = mAssistant.mSettings;
         assistant.readXml(new BufferedInputStream(new ByteArrayInputStream(baos.toByteArray())));
 
         assertEquals(ci1, assistant.getImpressions(key1));
@@ -407,8 +424,6 @@ public class AssistantTest extends ServiceTestCase<Assistant> {
 
     @Test
     public void testSettingsProviderUpdate() {
-        ContentResolver resolver = mApplication.getContentResolver();
-
         // Set up channels
         String key = mAssistant.getKey("pkg1", 1, "channel1");
         ChannelImpressions ci = new ChannelImpressions();
@@ -425,23 +440,38 @@ public class AssistantTest extends ServiceTestCase<Assistant> {
         assertEquals(false, ci.shouldTriggerBlock());
 
         // Update settings values.
-        float newDismissToViewRatioLimit = 0f;
-        int newStreakLimit = 0;
-        Settings.Global.putFloat(resolver,
-                Settings.Global.BLOCKING_HELPER_DISMISS_TO_VIEW_RATIO_LIMIT,
-                newDismissToViewRatioLimit);
-        Settings.Global.putInt(resolver,
-                Settings.Global.BLOCKING_HELPER_STREAK_LIMIT, newStreakLimit);
+        mAssistant.mSettings.mDismissToViewRatioLimit = 0f;
+        mAssistant.mSettings.mStreakLimit = 0;
 
         // Notify for the settings values we updated.
-        resolver.notifyChange(
-                Settings.Global.getUriFor(Settings.Global.BLOCKING_HELPER_STREAK_LIMIT), null);
-        resolver.notifyChange(
-                Settings.Global.getUriFor(
-                        Settings.Global.BLOCKING_HELPER_DISMISS_TO_VIEW_RATIO_LIMIT),
-                null);
+        mAssistant.mSettings.mOnUpdateRunnable.run();
 
         // With the new threshold, the blocking helper should be triggered.
         assertEquals(true, ci.shouldTriggerBlock());
+    }
+
+    @Test
+    public void testTrimLiveNotifications() {
+        StatusBarNotification sbn = generateSbn(PKG1, UID1, P1C1, "no", null);
+        mAssistant.setFakeRanking(generateRanking(sbn, P1C1));
+
+        mAssistant.onNotificationPosted(sbn, mock(RankingMap.class));
+
+        assertTrue(mAssistant.mLiveNotifications.containsKey(sbn.getKey()));
+
+        mAssistant.onNotificationRemoved(
+                sbn, mock(RankingMap.class), new NotificationStats(), 0);
+
+        assertFalse(mAssistant.mLiveNotifications.containsKey(sbn.getKey()));
+    }
+
+    @Test
+    public void testAssistantNeverIncreasesImportanceWhenSuggestingSilent() throws Exception {
+        StatusBarNotification sbn = generateSbn(PKG1, UID1, P1C3, "min notif!", null);
+        Adjustment adjust = mAssistant.createEnqueuedNotificationAdjustment(
+                new NotificationEntry(mContext, mPackageManager, sbn, P1C3, mSmsHelper),
+                new ArrayList<>(),
+                new ArrayList<>());
+        assertEquals(IMPORTANCE_MIN, adjust.getSignals().getInt(Adjustment.KEY_IMPORTANCE));
     }
 }

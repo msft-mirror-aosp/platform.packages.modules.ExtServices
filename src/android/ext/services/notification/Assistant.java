@@ -16,21 +16,25 @@
 
 package android.ext.services.notification;
 
+import static android.app.NotificationManager.IMPORTANCE_LOW;
 import static android.app.NotificationManager.IMPORTANCE_MIN;
+import static android.service.notification.Adjustment.KEY_IMPORTANCE;
 import static android.service.notification.NotificationListenerService.Ranking.USER_SENTIMENT_NEGATIVE;
 
+import android.annotation.NonNull;
+import android.annotation.Nullable;
+import android.annotation.SuppressLint;
+import android.app.ActivityThread;
 import android.app.INotificationManager;
-import android.content.ContentResolver;
+import android.app.Notification;
+import android.app.NotificationChannel;
 import android.content.Context;
-import android.database.ContentObserver;
-import android.ext.services.R;
-import android.net.Uri;
+import android.content.pm.IPackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
+import android.os.UserHandle;
 import android.os.storage.StorageManager;
-import android.provider.Settings;
 import android.service.notification.Adjustment;
 import android.service.notification.NotificationAssistantService;
 import android.service.notification.NotificationStats;
@@ -41,6 +45,7 @@ import android.util.Log;
 import android.util.Slog;
 import android.util.Xml;
 
+import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.util.FastXmlSerializer;
 import com.android.internal.util.XmlUtils;
 
@@ -57,11 +62,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Notification assistant that provides guidance on notification channel blocking
  */
+@SuppressLint("OverrideAbstract")
 public class Assistant extends NotificationAssistantService {
     private static final String TAG = "ExtAssistant";
     private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
@@ -71,6 +80,7 @@ public class Assistant extends NotificationAssistantService {
     private static final String ATT_KEY = "key";
     private static final int DB_VERSION = 1;
     private static final String ATTR_VERSION = "version";
+    private final ExecutorService mSingleThreadExecutor = Executors.newSingleThreadExecutor();
 
     private static final ArrayList<Integer> PREJUDICAL_DISMISSALS = new ArrayList<>();
     static {
@@ -78,17 +88,24 @@ public class Assistant extends NotificationAssistantService {
         PREJUDICAL_DISMISSALS.add(REASON_LISTENER_CANCEL);
     }
 
-    private float mDismissToViewRatioLimit;
-    private int mStreakLimit;
+    private SmartActionsHelper mSmartActionsHelper;
+    private NotificationCategorizer mNotificationCategorizer;
 
     // key : impressions tracker
     // TODO: prune deleted channels and apps
-    final ArrayMap<String, ChannelImpressions> mkeyToImpressions = new ArrayMap<>();
-    // SBN key : channel id
-    ArrayMap<String, String> mLiveNotifications = new ArrayMap<>();
+    private final ArrayMap<String, ChannelImpressions> mkeyToImpressions = new ArrayMap<>();
+    // SBN key : entry
+    protected ArrayMap<String, NotificationEntry> mLiveNotifications = new ArrayMap<>();
 
     private Ranking mFakeRanking = null;
     private AtomicFile mFile = null;
+    private IPackageManager mPackageManager;
+
+    @VisibleForTesting
+    protected AssistantSettings.Factory mSettingsFactory = AssistantSettings.FACTORY;
+    @VisibleForTesting
+    protected AssistantSettings mSettings;
+    private SmsHelper mSmsHelper;
 
     public Assistant() {
     }
@@ -98,7 +115,23 @@ public class Assistant extends NotificationAssistantService {
         super.onCreate();
         // Contexts are correctly hooked up by the creation step, which is required for the observer
         // to be hooked up/initialized.
-        new SettingsObserver(mHandler);
+        mPackageManager = ActivityThread.getPackageManager();
+        mSettings = mSettingsFactory.createAndRegister(mHandler,
+                getApplicationContext().getContentResolver(), getUserId(), this::updateThresholds);
+        mSmartActionsHelper = new SmartActionsHelper(getContext(), mSettings);
+        mNotificationCategorizer = new NotificationCategorizer();
+        mSmsHelper = new SmsHelper(this);
+        mSmsHelper.initialize();
+    }
+
+    @Override
+    public void onDestroy() {
+        // This null check is only for the unit tests as ServiceTestCase.tearDown calls onDestroy
+        // without having first called onCreate.
+        if (mSmsHelper != null) {
+            mSmsHelper.destroy();
+        }
+        super.onDestroy();
     }
 
     private void loadFile() {
@@ -145,7 +178,7 @@ public class Assistant extends NotificationAssistantService {
         }
     }
 
-    private void saveFile() throws IOException {
+    private void saveFile() {
         AsyncTask.execute(() -> {
             final FileOutputStream stream;
             try {
@@ -186,26 +219,92 @@ public class Assistant extends NotificationAssistantService {
 
     @Override
     public Adjustment onNotificationEnqueued(StatusBarNotification sbn) {
-        if (DEBUG) Log.i(TAG, "ENQUEUED " + sbn.getKey());
+        // we use the version with channel, so this is never called.
         return null;
+    }
+
+    @Override
+    public Adjustment onNotificationEnqueued(StatusBarNotification sbn,
+            NotificationChannel channel) {
+        if (DEBUG) Log.i(TAG, "ENQUEUED " + sbn.getKey() + " on " + channel.getId());
+        if (!isForCurrentUser(sbn)) {
+            return null;
+        }
+        mSingleThreadExecutor.submit(() -> {
+            NotificationEntry entry =
+                    new NotificationEntry(getContext(), mPackageManager, sbn, channel, mSmsHelper);
+            SmartActionsHelper.SmartSuggestions suggestions = mSmartActionsHelper.suggest(entry);
+            if (DEBUG) {
+                Log.d(TAG, String.format(
+                        "Creating Adjustment for %s, with %d actions, and %d replies.",
+                        sbn.getKey(), suggestions.actions.size(), suggestions.replies.size()));
+            }
+            Adjustment adjustment = createEnqueuedNotificationAdjustment(
+                    entry, suggestions.actions, suggestions.replies);
+            adjustNotification(adjustment);
+        });
+        return null;
+    }
+
+    /** A convenience helper for creating an adjustment for an SBN. */
+    @VisibleForTesting
+    @Nullable
+    Adjustment createEnqueuedNotificationAdjustment(
+            @NonNull NotificationEntry entry,
+            @NonNull ArrayList<Notification.Action> smartActions,
+            @NonNull ArrayList<CharSequence> smartReplies) {
+        Bundle signals = new Bundle();
+
+        if (!smartActions.isEmpty()) {
+            signals.putParcelableArrayList(Adjustment.KEY_CONTEXTUAL_ACTIONS, smartActions);
+        }
+        if (!smartReplies.isEmpty()) {
+            signals.putCharSequenceArrayList(Adjustment.KEY_TEXT_REPLIES, smartReplies);
+        }
+        if (mSettings.mNewInterruptionModel) {
+            if (mNotificationCategorizer.shouldSilence(entry)) {
+                final int importance = entry.getImportance() < IMPORTANCE_LOW
+                        ? entry.getImportance() : IMPORTANCE_LOW;
+                signals.putInt(KEY_IMPORTANCE, importance);
+            } else {
+                // Even if no change is made, send an identity adjustment for metric logging.
+                signals.putInt(KEY_IMPORTANCE, entry.getImportance());
+            }
+        }
+
+        return new Adjustment(
+                entry.getSbn().getPackageName(),
+                entry.getSbn().getKey(),
+                signals,
+                "",
+                entry.getSbn().getUserId());
     }
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn, RankingMap rankingMap) {
         if (DEBUG) Log.i(TAG, "POSTED " + sbn.getKey());
         try {
+            if (!isForCurrentUser(sbn)) {
+                return;
+            }
             Ranking ranking = getRanking(sbn.getKey(), rankingMap);
             if (ranking != null && ranking.getChannel() != null) {
+                NotificationEntry entry = new NotificationEntry(getContext(), mPackageManager,
+                        sbn, ranking.getChannel(), mSmsHelper);
                 String key = getKey(
                         sbn.getPackageName(), sbn.getUserId(), ranking.getChannel().getId());
-                ChannelImpressions ci = mkeyToImpressions.getOrDefault(key,
-                        createChannelImpressionsWithThresholds());
-                if (ranking.getImportance() > IMPORTANCE_MIN && ci.shouldTriggerBlock()) {
+                boolean shouldTriggerBlock;
+                synchronized (mkeyToImpressions) {
+                    ChannelImpressions ci = mkeyToImpressions.getOrDefault(key,
+                            createChannelImpressionsWithThresholds());
+                    mkeyToImpressions.put(key, ci);
+                    shouldTriggerBlock = ci.shouldTriggerBlock();
+                }
+                if (ranking.getImportance() > IMPORTANCE_MIN && shouldTriggerBlock) {
                     adjustNotification(createNegativeAdjustment(
                             sbn.getPackageName(), sbn.getKey(), sbn.getUserId()));
                 }
-                mkeyToImpressions.put(key, ci);
-                mLiveNotifications.put(sbn.getKey(), ranking.getChannel().getId());
+                mLiveNotifications.put(sbn.getKey(), entry);
             }
         } catch (Throwable e) {
             Log.e(TAG, "Error occurred processing post", e);
@@ -216,13 +315,17 @@ public class Assistant extends NotificationAssistantService {
     public void onNotificationRemoved(StatusBarNotification sbn, RankingMap rankingMap,
             NotificationStats stats, int reason) {
         try {
+            if (!isForCurrentUser(sbn)) {
+                return;
+            }
+
             boolean updatedImpressions = false;
-            String channelId = mLiveNotifications.remove(sbn.getKey());
+            String channelId = mLiveNotifications.remove(sbn.getKey()).getChannel().getId();
             String key = getKey(sbn.getPackageName(), sbn.getUserId(), channelId);
             synchronized (mkeyToImpressions) {
                 ChannelImpressions ci = mkeyToImpressions.getOrDefault(key,
                         createChannelImpressionsWithThresholds());
-                if (stats.hasSeen()) {
+                if (stats != null && stats.hasSeen()) {
                     ci.incrementViews();
                     updatedImpressions = true;
                 }
@@ -249,13 +352,62 @@ public class Assistant extends NotificationAssistantService {
                 saveFile();
             }
         } catch (Throwable e) {
-            Slog.e(TAG, "Error occurred processing removal", e);
+            Slog.e(TAG, "Error occurred processing removal of " + sbn, e);
         }
     }
 
     @Override
     public void onNotificationSnoozedUntilContext(StatusBarNotification sbn,
             String snoozeCriterionId) {
+    }
+
+    @Override
+    public void onNotificationsSeen(List<String> keys) {
+    }
+
+    @Override
+    public void onNotificationExpansionChanged(@NonNull String key, boolean isUserAction,
+            boolean isExpanded) {
+        if (DEBUG) {
+            Log.d(TAG, "onNotificationExpansionChanged() called with: key = [" + key
+                    + "], isUserAction = [" + isUserAction + "], isExpanded = [" + isExpanded
+                    + "]");
+        }
+        NotificationEntry entry = mLiveNotifications.get(key);
+
+        if (entry != null) {
+            mSingleThreadExecutor.submit(
+                    () -> mSmartActionsHelper.onNotificationExpansionChanged(entry, isExpanded));
+        }
+    }
+
+    @Override
+    public void onNotificationDirectReplied(@NonNull String key) {
+        if (DEBUG) Log.i(TAG, "onNotificationDirectReplied " + key);
+        mSingleThreadExecutor.submit(() -> mSmartActionsHelper.onNotificationDirectReplied(key));
+    }
+
+    @Override
+    public void onSuggestedReplySent(@NonNull String key, @NonNull CharSequence reply,
+            @Source int source) {
+        if (DEBUG) {
+            Log.d(TAG, "onSuggestedReplySent() called with: key = [" + key + "], reply = [" + reply
+                    + "], source = [" + source + "]");
+        }
+        mSingleThreadExecutor.submit(
+                () -> mSmartActionsHelper.onSuggestedReplySent(key, reply, source));
+    }
+
+    @Override
+    public void onActionInvoked(@NonNull String key, @NonNull Notification.Action action,
+            @Source int source) {
+        if (DEBUG) {
+            Log.d(TAG,
+                    "onActionInvoked() called with: key = [" + key + "], action = [" + action.title
+                            + "], source = [" + source + "]");
+        }
+        mSingleThreadExecutor.submit(
+                () -> mSmartActionsHelper.onActionClicked(key, action, source));
     }
 
     @Override
@@ -275,6 +427,14 @@ public class Assistant extends NotificationAssistantService {
         }
     }
 
+    @Override
+    public void onListenerDisconnected() {
+    }
+
+    private boolean isForCurrentUser(StatusBarNotification sbn) {
+        return sbn != null && sbn.getUserId() == UserHandle.myUserId();
+    }
+
     protected String getKey(String pkg, int userId, String channelId) {
         return pkg + "|" + userId + "|" + channelId;
     }
@@ -292,35 +452,45 @@ public class Assistant extends NotificationAssistantService {
         if (DEBUG) Log.d(TAG, "User probably doesn't want " + key);
         Bundle signals = new Bundle();
         signals.putInt(Adjustment.KEY_USER_SENTIMENT, USER_SENTIMENT_NEGATIVE);
-        return new Adjustment(packageName, key,  signals,
-                getContext().getString(R.string.prompt_block_reason), user);
+        return new Adjustment(packageName, key,  signals, "", user);
     }
 
     // for testing
 
-    protected void setFile(AtomicFile file) {
+    @VisibleForTesting
+    public void setFile(AtomicFile file) {
         mFile = file;
     }
 
-    protected void setFakeRanking(Ranking ranking) {
+    @VisibleForTesting
+    public void setFakeRanking(Ranking ranking) {
         mFakeRanking = ranking;
     }
 
-    protected void setNoMan(INotificationManager noMan) {
+    @VisibleForTesting
+    public void setNoMan(INotificationManager noMan) {
         mNoMan = noMan;
     }
 
-    protected void setContext(Context context) {
+    @VisibleForTesting
+    public void setContext(Context context) {
         mSystemContext = context;
     }
 
-    protected ChannelImpressions getImpressions(String key) {
+    @VisibleForTesting
+    public void setPackageManager(IPackageManager pm) {
+        mPackageManager = pm;
+    }
+
+    @VisibleForTesting
+    public ChannelImpressions getImpressions(String key) {
         synchronized (mkeyToImpressions) {
             return mkeyToImpressions.get(key);
         }
     }
 
-    protected void insertImpressions(String key, ChannelImpressions ci) {
+    @VisibleForTesting
+    public void insertImpressions(String key, ChannelImpressions ci) {
         synchronized (mkeyToImpressions) {
             mkeyToImpressions.put(key, ci);
         }
@@ -328,54 +498,16 @@ public class Assistant extends NotificationAssistantService {
 
     private ChannelImpressions createChannelImpressionsWithThresholds() {
         ChannelImpressions impressions = new ChannelImpressions();
-        impressions.updateThresholds(mDismissToViewRatioLimit, mStreakLimit);
+        impressions.updateThresholds(mSettings.mDismissToViewRatioLimit, mSettings.mStreakLimit);
         return impressions;
     }
 
-    /**
-     * Observer for updates on blocking helper threshold values.
-     */
-    private final class SettingsObserver extends ContentObserver {
-        private final Uri STREAK_LIMIT_URI =
-                Settings.Global.getUriFor(Settings.Global.BLOCKING_HELPER_STREAK_LIMIT);
-        private final Uri DISMISS_TO_VIEW_RATIO_LIMIT_URI =
-                Settings.Global.getUriFor(
-                        Settings.Global.BLOCKING_HELPER_DISMISS_TO_VIEW_RATIO_LIMIT);
-
-        public SettingsObserver(Handler handler) {
-            super(handler);
-            ContentResolver resolver = getApplicationContext().getContentResolver();
-            resolver.registerContentObserver(
-                    DISMISS_TO_VIEW_RATIO_LIMIT_URI, false, this, getUserId());
-            resolver.registerContentObserver(STREAK_LIMIT_URI, false, this, getUserId());
-
-            // Update all uris on creation.
-            update(null);
-        }
-
-        @Override
-        public void onChange(boolean selfChange, Uri uri) {
-            update(uri);
-        }
-
-        private void update(Uri uri) {
-            ContentResolver resolver = getApplicationContext().getContentResolver();
-            if (uri == null || DISMISS_TO_VIEW_RATIO_LIMIT_URI.equals(uri)) {
-                mDismissToViewRatioLimit = Settings.Global.getFloat(
-                        resolver, Settings.Global.BLOCKING_HELPER_DISMISS_TO_VIEW_RATIO_LIMIT,
-                        ChannelImpressions.DEFAULT_DISMISS_TO_VIEW_RATIO_LIMIT);
-            }
-            if (uri == null || STREAK_LIMIT_URI.equals(uri)) {
-                mStreakLimit = Settings.Global.getInt(
-                        resolver, Settings.Global.BLOCKING_HELPER_STREAK_LIMIT,
-                        ChannelImpressions.DEFAULT_STREAK_LIMIT);
-            }
-
-            // Update all existing channel impression objects with any new limits/thresholds.
-            synchronized (mkeyToImpressions) {
-                for (ChannelImpressions channelImpressions: mkeyToImpressions.values()) {
-                    channelImpressions.updateThresholds(mDismissToViewRatioLimit, mStreakLimit);
-                }
+    private void updateThresholds() {
+        // Update all existing channel impression objects with any new limits/thresholds.
+        synchronized (mkeyToImpressions) {
+            for (ChannelImpressions channelImpressions: mkeyToImpressions.values()) {
+                channelImpressions.updateThresholds(
+                        mSettings.mDismissToViewRatioLimit, mSettings.mStreakLimit);
             }
         }
     }

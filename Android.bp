@@ -12,15 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+android_library {
+    name: "ExtServices-core",
+     srcs: [
+         "src/**/*.java",
+     ],
+     resource_dirs: [
+         "res",
+     ],
+
+     manifest: "AndroidManifest.xml",
+}
+
 android_app {
     name: "ExtServices",
     srcs: ["src/**/*.java"],
     platform_apis: true,
     certificate: "platform",
-    aaptflags: ["--shared-lib"],
-    export_package_resources: true,
     optimize: {
         proguard_flags_files: ["proguard.proguard"],
     },
     privileged: true,
+    min_sdk_version: "28",
 }
