@@ -76,13 +76,6 @@
                 android:resource="@array/autofill_field_classification_available_algorithms" />
         </service>
 
-        <service android:name=".sms.FinancialSmsServiceImpl"
-                 android:permission="android.permission.BIND_FINANCIAL_SMS_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.sms.action.FINANCIAL_SERVICE_INTENT" />
-            </intent-filter>
-        </service>
-
         <service android:name=".watchdog.ExplicitHealthCheckServiceImpl"
                  android:permission="android.permission.BIND_EXPLICIT_HEALTH_CHECK_SERVICE">
             <intent-filter>
