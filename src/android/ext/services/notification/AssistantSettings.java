@@ -23,10 +23,12 @@ import android.util.Log;
 
 import androidx.annotation.VisibleForTesting;
 
+import com.android.textclassifier.notification.SmartSuggestionsConfig;
+
 /**
  * Observes the settings for {@link Assistant}.
  */
-final class AssistantSettings {
+final class AssistantSettings implements SmartSuggestionsConfig {
     private static final String LOG_TAG = "AssistantSettings";
     public static Factory FACTORY = AssistantSettings::createAndRegister;
     private static final boolean DEFAULT_GENERATE_REPLIES = true;
@@ -116,6 +118,26 @@ final class AssistantSettings {
         mMaxSuggestions = DeviceConfig.getInt(DeviceConfig.NAMESPACE_SYSTEMUI,
                 NAS_MAX_SUGGESTIONS, DEFAULT_MAX_SUGGESTIONS);
 
+    }
+
+    @Override
+    public boolean shouldGenerateReplies() {
+        return mGenerateReplies;
+    }
+
+    @Override
+    public boolean shouldGenerateActions() {
+        return mGenerateActions;
+    }
+
+    @Override
+    public int getMaxSuggestions() {
+        return mMaxSuggestions;
+    }
+
+    @Override
+    public int getMaxMessagesToExtract() {
+        return mMaxMessagesToExtract;
     }
 
     public interface Factory {

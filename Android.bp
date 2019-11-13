@@ -27,7 +27,8 @@ android_library {
 
      static_libs: [
          "androidx.annotation_annotation",
-         "TextClassifierServiceLibNoManifest"
+         "TextClassifierServiceLibNoManifest",
+         "TextClassifierNotificationLibNoManifest"
      ],
 
      plugins: ["java_api_finder"],

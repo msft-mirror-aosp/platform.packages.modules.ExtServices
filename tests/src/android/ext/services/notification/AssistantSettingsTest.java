@@ -78,6 +78,7 @@ public class AssistantSettingsTest {
         mAssistantSettings.onDeviceConfigPropertiesChanged(DeviceConfig.NAMESPACE_SYSTEMUI);
 
         assertFalse(mAssistantSettings.mGenerateReplies);
+        assertFalse(mAssistantSettings.shouldGenerateReplies());
     }
 
     @Test
@@ -90,6 +91,7 @@ public class AssistantSettingsTest {
         mAssistantSettings.onDeviceConfigPropertiesChanged(DeviceConfig.NAMESPACE_SYSTEMUI);
 
         assertTrue(mAssistantSettings.mGenerateReplies);
+        assertTrue(mAssistantSettings.shouldGenerateReplies());
     }
 
     @Test
@@ -124,6 +126,7 @@ public class AssistantSettingsTest {
         mAssistantSettings.onDeviceConfigPropertiesChanged(DeviceConfig.NAMESPACE_SYSTEMUI);
 
         assertFalse(mAssistantSettings.mGenerateActions);
+        assertFalse(mAssistantSettings.shouldGenerateActions());
     }
 
     @Test
@@ -136,6 +139,7 @@ public class AssistantSettingsTest {
         mAssistantSettings.onDeviceConfigPropertiesChanged(DeviceConfig.NAMESPACE_SYSTEMUI);
 
         assertTrue(mAssistantSettings.mGenerateActions);
+        assertTrue(mAssistantSettings.shouldGenerateActions());
     }
 
     @Test
@@ -170,6 +174,7 @@ public class AssistantSettingsTest {
         mAssistantSettings.onDeviceConfigPropertiesChanged(DeviceConfig.NAMESPACE_SYSTEMUI);
 
         assertEquals(10, mAssistantSettings.mMaxMessagesToExtract);
+        assertEquals(10, mAssistantSettings.getMaxMessagesToExtract());
     }
 
     @Test
@@ -182,6 +187,7 @@ public class AssistantSettingsTest {
         mAssistantSettings.onDeviceConfigPropertiesChanged(DeviceConfig.NAMESPACE_SYSTEMUI);
 
         assertEquals(5, mAssistantSettings.mMaxSuggestions);
+        assertEquals(5, mAssistantSettings.getMaxSuggestions());
     }
 
     @Test

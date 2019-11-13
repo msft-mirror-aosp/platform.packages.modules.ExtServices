@@ -36,6 +36,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
+import com.android.textclassifier.notification.SmartSuggestions;
+import com.android.textclassifier.notification.SmartSuggestionsHelper;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -60,7 +63,7 @@ public class Assistant extends NotificationAssistantService {
     @VisibleForTesting
     protected AssistantSettings mSettings;
     private SmsHelper mSmsHelper;
-    private SmartActionsHelper mSmartActionsHelper;
+    private SmartSuggestionsHelper mSmartSuggestionsHelper;
     private NotificationCategorizer mNotificationCategorizer;
 
     public Assistant() {
@@ -73,7 +76,7 @@ public class Assistant extends NotificationAssistantService {
         // to be hooked up/initialized.
         mPackageManager = getPackageManager();
         mSettings = mSettingsFactory.createAndRegister();
-        mSmartActionsHelper = new SmartActionsHelper(this, mSettings);
+        mSmartSuggestionsHelper = new SmartSuggestionsHelper(this, mSettings);
         mNotificationCategorizer = new NotificationCategorizer();
         mSmsHelper = new SmsHelper(this);
         mSmsHelper.initialize();
@@ -105,14 +108,18 @@ public class Assistant extends NotificationAssistantService {
         mSingleThreadExecutor.submit(() -> {
             NotificationEntry entry =
                     new NotificationEntry(this, mPackageManager, sbn, channel, mSmsHelper);
-            SmartActionsHelper.SmartSuggestions suggestions = mSmartActionsHelper.suggest(entry);
+            SmartSuggestions suggestions = mSmartSuggestionsHelper.onNotificationEnqueued(sbn);
             if (DEBUG) {
                 Log.d(TAG, String.format(
                         "Creating Adjustment for %s, with %d actions, and %d replies.",
-                        sbn.getKey(), suggestions.actions.size(), suggestions.replies.size()));
+                        sbn.getKey(),
+                        suggestions.getActions().size(),
+                        suggestions.getReplies().size()));
             }
             Adjustment adjustment = createEnqueuedNotificationAdjustment(
-                    entry, suggestions.actions, suggestions.replies);
+                    entry,
+                    new ArrayList<Notification.Action>(suggestions.getActions()),
+                    new ArrayList<>(suggestions.getReplies()));
             adjustNotification(adjustment);
         });
         return null;
@@ -205,14 +212,15 @@ public class Assistant extends NotificationAssistantService {
 
         if (entry != null) {
             mSingleThreadExecutor.submit(
-                    () -> mSmartActionsHelper.onNotificationExpansionChanged(entry, isExpanded));
+                    () -> mSmartSuggestionsHelper.onNotificationExpansionChanged(
+                            entry.getSbn(), isExpanded));
         }
     }
 
     @Override
     public void onNotificationDirectReplied(@NonNull String key) {
         if (DEBUG) Log.i(TAG, "onNotificationDirectReplied " + key);
-        mSingleThreadExecutor.submit(() -> mSmartActionsHelper.onNotificationDirectReplied(key));
+        mSingleThreadExecutor.submit(() -> mSmartSuggestionsHelper.onNotificationDirectReplied(key));
     }
 
     @Override
@@ -223,7 +231,7 @@ public class Assistant extends NotificationAssistantService {
                     + "], source = [" + source + "]");
         }
         mSingleThreadExecutor.submit(
-                () -> mSmartActionsHelper.onSuggestedReplySent(key, reply, source));
+                () -> mSmartSuggestionsHelper.onSuggestedReplySent(key, reply, source));
     }
 
     @Override
@@ -235,7 +243,7 @@ public class Assistant extends NotificationAssistantService {
                             + "], source = [" + source + "]");
         }
         mSingleThreadExecutor.submit(
-                () -> mSmartActionsHelper.onActionClicked(key, action, source));
+                () -> mSmartSuggestionsHelper.onActionClicked(key, action, source));
     }
 
     @Override

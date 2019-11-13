@@ -90,7 +90,7 @@
             </intent-filter>
         </service>
 
-        <activity android:name=".notification.CopyCodeActivity"
+        <activity android:name="com.android.textclassifier.notification.CopyCodeActivity"
                   android:exported="false"
                   android:theme="@android:style/Theme.NoDisplay"/>
 
