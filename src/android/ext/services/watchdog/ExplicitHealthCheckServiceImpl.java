@@ -42,7 +42,7 @@ public final class ExplicitHealthCheckServiceImpl extends ExplicitHealthCheckSer
     public static final String PROPERTY_WATCHDOG_REQUEST_TIMEOUT_MILLIS =
             "watchdog_request_timeout_millis";
     public static final long DEFAULT_REQUEST_TIMEOUT_MILLIS =
-            TimeUnit.HOURS.toMillis(1);
+            TimeUnit.DAYS.toMillis(1);
     // Modified only #onCreate, using concurrent collection to ensure thread visibility
     private final Map<String, ExplicitHealthChecker> mSupportedCheckers = new ConcurrentHashMap<>();
 
