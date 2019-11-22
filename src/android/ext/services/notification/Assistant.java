@@ -248,7 +248,7 @@ public class Assistant extends NotificationAssistantService {
 
     @Override
     public void onListenerConnected() {
-        if (DEBUG) Log.i(TAG, "CONNECTED");
+        if (DEBUG) Log.i(TAG, "Connected");
     }
 
     @Override
