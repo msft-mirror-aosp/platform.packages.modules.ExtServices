@@ -4,9 +4,6 @@ android_test {
     // Include all test java files.
     srcs: ["src/**/*.java"],
 
-    // We only want this apk build for tests.
-    certificate: "platform",
-
     libs: [
         "android.test.runner",
         "android.test.base",
@@ -22,6 +19,6 @@ android_test {
         "testables",
         "testng",
     ],
-    test_suites: ["device-tests"],
+    test_suites: ["device-tests", "mts"],
     platform_apis: true,
 }
