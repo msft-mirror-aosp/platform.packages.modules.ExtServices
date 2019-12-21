@@ -50,6 +50,11 @@ import java.io.IOException;
 public class AssistantSettingsTest {
     private static final String CLEAR_DEVICE_CONFIG_KEY_CMD =
             "device_config delete " + DeviceConfig.NAMESPACE_SYSTEMUI;
+    private static final String WRITE_DEVICE_CONFIG_PERMISSION =
+            "android.permission.WRITE_DEVICE_CONFIG";
+
+    private static final String READ_DEVICE_CONFIG_PERMISSION =
+            "android.permission.READ_DEVICE_CONFIG";
 
     @Rule
     public final TestableContext mContext =
@@ -60,21 +65,32 @@ public class AssistantSettingsTest {
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
+
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        WRITE_DEVICE_CONFIG_PERMISSION,
+                        READ_DEVICE_CONFIG_PERMISSION);
+
+
         mAssistantSettings = new AssistantSettings();
     }
 
     @After
     public void tearDown() throws IOException {
         clearDeviceConfig();
+        InstrumentationRegistry
+                .getInstrumentation()
+                .getUiAutomation()
+                .dropShellPermissionIdentity();
     }
 
     @Test
     public void testGenerateRepliesDisabled() {
-        runWithShellPermissionIdentity(() -> setProperty(
+        setProperty(
                 DeviceConfig.NAMESPACE_SYSTEMUI,
                 SystemUiDeviceConfigFlags.NAS_GENERATE_REPLIES,
                 "false",
-                false /* makeDefault */));
+                false /* makeDefault */);
         mAssistantSettings.onDeviceConfigPropertiesChanged(DeviceConfig.NAMESPACE_SYSTEMUI);
 
         assertFalse(mAssistantSettings.mGenerateReplies);
@@ -83,11 +99,11 @@ public class AssistantSettingsTest {
 
     @Test
     public void testGenerateRepliesEnabled() {
-        runWithShellPermissionIdentity(() -> setProperty(
+        setProperty(
                 DeviceConfig.NAMESPACE_SYSTEMUI,
                 SystemUiDeviceConfigFlags.NAS_GENERATE_REPLIES,
                 "true",
-                false /* makeDefault */));
+                false /* makeDefault */);
         mAssistantSettings.onDeviceConfigPropertiesChanged(DeviceConfig.NAMESPACE_SYSTEMUI);
 
         assertTrue(mAssistantSettings.mGenerateReplies);
@@ -96,20 +112,20 @@ public class AssistantSettingsTest {
 
     @Test
     public void testGenerateRepliesNullFlag() {
-        runWithShellPermissionIdentity(() -> setProperty(
+        setProperty(
                 DeviceConfig.NAMESPACE_SYSTEMUI,
                 SystemUiDeviceConfigFlags.NAS_GENERATE_REPLIES,
                 "false",
-                false /* makeDefault */));
+                false /* makeDefault */);
         mAssistantSettings.onDeviceConfigPropertiesChanged(DeviceConfig.NAMESPACE_SYSTEMUI);
 
         assertFalse(mAssistantSettings.mGenerateReplies);
 
-        runWithShellPermissionIdentity(() -> setProperty(
+        setProperty(
                 DeviceConfig.NAMESPACE_SYSTEMUI,
                 SystemUiDeviceConfigFlags.NAS_GENERATE_REPLIES,
                 null,
-                false /* makeDefault */));
+                false /* makeDefault */);
         mAssistantSettings.onDeviceConfigPropertiesChanged(DeviceConfig.NAMESPACE_SYSTEMUI);
 
         // Go back to the default value.
@@ -118,11 +134,11 @@ public class AssistantSettingsTest {
 
     @Test
     public void testGenerateActionsDisabled() {
-        runWithShellPermissionIdentity(() -> setProperty(
+        setProperty(
                 DeviceConfig.NAMESPACE_SYSTEMUI,
                 SystemUiDeviceConfigFlags.NAS_GENERATE_ACTIONS,
                 "false",
-                false /* makeDefault */));
+                false /* makeDefault */);
         mAssistantSettings.onDeviceConfigPropertiesChanged(DeviceConfig.NAMESPACE_SYSTEMUI);
 
         assertFalse(mAssistantSettings.mGenerateActions);
@@ -131,11 +147,11 @@ public class AssistantSettingsTest {
 
     @Test
     public void testGenerateActionsEnabled() {
-        runWithShellPermissionIdentity(() -> setProperty(
+        setProperty(
                 DeviceConfig.NAMESPACE_SYSTEMUI,
                 SystemUiDeviceConfigFlags.NAS_GENERATE_ACTIONS,
                 "true",
-                false /* makeDefault */));
+                false /* makeDefault */);
         mAssistantSettings.onDeviceConfigPropertiesChanged(DeviceConfig.NAMESPACE_SYSTEMUI);
 
         assertTrue(mAssistantSettings.mGenerateActions);
@@ -144,20 +160,20 @@ public class AssistantSettingsTest {
 
     @Test
     public void testGenerateActionsNullFlag() {
-        runWithShellPermissionIdentity(() -> setProperty(
+        setProperty(
                 DeviceConfig.NAMESPACE_SYSTEMUI,
                 SystemUiDeviceConfigFlags.NAS_GENERATE_ACTIONS,
                 "false",
-                false /* makeDefault */));
+                false /* makeDefault */);
         mAssistantSettings.onDeviceConfigPropertiesChanged(DeviceConfig.NAMESPACE_SYSTEMUI);
 
         assertFalse(mAssistantSettings.mGenerateActions);
 
-        runWithShellPermissionIdentity(() -> setProperty(
+        setProperty(
                 DeviceConfig.NAMESPACE_SYSTEMUI,
                 SystemUiDeviceConfigFlags.NAS_GENERATE_ACTIONS,
                 null,
-                false /* makeDefault */));
+                false /* makeDefault */);
         mAssistantSettings.onDeviceConfigPropertiesChanged(DeviceConfig.NAMESPACE_SYSTEMUI);
 
         // Go back to the default value.
@@ -166,11 +182,11 @@ public class AssistantSettingsTest {
 
     @Test
     public void testMaxMessagesToExtract() {
-        runWithShellPermissionIdentity(() -> setProperty(
+        setProperty(
                 DeviceConfig.NAMESPACE_SYSTEMUI,
                 SystemUiDeviceConfigFlags.NAS_MAX_MESSAGES_TO_EXTRACT,
                 "10",
-                false /* makeDefault */));
+                false /* makeDefault */);
         mAssistantSettings.onDeviceConfigPropertiesChanged(DeviceConfig.NAMESPACE_SYSTEMUI);
 
         assertEquals(10, mAssistantSettings.mMaxMessagesToExtract);
@@ -179,11 +195,11 @@ public class AssistantSettingsTest {
 
     @Test
     public void testMaxSuggestions() {
-        runWithShellPermissionIdentity(() -> setProperty(
+        setProperty(
                 DeviceConfig.NAMESPACE_SYSTEMUI,
                 SystemUiDeviceConfigFlags.NAS_MAX_SUGGESTIONS,
                 "5",
-                false /* makeDefault */));
+                false /* makeDefault */);
         mAssistantSettings.onDeviceConfigPropertiesChanged(DeviceConfig.NAMESPACE_SYSTEMUI);
 
         assertEquals(5, mAssistantSettings.mMaxSuggestions);
