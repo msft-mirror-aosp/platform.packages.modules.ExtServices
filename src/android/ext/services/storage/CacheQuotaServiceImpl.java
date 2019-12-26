@@ -20,9 +20,11 @@ import android.app.usage.CacheQuotaHint;
 import android.app.usage.CacheQuotaService;
 import android.os.Environment;
 import android.os.storage.StorageManager;
-import android.os.storage.VolumeInfo;
+import android.os.storage.StorageVolume;
+import android.text.TextUtils;
 import android.util.ArrayMap;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -120,13 +122,21 @@ public class CacheQuotaServiceImpl extends CacheQuotaService {
         // TODO: Revisit the cache size after running more storage tests.
         // TODO: Figure out how to ensure ExtServices has the permissions to call
         //       StorageStatsManager, because this is ignoring the cache...
-        StorageManager storageManager = getSystemService(StorageManager.class);
         long freeBytes = 0;
-        if (uuid == StorageManager.UUID_PRIVATE_INTERNAL) { // regular equals because of null
+        if (TextUtils.isEmpty(uuid)) { // regular equals because of null
             freeBytes = Environment.getDataDirectory().getUsableSpace();
         } else {
-            final VolumeInfo vol = storageManager.findVolumeByUuid(uuid);
-            freeBytes = vol.getPath().getUsableSpace();
+            final StorageManager storageManager = getSystemService(StorageManager.class);
+            final List<StorageVolume> storageVolumes = storageManager.getStorageVolumes();
+            final int volumeCount = storageVolumes.size();
+            for (int i = 0; i < volumeCount; i++) {
+                final StorageVolume volume = storageVolumes.get(i);
+                if (TextUtils.equals(volume.getUuid(), uuid)) {
+                    final File directory = volume.getDirectory();
+                    freeBytes = (directory != null) ? directory.getUsableSpace() : 0;
+                    break;
+                }
+            }
         }
         return Math.round(freeBytes * CACHE_RESERVE_RATIO);
     }
