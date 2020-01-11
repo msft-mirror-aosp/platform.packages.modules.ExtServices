@@ -25,9 +25,8 @@ import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
-import android.os.Handler;
-import android.os.Looper;
 import android.provider.DeviceConfig;
 import android.support.test.uiautomator.UiDevice;
 import android.testing.TestableContext;
@@ -42,7 +41,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.MockitoAnnotations;
 
 import java.io.IOException;
 
@@ -64,14 +62,10 @@ public class AssistantSettingsTest {
 
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
-
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(
                         WRITE_DEVICE_CONFIG_PERMISSION,
                         READ_DEVICE_CONFIG_PERMISSION);
-
-
         mAssistantSettings = new AssistantSettings();
     }
 
@@ -82,6 +76,19 @@ public class AssistantSettingsTest {
                 .getInstrumentation()
                 .getUiAutomation()
                 .dropShellPermissionIdentity();
+    }
+
+    @Test
+    public void testWrongNamespace() {
+        runWithShellPermissionIdentity(() -> setProperty(
+                "wrong",
+                SystemUiDeviceConfigFlags.NAS_GENERATE_REPLIES,
+                "false",
+                false /* makeDefault */));
+        mAssistantSettings.onDeviceConfigPropertiesChanged("wrong");
+
+        assertTrue(mAssistantSettings.mGenerateReplies);
+        assertTrue(mAssistantSettings.shouldGenerateReplies());
     }
 
     @Test
@@ -211,6 +218,14 @@ public class AssistantSettingsTest {
         mAssistantSettings.onDeviceConfigPropertiesChanged(DeviceConfig.NAMESPACE_SYSTEMUI);
 
         assertEquals(DEFAULT_MAX_SUGGESTIONS, mAssistantSettings.mMaxSuggestions);
+    }
+
+    @Test
+    public void testCreation() {
+        AssistantSettings.Factory factory = AssistantSettings.FACTORY;
+        AssistantSettings as = factory.createAndRegister();
+        assertNotNull(as);
+
     }
 
     private static void clearDeviceConfig() throws IOException {
