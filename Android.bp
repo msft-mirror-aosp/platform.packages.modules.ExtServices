@@ -14,29 +14,29 @@
 
 android_library {
     name: "ExtServices-core",
-     srcs: [
-         "src/**/*.java",
-     ],
-     platform_apis: true,
-     min_sdk_version: "29",
-     resource_dirs: [
-         "res",
-     ],
+    srcs: [
+        "src/**/*.java",
+    ],
+    sdk_version: "system_current",
+    min_sdk_version: "29",
+    resource_dirs: [
+        "res",
+    ],
 
-     manifest: "AndroidManifest.xml",
+    manifest: "AndroidManifest.xml",
 
-     static_libs: [
-         "androidx.annotation_annotation",
-         "TextClassifierServiceLibNoManifest",
-         "TextClassifierNotificationLibNoManifest"
-     ],
+    static_libs: [
+        "androidx.annotation_annotation",
+        "TextClassifierServiceLibNoManifest",
+        "TextClassifierNotificationLibNoManifest"
+    ],
 
-     plugins: ["java_api_finder"],
+    plugins: ["java_api_finder"],
 }
 
 android_app {
     name: "ExtServices",
-    platform_apis: true,
+    sdk_version: "system_current",
     compile_multilib: "both",
     certificate: "platform",
     optimize: {
