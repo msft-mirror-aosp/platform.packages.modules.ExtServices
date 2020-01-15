@@ -14,14 +14,16 @@
 
 android_library {
     name: "ExtServices-core",
-     srcs: [
-         "src/**/*.java",
-     ],
-     resource_dirs: [
-         "res",
-     ],
+    srcs: [
+        "src/**/*.java",
+    ],
+    resource_dirs: [
+        "res",
+    ],
 
-     manifest: "AndroidManifest.xml",
+    manifest: "AndroidManifest.xml",
+
+    plugins: ["java_api_finder"],
 }
 
 android_app {
