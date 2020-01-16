@@ -27,6 +27,8 @@ import android.service.resolver.ResolverTarget;
 import android.util.ArrayMap;
 import android.util.Log;
 
+import androidx.annotation.VisibleForTesting;
+
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
@@ -57,8 +59,10 @@ public final class LRResolverRankerService extends ResolverRankerService {
     private static final float REGULARIZER_PARAM = 0.0001f;
 
     private SharedPreferences mParamSharedPref;
-    private ArrayMap<String, Float> mFeatureWeights;
     private float mBias;
+
+    @VisibleForTesting
+    ArrayMap<String, Float> mFeatureWeights;
 
     @Override
     public IBinder onBind(Intent intent) {
