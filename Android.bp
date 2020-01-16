@@ -37,7 +37,6 @@ android_library {
 android_app {
     name: "ExtServices",
     sdk_version: "system_current",
-    compile_multilib: "both",
     certificate: "platform",
     optimize: {
         proguard_flags_files: ["proguard.proguard"],
