@@ -47,5 +47,8 @@ android_app {
         "ExtServices-core",
     ],
     jni_libs: ["libtextclassifier"],
-    use_embedded_native_libs: true
+    use_embedded_native_libs: true,
+    apex_available: [
+        "com.android.extservices",
+    ],
 }
