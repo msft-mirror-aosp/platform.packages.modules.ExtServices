@@ -224,8 +224,11 @@ public class AssistantSettingsTest {
     public void testCreation() {
         AssistantSettings.Factory factory = AssistantSettings.FACTORY;
         AssistantSettings as = factory.createAndRegister();
+
         assertNotNull(as);
 
+        // unregister listener to avoid onDeviceConfigPropertiesChanged is called after test done.
+        as.unregisterDeviceConfigs();
     }
 
     private static void clearDeviceConfig() throws IOException {
