@@ -49,6 +49,7 @@ android_app {
     jni_libs: ["libtextclassifier"],
     use_embedded_native_libs: true,
     apex_available: [
+        "//apex_available:platform",
         "com.android.extservices",
     ],
 }
