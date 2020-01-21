@@ -69,6 +69,9 @@ final class AssistantSettings implements SmartSuggestionsConfig {
     int mMaxMessagesToExtract = DEFAULT_MAX_MESSAGES_TO_EXTRACT;
     int mMaxSuggestions = DEFAULT_MAX_SUGGESTIONS;
 
+    @VisibleForTesting
+    DeviceConfig.OnPropertiesChangedListener mDeviceConfigChangedListener;
+
     public AssistantSettings() {
         mHandler = new Handler(Looper.getMainLooper());
     }
@@ -80,10 +83,12 @@ final class AssistantSettings implements SmartSuggestionsConfig {
     }
 
     private void registerDeviceConfigs() {
+        mDeviceConfigChangedListener =
+                properties -> onDeviceConfigPropertiesChanged(properties.getNamespace());
         DeviceConfig.addOnPropertiesChangedListener(
                 DeviceConfig.NAMESPACE_SYSTEMUI,
                 this::postToHandler,
-                (properties) -> onDeviceConfigPropertiesChanged(properties.getNamespace()));
+                mDeviceConfigChangedListener);
 
         // Update the fields in this class from the current state of the device config.
         updateFromDeviceConfigFlags();
@@ -91,6 +96,14 @@ final class AssistantSettings implements SmartSuggestionsConfig {
 
     private void postToHandler(Runnable r) {
         this.mHandler.post(r);
+    }
+
+    @VisibleForTesting
+    void unregisterDeviceConfigs() {
+        if (mDeviceConfigChangedListener != null) {
+            DeviceConfig.removeOnPropertiesChangedListener(mDeviceConfigChangedListener);
+            mDeviceConfigChangedListener = null;
+        }
     }
 
     @VisibleForTesting
