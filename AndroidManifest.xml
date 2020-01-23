@@ -98,6 +98,13 @@
             </intent-filter>
         </service>
 
+        <service android:name=".autofill.InlineSuggestionRenderServiceImpl"
+                 android:permission="android.permission.BIND_INLINE_SUGGESTION_RENDER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.autofill.InlineSuggestionRenderService" />
+            </intent-filter>
+        </service>
+
     </application>
 
 </manifest>
