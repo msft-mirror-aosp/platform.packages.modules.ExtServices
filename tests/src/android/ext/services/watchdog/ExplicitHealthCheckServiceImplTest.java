@@ -130,8 +130,6 @@ public class ExplicitHealthCheckServiceImplTest {
         // Then request health check
         mService.request(mNetworkStackPackageName);
 
-        // TODO(gavincorkery): Eliminate the need for this sleep
-        Thread.sleep(1000);
         // Verify that health check is requested for network stack
         mService.getRequestedPackages(new RemoteCallback(result -> {
             requestedPackages.addAll(result.getParcelableArrayList(EXTRA_REQUESTED_PACKAGES));
