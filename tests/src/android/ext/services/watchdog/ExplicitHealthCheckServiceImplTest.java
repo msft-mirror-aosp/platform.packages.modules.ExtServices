@@ -33,6 +33,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
 import android.os.RemoteCallback;
+import android.provider.DeviceConfig;
 import android.service.watchdog.ExplicitHealthCheckService;
 import android.service.watchdog.IExplicitHealthCheckService;
 
@@ -68,13 +69,18 @@ public class ExplicitHealthCheckServiceImplTest {
                 .getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(
-                        Manifest.permission.BIND_EXPLICIT_HEALTH_CHECK_SERVICE);
+                        Manifest.permission.BIND_EXPLICIT_HEALTH_CHECK_SERVICE,
+                        Manifest.permission.WRITE_DEVICE_CONFIG);
 
         mServiceTestRule = new ServiceTestRule();
         mService = IExplicitHealthCheckService.Stub.asInterface(
                 mServiceTestRule.bindService(getExtServiceIntent()));
         mNetworkStackPackageName = getNetworkStackPackage();
         assumeFalse(mNetworkStackPackageName == null);
+        DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ROLLBACK,
+                ExplicitHealthCheckServiceImpl.PROPERTY_WATCHDOG_REQUEST_TIMEOUT_MILLIS,
+                Long.toString(ExplicitHealthCheckServiceImpl.DEFAULT_REQUEST_TIMEOUT_MILLIS),
+                false);
     }
 
     @After

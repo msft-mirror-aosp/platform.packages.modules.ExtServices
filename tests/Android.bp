@@ -22,6 +22,6 @@ android_test {
         "testables",
         "testng",
     ],
-
+    test_suites: ["device-tests"],
     platform_apis: true,
 }
