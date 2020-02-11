@@ -55,6 +55,8 @@ import java.util.concurrent.CountDownLatch;
 public class ExplicitHealthCheckServiceImplTest {
     private static final String NETWORK_STACK_CONNECTOR_CLASS =
             "android.net.INetworkStackConnector";
+    private static final String PROPERTY_WATCHDOG_EXPLICIT_HEALTH_CHECK_ENABLED =
+            "watchdog_explicit_health_check_enabled";
 
     private final Context mContext = InstrumentationRegistry.getContext();
     private IExplicitHealthCheckService mService;
@@ -81,10 +83,16 @@ public class ExplicitHealthCheckServiceImplTest {
                 ExplicitHealthCheckServiceImpl.PROPERTY_WATCHDOG_REQUEST_TIMEOUT_MILLIS,
                 Long.toString(ExplicitHealthCheckServiceImpl.DEFAULT_REQUEST_TIMEOUT_MILLIS),
                 false);
+        DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ROLLBACK,
+                PROPERTY_WATCHDOG_EXPLICIT_HEALTH_CHECK_ENABLED,
+                Boolean.toString(false), /* makeDefault */ false);
     }
 
     @After
     public void tearDown() {
+        DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ROLLBACK,
+                PROPERTY_WATCHDOG_EXPLICIT_HEALTH_CHECK_ENABLED,
+                Boolean.toString(true), /* makeDefault */ false);
         InstrumentationRegistry
                 .getInstrumentation()
                 .getUiAutomation()
