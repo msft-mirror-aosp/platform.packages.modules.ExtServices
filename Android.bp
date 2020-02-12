@@ -49,5 +49,6 @@ android_app {
     apex_available: [
         "//apex_available:platform",
         "com.android.extservices",
+        "test_com.android.extservices",
     ],
 }
