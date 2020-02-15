@@ -26,6 +26,7 @@ android_library {
 
     static_libs: [
         "androidx.annotation_annotation",
+        "androidx.autofill_autofill",
         "TextClassifierServiceLibNoManifest",
         "TextClassifierNotificationLibNoManifest"
     ],
