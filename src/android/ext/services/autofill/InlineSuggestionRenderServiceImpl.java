@@ -40,7 +40,6 @@ public class InlineSuggestionRenderServiceImpl extends InlineSuggestionRenderSer
         Preconditions.checkNotNull(presentation, TAG + ": InlinePresentation should not be null");
 
         Log.v(TAG, "onRenderSuggestion: width=" + width + ", height=" + height);
-        return renderSlice(this, presentation.getSlice(),
-                presentation.getInlinePresentationSpec().getStyle());
+        return renderSlice(this, presentation.getSlice(), /* style */ null);
     }
 }
