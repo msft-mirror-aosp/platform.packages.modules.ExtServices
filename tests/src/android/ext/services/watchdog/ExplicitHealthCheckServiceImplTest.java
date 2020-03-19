@@ -42,6 +42,7 @@ import androidx.test.rule.ServiceTestRule;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -119,6 +120,7 @@ public class ExplicitHealthCheckServiceImplTest {
     }
 
     @Test
+    @Ignore
     public void testHealthCheckRequests() throws Exception {
         List<String> requestedPackages = new ArrayList<>();
         CountDownLatch latch1 = new CountDownLatch(1);
