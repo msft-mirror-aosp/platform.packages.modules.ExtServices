@@ -32,7 +32,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Routes explicit health check requests to the appropriate {@link ExplicitHealthChecker}.
@@ -44,8 +43,8 @@ public final class ExplicitHealthCheckServiceImpl extends ExplicitHealthCheckSer
             "android.net.INetworkStackConnector";
     public static final String PROPERTY_WATCHDOG_REQUEST_TIMEOUT_MILLIS =
             "watchdog_request_timeout_millis";
-    public static final long DEFAULT_REQUEST_TIMEOUT_MILLIS =
-            TimeUnit.DAYS.toMillis(1);
+    // TODO(b/153701690): Use TimeUnit class to get time information instead of using constant.
+    public static final long DEFAULT_REQUEST_TIMEOUT_MILLIS = 24 * 60 * 60 * 1000; // 1 day
     // Modified only #onCreate, using concurrent collection to ensure thread visibility
     private final Map<String, ExplicitHealthChecker> mSupportedCheckers = new ConcurrentHashMap<>();
 
