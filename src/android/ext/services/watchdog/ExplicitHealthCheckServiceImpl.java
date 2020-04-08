@@ -27,6 +27,8 @@ import android.provider.DeviceConfig;
 import android.service.watchdog.ExplicitHealthCheckService;
 import android.util.Log;
 
+import androidx.annotation.VisibleForTesting;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -47,7 +49,8 @@ public final class ExplicitHealthCheckServiceImpl extends ExplicitHealthCheckSer
     public static final long DEFAULT_REQUEST_TIMEOUT_MILLIS =
             TimeUnit.DAYS.toMillis(1);
     // Modified only #onCreate, using concurrent collection to ensure thread visibility
-    private final Map<String, ExplicitHealthChecker> mSupportedCheckers = new ConcurrentHashMap<>();
+    @VisibleForTesting
+    final Map<String, ExplicitHealthChecker> mSupportedCheckers = new ConcurrentHashMap<>();
 
     @Override
     public void onCreate() {
