@@ -32,6 +32,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
+import android.net.ConnectivityManager;
 import android.test.ServiceTestCase;
 
 import androidx.test.InstrumentationRegistry;
@@ -53,6 +54,8 @@ public class ExplicitHealthCheckServiceImplUnitTest
         extends ServiceTestCase<ExplicitHealthCheckServiceImpl> {
     private Context mContext;
     @Mock
+    private ConnectivityManager mConnectivityManager;
+    @Mock
     private PackageManager mPackageManager;
 
     public ExplicitHealthCheckServiceImplUnitTest() {
@@ -66,6 +69,7 @@ public class ExplicitHealthCheckServiceImplUnitTest
         mContext = Mockito.spy(new ContextWrapper(getSystemContext()));
         setContext(mContext);
 
+        when(mContext.getSystemService(ConnectivityManager.class)).thenReturn(mConnectivityManager);
         when(mContext.getPackageManager()).thenReturn(mPackageManager);
 
         InstrumentationRegistry
