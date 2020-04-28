@@ -46,11 +46,9 @@ import android.view.textclassifier.TextClassificationManager;
 import android.view.textclassifier.TextClassifier;
 import android.view.textclassifier.TextClassifierEvent;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
-
-import com.google.common.truth.FailureMetadata;
+import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
+import com.google.common.truth.SubjectFactory;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -505,19 +503,19 @@ public class SmartActionsHelperTest {
     private static final class MessageSubject
             extends Subject<MessageSubject, ConversationActions.Message> {
 
-        private static final Subject.Factory<MessageSubject, ConversationActions.Message> FACTORY =
-                new Subject.Factory<MessageSubject, ConversationActions.Message>() {
+        private static final SubjectFactory<MessageSubject, ConversationActions.Message> FACTORY =
+                new SubjectFactory<MessageSubject, ConversationActions.Message>() {
                     @Override
-                    public MessageSubject createSubject(
-                            @NonNull FailureMetadata failureMetadata,
+                    public MessageSubject getSubject(
+                            @NonNull FailureStrategy failureStrategy,
                             @NonNull ConversationActions.Message subject) {
-                        return new MessageSubject(failureMetadata, subject);
+                        return new MessageSubject(failureStrategy, subject);
                     }
                 };
 
         private MessageSubject(
-                FailureMetadata failureMetadata, @Nullable ConversationActions.Message subject) {
-            super(failureMetadata, subject);
+                FailureStrategy failureStrategy, @Nullable ConversationActions.Message subject) {
+            super(failureStrategy, subject);
         }
 
         private void hasText(String text) {
