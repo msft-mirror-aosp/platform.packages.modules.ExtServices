@@ -18,13 +18,16 @@ package android.ext.services.resolver;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertThrows;
 
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.UserManager;
 import android.service.resolver.ResolverTarget;
 import android.test.ServiceTestCase;
 import android.util.ArrayMap;
@@ -52,6 +55,7 @@ public class LRResolverRankerServiceTest extends ServiceTestCase<LRResolverRanke
     @Mock private Context mContext;
     @Mock private SharedPreferences mSharedPreferences;
     @Mock private SharedPreferences.Editor mEditor;
+    @Mock private UserManager mUserManager;
 
     public LRResolverRankerServiceTest() {
         super(LRResolverRankerService.class);
@@ -69,7 +73,19 @@ public class LRResolverRankerServiceTest extends ServiceTestCase<LRResolverRanke
     }
 
     @Test
+    public void testInitModelUnderUserLocked() {
+        setUserLockedStatus(true);
+        createSharedPreferences(/* hasSharedPreferences */ true, /* version */ 1);
+
+        final LRResolverRankerService service = getService();
+        service.onBind(new Intent("test"));
+
+        assertThat(service.mFeatureWeights).isNull();
+    }
+
+    @Test
     public void testInitModelWhileNoSharedPreferences() {
+        setUserLockedStatus(false);
         createSharedPreferences(/* hasSharedPreferences */ false, /* version */ 0);
 
         final LRResolverRankerService service = getService();
@@ -84,6 +100,7 @@ public class LRResolverRankerServiceTest extends ServiceTestCase<LRResolverRanke
 
     @Test
     public void testInitModelWhileVersionInSharedPreferencesSmallerThanCurrent() {
+        setUserLockedStatus(false);
         createSharedPreferences(/* hasSharedPreferences */ true, /* version */ 0);
 
         final LRResolverRankerService service = getService();
@@ -98,6 +115,7 @@ public class LRResolverRankerServiceTest extends ServiceTestCase<LRResolverRanke
 
     @Test
     public void testInitModelWhileVersionInSharedPreferencesNotSmallerThanCurrent() {
+        setUserLockedStatus(false);
         createSharedPreferences(/* hasSharedPreferences */ true, /* version */ 1);
 
         final LRResolverRankerService service = getService();
@@ -111,7 +129,25 @@ public class LRResolverRankerServiceTest extends ServiceTestCase<LRResolverRanke
     }
 
     @Test
+    public void testOnPredictSharingProbabilitiesWhileServiceIsNotReady() {
+        setUserLockedStatus(true);
+        createSharedPreferences(/* hasSharedPreferences */ true, /* version */ 1);
+        final LRResolverRankerService service = getService();
+        service.onBind(new Intent("test"));
+        final List<ResolverTarget> targets =
+                Arrays.asList(
+                        makeNewResolverTarget(/* recency */ 0.1f, /* timeSpent */ 0.2f,
+                                /* launch */ 0.3f, /* chooser */ 0.4f, /* selectProb */ -1.0f),
+                        makeNewResolverTarget(/* recency */ 0.4f, /* timeSpent */ 0.3f,
+                                /* launch */ 0.2f, /* chooser */ 0.1f, /* selectProb */ -1.0f));
+
+        assertThrows(IllegalStateException.class,
+                () -> service.onPredictSharingProbabilities(targets));
+    }
+
+    @Test
     public void testOnPredictSharingProbabilities() {
+        setUserLockedStatus(false);
         createSharedPreferences(/* hasSharedPreferences */ false, /* version */ 0);
         final LRResolverRankerService service = getService();
         service.onBind(new Intent("test"));
@@ -129,7 +165,27 @@ public class LRResolverRankerServiceTest extends ServiceTestCase<LRResolverRanke
     }
 
     @Test
+    public void testOnTrainRankingModelWhileServiceIsNotReady() {
+        setUserLockedStatus(true);
+        createSharedPreferences(/* hasSharedPreferences */ true, /* version */ 1);
+        final LRResolverRankerService service = getService();
+        service.onBind(new Intent("test"));
+        final List<ResolverTarget> targets =
+                Arrays.asList(
+                        makeNewResolverTarget(/* recency */ 0.1f, /* timeSpent */ 0.1f,
+                                /* launch */ 0.1f, /* chooser */ 0.1f, /* selectProb */ 0.1f),
+                        makeNewResolverTarget(/* recency */ 0.2f, /* timeSpent */ 0.2f,
+                                /* launch */ 0.2f, /* chooser */ 0.2f, /* selectProb */ 0.2f),
+                        makeNewResolverTarget(/* recency */ 0.3f, /* timeSpent */ 0.3f,
+                                /* launch */ 0.3f, /* chooser */ 0.3f, /* selectProb */ 0.3f));
+
+        assertThrows(IllegalStateException.class,
+                () -> service.onTrainRankingModel(targets, /* selectedPosition */ 0));
+    }
+
+    @Test
     public void testOnTrainRankingModelWhileSelectedPositionScoreIsNotHighest() {
+        setUserLockedStatus(false);
         createSharedPreferences(/* hasSharedPreferences */ true, /* version */ 1);
         final LRResolverRankerService service = getService();
         service.onBind(new Intent("test"));
@@ -153,6 +209,7 @@ public class LRResolverRankerServiceTest extends ServiceTestCase<LRResolverRanke
 
     @Test
     public void testOnTrainRankingModelWhileSelectedPositionScoreIsHighest() {
+        setUserLockedStatus(false);
         createSharedPreferences(/* hasSharedPreferences */ true, /* version */ 1);
         final LRResolverRankerService service = getService();
         service.onBind(new Intent("test"));
@@ -202,5 +259,10 @@ public class LRResolverRankerServiceTest extends ServiceTestCase<LRResolverRanke
             when(mSharedPreferences.edit()).thenReturn(mEditor);
             doNothing().when(mEditor).apply();
         }
+    }
+
+    private void setUserLockedStatus(boolean locked) {
+        when(mContext.getSystemService(eq(Context.USER_SERVICE))).thenReturn(mUserManager);
+        when(mUserManager.isUserUnlocked()).thenReturn(!locked);
     }
 }
