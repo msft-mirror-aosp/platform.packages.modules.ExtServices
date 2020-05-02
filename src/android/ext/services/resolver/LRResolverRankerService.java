@@ -21,6 +21,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Environment;
 import android.os.IBinder;
+import android.os.UserManager;
 import android.os.storage.StorageManager;
 import android.service.resolver.ResolverRankerService;
 import android.service.resolver.ResolverTarget;
@@ -28,6 +29,7 @@ import android.util.ArrayMap;
 import android.util.Log;
 
 import androidx.annotation.VisibleForTesting;
+import androidx.core.util.Preconditions;
 
 import java.io.File;
 import java.util.Collection;
@@ -60,6 +62,7 @@ public final class LRResolverRankerService extends ResolverRankerService {
 
     private SharedPreferences mParamSharedPref;
     private float mBias;
+    private boolean mInitModelDone;
 
     @VisibleForTesting
     ArrayMap<String, Float> mFeatureWeights;
@@ -72,6 +75,8 @@ public final class LRResolverRankerService extends ResolverRankerService {
 
     @Override
     public void onPredictSharingProbabilities(List<ResolverTarget> targets) {
+        Preconditions.checkState(initModel(), "Service is not ready yet");
+
         final int size = targets.size();
         for (int i = 0; i < size; ++i) {
             ResolverTarget target = targets.get(i);
@@ -82,6 +87,8 @@ public final class LRResolverRankerService extends ResolverRankerService {
 
     @Override
     public void onTrainRankingModel(List<ResolverTarget> targets, int selectedPosition) {
+        Preconditions.checkState(initModel(), "Service is not ready yet");
+
         final int size = targets.size();
         if (selectedPosition < 0 || selectedPosition >= size) {
             if (DEBUG) {
@@ -106,7 +113,16 @@ public final class LRResolverRankerService extends ResolverRankerService {
         commitUpdate();
     }
 
-    private void initModel() {
+    // This is not thread safe, but ResolverRankerService has added the protection to call into it
+    // in the same Handler.
+    private boolean initModel() {
+        if (mInitModelDone) {
+            return true;
+        }
+        final UserManager userManager = (UserManager) getSystemService(Context.USER_SERVICE);
+        if (userManager == null || !userManager.isUserUnlocked()) {
+            return false;
+        }
         mParamSharedPref = getParamSharedPref();
         mFeatureWeights = new ArrayMap<>(4);
         if (mParamSharedPref == null ||
@@ -127,6 +143,8 @@ public final class LRResolverRankerService extends ResolverRankerService {
             mFeatureWeights.put(RECENCY_SCORE, mParamSharedPref.getFloat(RECENCY_SCORE, 0.0f));
             mFeatureWeights.put(CHOOSER_SCORE, mParamSharedPref.getFloat(CHOOSER_SCORE, 0.0f));
         }
+        mInitModelDone = true;
+        return true;
     }
 
     private ArrayMap<String, Float> getFeatures(ResolverTarget target) {
