@@ -146,6 +146,26 @@ public class LRResolverRankerServiceTest extends ServiceTestCase<LRResolverRanke
     }
 
     @Test
+    public void testOnPredictSharingProbabilitiesAfterUserUnlock() {
+        setUserLockedStatus(true);
+        createSharedPreferences(/* hasSharedPreferences */ true, /* version */ 1);
+        final LRResolverRankerService service = getService();
+        service.onBind(new Intent("test"));
+        setUserLockedStatus(false);
+        final List<ResolverTarget> targets =
+                Arrays.asList(
+                        makeNewResolverTarget(/* recency */ 0.1f, /* timeSpent */ 0.2f,
+                                /* launch */ 0.3f, /* chooser */ 0.4f, /* selectProb */ -1.0f),
+                        makeNewResolverTarget(/* recency */ 0.4f, /* timeSpent */ 0.3f,
+                                /* launch */ 0.2f, /* chooser */ 0.1f, /* selectProb */ -1.0f));
+
+        service.onPredictSharingProbabilities(targets);
+
+        assertThat(targets.get(0).getSelectProbability()).isIn(Range.closed(0f, 1.0f));
+        assertThat(targets.get(1).getSelectProbability()).isIn(Range.closed(0f, 1.0f));
+    }
+
+    @Test
     public void testOnPredictSharingProbabilities() {
         setUserLockedStatus(false);
         createSharedPreferences(/* hasSharedPreferences */ false, /* version */ 0);
@@ -181,6 +201,31 @@ public class LRResolverRankerServiceTest extends ServiceTestCase<LRResolverRanke
 
         assertThrows(IllegalStateException.class,
                 () -> service.onTrainRankingModel(targets, /* selectedPosition */ 0));
+    }
+
+    @Test
+    public void testOnTrainRankingModelAfterUserUnlock() {
+        setUserLockedStatus(true);
+        createSharedPreferences(/* hasSharedPreferences */ true, /* version */ 1);
+        final LRResolverRankerService service = getService();
+        service.onBind(new Intent("test"));
+        setUserLockedStatus(false);
+        final List<ResolverTarget> targets =
+                Arrays.asList(
+                        makeNewResolverTarget(/* recency */ 0.1f, /* timeSpent */ 0.1f,
+                                /* launch */ 0.1f, /* chooser */ 0.1f, /* selectProb */ 0.1f),
+                        makeNewResolverTarget(/* recency */ 0.2f, /* timeSpent */ 0.2f,
+                                /* launch */ 0.2f, /* chooser */ 0.2f, /* selectProb */ 0.2f),
+                        makeNewResolverTarget(/* recency */ 0.3f, /* timeSpent */ 0.3f,
+                                /* launch */ 0.3f, /* chooser */ 0.3f, /* selectProb */ 0.3f));
+
+        service.onTrainRankingModel(targets, /* selectedPosition */ 0);
+
+        final ArrayMap<String, Float> featureWeights = service.mFeatureWeights;
+        assertThat(featureWeights.get(LAUNCH_SCORE)).isNotEqualTo(0.1f);
+        assertThat(featureWeights.get(TIME_SPENT_SCORE)).isNotEqualTo(0.2f);
+        assertThat(featureWeights.get(RECENCY_SCORE)).isNotEqualTo(0.3f);
+        assertThat(featureWeights.get(CHOOSER_SCORE)).isNotEqualTo(0.4f);
     }
 
     @Test
