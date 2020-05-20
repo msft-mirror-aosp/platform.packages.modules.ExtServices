@@ -44,6 +44,7 @@
         android:directBootAware="true">
 
         <service android:name=".storage.CacheQuotaServiceImpl"
+             android:exported="true"
              android:permission="android.permission.BIND_CACHE_QUOTA_SERVICE">
             <intent-filter>
                 <action android:name="android.app.usage.CacheQuotaService" />
@@ -51,6 +52,7 @@
         </service>
 
         <service android:name=".resolver.LRResolverRankerService"
+                 android:exported="true"
                  android:permission="android.permission.BIND_RESOLVER_RANKER_SERVICE">
             <intent-filter android:priority="-1">
                 <action android:name="android.service.resolver.ResolverRankerService" />
@@ -67,6 +69,7 @@
         </service>
 
         <service android:name=".autofill.AutofillFieldClassificationServiceImpl"
+             android:exported="true"
              android:permission="android.permission.BIND_AUTOFILL_FIELD_CLASSIFICATION_SERVICE">
             <intent-filter>
                 <action android:name="android.service.autofill.AutofillFieldClassificationService" />
@@ -80,6 +83,7 @@
         </service>
 
         <service android:name=".watchdog.ExplicitHealthCheckServiceImpl"
+                 android:exported="true"
                  android:permission="android.permission.BIND_EXPLICIT_HEALTH_CHECK_SERVICE">
             <intent-filter>
                 <action android:name="android.service.watchdog.ExplicitHealthCheckService" />
@@ -100,6 +104,7 @@
         </service>
 
         <service android:name=".autofill.InlineSuggestionRenderServiceImpl"
+                 android:exported="true"
                  android:permission="android.permission.BIND_INLINE_SUGGESTION_RENDER_SERVICE">
             <intent-filter>
                 <action android:name="android.service.autofill.InlineSuggestionRenderService" />
