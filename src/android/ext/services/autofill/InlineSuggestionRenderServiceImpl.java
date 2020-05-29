@@ -47,7 +47,7 @@ public class InlineSuggestionRenderServiceImpl extends InlineSuggestionRenderSer
         PendingIntent attributionIntent = null;
         if(style != null && !style.isEmpty()) {
             suggestionView = Renderer.render(this, presentation.getSlice(), style);
-            attributionIntent = Renderer.getAttribution(presentation.getSlice());
+            attributionIntent = Renderer.getAttributionIntent(presentation.getSlice());
         }
         if (suggestionView != null && attributionIntent != null) {
             final IntentSender attributionIntentSender = attributionIntent.getIntentSender();
