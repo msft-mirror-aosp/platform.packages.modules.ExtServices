@@ -17,8 +17,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:androidprv="http://schemas.android.com/apk/prv/res/android"
     package="android.ext.services"
-    android:versionCode="300802100"
-    android:versionName="r_aml_300802100"
+    android:versionCode="300802200"
+    android:versionName="r_aml_300802200"
     coreApp="true">
 
     <uses-permission android:name="android.permission.PROVIDE_RESOLVER_RANKER_SERVICE" />
@@ -41,7 +41,8 @@
     <application android:label="@string/app_name"
         android:defaultToDeviceProtectedStorage="true"
         android:forceQueryable="true"
-        android:directBootAware="true">
+        android:directBootAware="true"
+        android:supportsRtl="true">
 
         <service android:name=".storage.CacheQuotaServiceImpl"
              android:permission="android.permission.BIND_CACHE_QUOTA_SERVICE">
