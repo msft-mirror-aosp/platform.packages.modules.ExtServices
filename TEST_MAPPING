@@ -8,5 +8,10 @@
     {
       "name": "ExtServicesUnitTests"
     }
+  ],
+  "imports": [
+    {
+      "path": "external/libtextclassifier"
+    }
   ]
 }
