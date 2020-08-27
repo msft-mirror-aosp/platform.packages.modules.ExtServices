@@ -42,6 +42,7 @@ import androidx.test.rule.ServiceTestRule;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -74,6 +75,8 @@ public class ExplicitHealthCheckServiceImplTest {
                         Manifest.permission.BIND_EXPLICIT_HEALTH_CHECK_SERVICE,
                         Manifest.permission.WRITE_DEVICE_CONFIG);
 
+        executeShellCommand("svc wifi disable");
+        executeShellCommand("svc data disable");
         mServiceTestRule = new ServiceTestRule();
         mService = IExplicitHealthCheckService.Stub.asInterface(
                 mServiceTestRule.bindService(getExtServiceIntent()));
@@ -93,6 +96,8 @@ public class ExplicitHealthCheckServiceImplTest {
         DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ROLLBACK,
                 PROPERTY_WATCHDOG_EXPLICIT_HEALTH_CHECK_ENABLED,
                 Boolean.toString(true), /* makeDefault */ false);
+        executeShellCommand("svc wifi enable");
+        executeShellCommand("svc data enable");
         InstrumentationRegistry
                 .getInstrumentation()
                 .getUiAutomation()
@@ -119,6 +124,7 @@ public class ExplicitHealthCheckServiceImplTest {
     }
 
     @Test
+    @Ignore
     public void testHealthCheckRequests() throws Exception {
         List<String> requestedPackages = new ArrayList<>();
         CountDownLatch latch1 = new CountDownLatch(1);
@@ -211,5 +217,12 @@ public class ExplicitHealthCheckServiceImplTest {
             return null;
         }
         return resolveInfo.serviceInfo;
+    }
+
+    private void executeShellCommand(String command) {
+        InstrumentationRegistry
+                .getInstrumentation()
+                .getUiAutomation()
+                .executeShellCommand(command);
     }
 }
