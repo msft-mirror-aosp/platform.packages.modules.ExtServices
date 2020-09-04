@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--  Copyright (C) 2016 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+ -->
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- no translation found for app_name (4673195523940187649) -->
+    <skip />
+    <string name="notification_assistant" msgid="5607299349355870878">"Androidin mukautuvat ilmoitukset"</string>
+    <!-- no translation found for autofill_field_classification_default_algorithm (7862725390325125832) -->
+    <skip />
+    <!-- no translation found for autofill_field_classification_available_algorithms:0 (7041855124569290434) -->
+    <!-- no translation found for autofill_field_classification_available_algorithms:1 (1835877693348683387) -->
+    <!-- no translation found for copy_code_desc (2743019136799529731) -->
+    <skip />
+    <!-- no translation found for code_copied_to_clipboard (8973654687582113127) -->
+    <skip />
+</resources>
