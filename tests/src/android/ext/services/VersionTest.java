@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2018 The Android Open Source Project
+/**
+ * Copyright (C) 2019 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,23 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.ext.services.sms;
+
+package android.ext.services;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import android.os.Bundle;
+import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
-/**
- * Contains the base tests for FinancialSmsServiceImpl.
- */
-public class FinancialSmsServiceImplTest {
-
-    private final FinancialSmsServiceImpl mService = new FinancialSmsServiceImpl();
+@RunWith(AndroidJUnit4.class)
+public class VersionTest {
 
     @Test
-    public void testOnGetSmsMessages_nullWithNoParamData() {
-        assertThat(mService.onGetSmsMessages(new Bundle())).isNull();
+    public void testGetVersionCode() {
+        final int versionCode = Version.getVersionCode();
+        assertThat(versionCode).isEqualTo(1);
     }
 }

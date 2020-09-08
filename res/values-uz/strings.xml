@@ -16,15 +16,5 @@
 
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <!-- no translation found for app_name (4673195523940187649) -->
-    <skip />
     <string name="notification_assistant" msgid="5607299349355870878">"Android moslashuvchan bildirishnomalari"</string>
-    <!-- no translation found for autofill_field_classification_default_algorithm (7862725390325125832) -->
-    <skip />
-    <!-- no translation found for autofill_field_classification_available_algorithms:0 (7041855124569290434) -->
-    <!-- no translation found for autofill_field_classification_available_algorithms:1 (1835877693348683387) -->
-    <!-- no translation found for copy_code_desc (2743019136799529731) -->
-    <skip />
-    <!-- no translation found for code_copied_to_clipboard (8973654687582113127) -->
-    <skip />
 </resources>
