@@ -187,7 +187,7 @@ public class Assistant extends NotificationAssistantService {
             mLiveNotifications.remove(sbn.getKey());
 
         } catch (Throwable e) {
-            Log.e(TAG, "Error occurred processing removal of " + sbn, e);
+            Log.e(TAG, "Error occurred processing removal of " + sbn.getKey(), e);
         }
     }
 
