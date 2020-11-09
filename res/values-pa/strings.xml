@@ -16,5 +16,5 @@
 
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="notification_assistant" msgid="5607299349355870878">"Android ਅਨੁਕੂਲ ਸੂਚਨਾਵਾਂ"</string>
+    <string name="notification_assistant" msgid="5607299349355870878">"Android ਅਡੈਪਟਿਵ ਸੂਚਨਾਵਾਂ"</string>
 </resources>
