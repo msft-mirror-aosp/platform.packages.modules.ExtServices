@@ -16,7 +16,6 @@
 
 package android.ext.services.attestation;
 
-import android.ext.services.R;
 import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
 import android.service.attestation.ImpressionAttestationService;
@@ -29,26 +28,20 @@ import androidx.annotation.Nullable;
  * The implementation service for {@link ImpressionAttestationService}
  */
 public class ImpressionAttestationServiceImpl extends ImpressionAttestationService {
-    private String mDefaultAlgorithm;
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        mDefaultAlgorithm = getString(R.string.attestation_default_algorithm);
-    }
-
     @Override
     @Nullable
-    public ImpressionToken onGenerateImpressionToken(@NonNull HardwareBuffer screenshot,
-            @NonNull Rect bounds, @NonNull String hashAlgorithm) {
+    public ImpressionToken onGenerateImpressionToken(@NonNull String salt,
+            @NonNull HardwareBuffer screenshot, @NonNull Rect bounds,
+            @NonNull String hashAlgorithm) {
         // TODO: Implement the hashing and hmac functions
         return new ImpressionToken(System.currentTimeMillis(), bounds, hashAlgorithm, new byte[8],
                 new byte[32]);
     }
 
     @Override
-    public int onVerifyImpressionToken(@NonNull ImpressionToken impressionToken) {
+    public boolean onVerifyImpressionToken(@NonNull String salt,
+            @NonNull ImpressionToken impressionToken) {
         // TODO: Implement the verification
-        return VERIFICATION_STATUS_UNKNOWN;
+        return true;
     }
 }
