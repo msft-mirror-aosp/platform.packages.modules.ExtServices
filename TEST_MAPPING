@@ -2,11 +2,17 @@
   "presubmit": [
     {
       "name": "ExtServicesUnitTests"
+    },
+    {
+      "name": "libextservices_test"
     }
   ],
   "postsubmit": [
     {
       "name": "ExtServicesUnitTests"
+    },
+    {
+      "name": "libextservices_test"
     }
   ],
   "imports": [
