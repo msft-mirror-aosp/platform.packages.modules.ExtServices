@@ -26,7 +26,6 @@
         <item>CREDIT_CARD</item>
     </string-array>
 
-    <string name="attestation_default_algorithm" translatable="false">WAVELET</string>
     <string-array name="attestation_available_algorithms" translatable="false">
         <item>WAVELET</item>
     </string-array>
