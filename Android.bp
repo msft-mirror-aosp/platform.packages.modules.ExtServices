@@ -15,12 +15,12 @@
 android_library {
     name: "ExtServices-core",
     srcs: [
-        "src/**/*.java",
+        "java/src/**/*.java",
     ],
     sdk_version: "system_current",
     min_sdk_version: "30",
     resource_dirs: [
-        "res",
+        "java/res",
     ],
 
     manifest: "AndroidManifest.xml",
