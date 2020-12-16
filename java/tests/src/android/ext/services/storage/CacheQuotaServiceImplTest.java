@@ -155,6 +155,7 @@ public class CacheQuotaServiceImplTest extends ServiceTestCase<CacheQuotaService
     private StorageVolume makeNewStorageVolume(String id, File path, String fsUuid) {
         return new StorageVolume(id, path, path, /* description */ "", /* primary */ false,
                 /* removable */ false, /* emulated */ true, /* allowMassStorage */ false,
-                /* maxFileSize */ -1, UserHandle.CURRENT, fsUuid, Environment.MEDIA_MOUNTED);
+                /* maxFileSize */ -1, UserHandle.CURRENT, null /* uuid */, fsUuid,
+                Environment.MEDIA_MOUNTED);
     }
 }
