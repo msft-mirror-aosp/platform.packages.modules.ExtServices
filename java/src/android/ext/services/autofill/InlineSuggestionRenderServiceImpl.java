@@ -32,6 +32,12 @@ public class InlineSuggestionRenderServiceImpl extends InlineSuggestionRenderSer
 
     private static final String TAG = "InlinePresentationRendererServiceImpl";
 
+    @NonNull
+    @Override
+    public Bundle onGetInlineSuggestionsRendererInfo() {
+        return Renderer.getSupportedInlineUiVersionsAsBundle();
+    }
+
     /**
      * @hide
      */
