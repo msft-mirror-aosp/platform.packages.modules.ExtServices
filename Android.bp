@@ -15,11 +15,12 @@
 android_library {
     name: "ExtServices-core",
     srcs: [
-        "src/**/*.java",
+        "java/src/**/*.java",
     ],
     sdk_version: "system_current",
+    min_sdk_version: "30",
     resource_dirs: [
-        "res",
+        "java/res",
     ],
 
     manifest: "AndroidManifest.xml",
@@ -37,6 +38,7 @@ android_library {
 android_app {
     name: "ExtServices",
     sdk_version: "system_current",
+    min_sdk_version: "30",
     certificate: "platform",
     optimize: {
         proguard_flags_files: ["proguard.proguard"],
@@ -52,7 +54,6 @@ android_app {
         "com.android.extservices",
         "test_com.android.extservices",
     ],
-    min_sdk_version: "current",
     required: [
         "libtextclassifier_annotator_en_model",
         "libtextclassifier_annotator_universal_model",
