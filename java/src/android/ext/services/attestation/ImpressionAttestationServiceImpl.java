@@ -30,16 +30,16 @@ import androidx.annotation.Nullable;
 public class ImpressionAttestationServiceImpl extends ImpressionAttestationService {
     @Override
     @Nullable
-    public ImpressionToken onGenerateImpressionToken(@NonNull String salt,
+    public ImpressionToken onGenerateImpressionToken(@NonNull byte[] salt,
             @NonNull HardwareBuffer screenshot, @NonNull Rect bounds,
             @NonNull String hashAlgorithm) {
         // TODO: Implement the hashing and hmac functions
-        return new ImpressionToken(System.currentTimeMillis(), bounds, hashAlgorithm, new byte[8],
-                new byte[32]);
+        return new ImpressionToken(System.currentTimeMillis(), bounds, hashAlgorithm,
+                new byte[8], new byte[32]);
     }
 
     @Override
-    public boolean onVerifyImpressionToken(@NonNull String salt,
+    public boolean onVerifyImpressionToken(@NonNull byte[] salt,
             @NonNull ImpressionToken impressionToken) {
         // TODO: Implement the verification
         return true;
