@@ -109,15 +109,15 @@
             </intent-filter>
         </service>
 
-        <service android:name=".attestation.ImpressionAttestationServiceImpl"
+        <service android:name=".screenshot.ScreenshotHasherServiceImpl"
             android:exported="true"
-            android:permission="android.permission.BIND_IMPRESSION_ATTESTATION_SERVICE">
+            android:permission="android.permission.BIND_SCREENSHOT_HASHER_SERVICE">
             <intent-filter>
-                <action android:name="android.service.attestation.ImpressionAttestationService" />
+                <action android:name="android.service.screenshot.ScreenshotHasherService" />
             </intent-filter>
             <meta-data
-                android:name="android.attestation.available_algorithms"
-                android:resource="@array/attestation_available_algorithms" />
+                android:name="android.screenshot.available_algorithms"
+                android:resource="@array/screenshot_available_algorithms" />
         </service>
 
     </application>
