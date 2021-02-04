@@ -56,11 +56,7 @@ public:
         AHardwareBuffer_unlock(mBuffer, nullptr);
     }
 
-    ~BufferWrapper() {
-        unlock();
-        AHardwareBuffer_release(mBuffer);
-        mBuffer = nullptr;
-    }
+    ~BufferWrapper() { unlock(); }
 
 private:
     AHardwareBuffer* mBuffer = nullptr;
