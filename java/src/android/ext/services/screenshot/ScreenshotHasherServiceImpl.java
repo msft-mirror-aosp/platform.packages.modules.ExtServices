@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The Android Open Source Project
+ * Copyright (C) 2021 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,33 +14,33 @@
  * limitations under the License.
  */
 
-package android.ext.services.attestation;
+package android.ext.services.screenshot;
 
 import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
-import android.service.attestation.ImpressionAttestationService;
-import android.service.attestation.ImpressionToken;
+import android.service.screenshot.ScreenshotHash;
+import android.service.screenshot.ScreenshotHasherService;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 /**
- * The implementation service for {@link ImpressionAttestationService}
+ * The implementation service for {@link ScreenshotHasherService}
  */
-public class ImpressionAttestationServiceImpl extends ImpressionAttestationService {
+public class ScreenshotHasherServiceImpl extends ScreenshotHasherService {
     @Override
     @Nullable
-    public ImpressionToken onGenerateImpressionToken(@NonNull byte[] salt,
+    public ScreenshotHash onGenerateScreenshotHash(@NonNull byte[] salt,
             @NonNull HardwareBuffer screenshot, @NonNull Rect bounds,
             @NonNull String hashAlgorithm) {
         // TODO: Implement the hashing and hmac functions
-        return new ImpressionToken(System.currentTimeMillis(), bounds, hashAlgorithm,
+        return new ScreenshotHash(System.currentTimeMillis(), bounds, hashAlgorithm,
                 new byte[8], new byte[32]);
     }
 
     @Override
-    public boolean onVerifyImpressionToken(@NonNull byte[] salt,
-            @NonNull ImpressionToken impressionToken) {
+    public boolean onVerifyScreenshotHash(@NonNull byte[] salt,
+            @NonNull ScreenshotHash screenshotHash) {
         // TODO: Implement the verification
         return true;
     }
