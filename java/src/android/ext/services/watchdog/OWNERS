@@ -1,2 +1,1 @@
-gavincorkery@google.com
-olilan@google.com
+include platform/frameworks/base:/core/java/android/service/watchdog/OWNERS
