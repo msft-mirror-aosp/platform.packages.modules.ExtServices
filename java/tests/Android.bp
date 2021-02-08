@@ -23,7 +23,7 @@ android_test {
         "libdexmakerjvmtiagent",
         "libstaticjvmtiagent",
     ],
-    test_suites: ["device-tests", "mts"],
+    test_suites: ["device-tests", "mts-extservices"],
     platform_apis: true,
     compile_multilib: "both",
 }
