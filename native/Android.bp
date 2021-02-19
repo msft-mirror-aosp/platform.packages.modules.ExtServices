@@ -19,8 +19,13 @@ cc_library_static {
     shared_libs: [
         "libandroid",
     ],
+    // TODO(b/155825630): uncomment after Android.bp for libfft2d is submitted.
+    // static_libs: [
+    //   "libfft2d",
+    // ],
     srcs: [
         "*.cpp",
+        "pHash/*.cpp",
     ],
     cflags: [
         "-Wno-unused-parameter",
