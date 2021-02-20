@@ -109,15 +109,15 @@
             </intent-filter>
         </service>
 
-        <service android:name=".screenshot.ScreenshotHasherServiceImpl"
+        <service android:name=".displayhash.DisplayHasherServiceImpl"
             android:exported="true"
-            android:permission="android.permission.BIND_SCREENSHOT_HASHER_SERVICE">
+            android:permission="android.permission.BIND_DISPLAY_HASHER_SERVICE">
             <intent-filter>
-                <action android:name="android.service.screenshot.ScreenshotHasherService" />
+                <action android:name="android.service.displayhash.DisplayHasherService" />
             </intent-filter>
             <meta-data
-                android:name="android.screenshot.available_algorithms"
-                android:resource="@array/screenshot_available_algorithms" />
+                android:name="android.displayhash.available_algorithms"
+                android:resource="@array/displayhash_available_algorithms" />
         </service>
 
     </application>
