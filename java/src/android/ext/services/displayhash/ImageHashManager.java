@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.ext.services.screenshot;
+package android.ext.services.displayhash;
 
 import android.hardware.HardwareBuffer;
 

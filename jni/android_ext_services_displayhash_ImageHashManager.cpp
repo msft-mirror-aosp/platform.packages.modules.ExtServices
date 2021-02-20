@@ -115,8 +115,8 @@ static const JNINativeMethod gMethods[] = {
 };
 // clang-format on
 
-int register_android_ext_services_attestation_ImpressionAlgorithm(JNIEnv* env) {
-    int res = jniRegisterNativeMethods(env, "android/ext/services/attestation/ImageHashManager",
+int register_android_ext_services_displayhash_DisplayHashAlgorithm(JNIEnv* env) {
+    int res = jniRegisterNativeMethods(env, "android/ext/services/displayhash/ImageHashManager",
                                        gMethods, NELEM(gMethods));
     LOG_ALWAYS_FATAL_IF(res < 0, "Unable to register native methods.");
 
