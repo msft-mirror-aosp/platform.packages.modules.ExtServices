@@ -15,13 +15,22 @@
  */
 
 #include "ImageHashManager.h"
+#include "pHash/phash_config.h"
+#include "pHash/phash_fingerprinter.h"
+
 #include <errno.h>
 
 namespace android {
 
-int32_t ImageHashManager::generateWaveletHash(uint8_t* buf, int32_t width, int32_t height,
-                                              std::array<uint8_t, 8>* outImageHash) {
-    *outImageHash = {buf[0], buf[0], buf[0], buf[0], buf[0], buf[0], buf[0], buf[0]};
+int32_t ImageHashManager::generatePHash(const uint8_t* buffer, int32_t width, int32_t height,
+                                        std::array<uint8_t, 8>* outImageHash) {
+    if (width != kImageLength || height != kImageLength) {
+        return -EINVAL;
+    }
+
+    PhashFingerprinter worker;
+    const int64_t result = worker.GenerateFingerprint(buffer);
+    *reinterpret_cast<int64_t*>(outImageHash->data()) = result;
     return 0;
 }
 
@@ -31,8 +40,8 @@ int32_t ImageHashManager::generateHash(std::string hashAlgorithm, uint8_t* buf,
                                        std::array<uint8_t, 8>* outImageHash) {
     // TODO: Add real hashing algorithms here. This just calls a fake function
     // that just returns some bytes from the buffer.
-    if (hashAlgorithm == "wavelet") {
-        return generateWaveletHash(buf, bufferDesc.width, bufferDesc.height, outImageHash);
+    if (hashAlgorithm == "phash") {
+        return generatePHash(buf, bufferDesc.width, bufferDesc.height, outImageHash);
     }
 
     return -EINVAL;
