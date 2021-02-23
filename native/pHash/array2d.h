@@ -24,7 +24,7 @@ namespace android {
 template <typename T>
 class Array2D {
 public:
-    Array2D(T* buffer);
+    Array2D(T* buffer2d) : buffer(buffer2d) {}
 
     const T& operator()(const int y, const int x) const { return buffer[y * kImageLength + x]; }
 
