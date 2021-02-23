@@ -15,7 +15,9 @@
  */
 
 #include <ImageHashManager.h>
+#include <android-base/file.h>
 #include <gtest/gtest.h>
+#include <pHash/phash_fingerprinter.h>
 
 namespace android {
 class ImageHashManagerTest : public ::testing::Test {};
@@ -32,5 +34,37 @@ TEST_F(ImageHashManagerTest, TestWavelet) {
     ImageHashManager::generateWaveletHash(buf.data(), width, height, &imageHash);
     ASSERT_EQ(expectedHash, imageHash);
 }
+
+namespace {
+// TODO(b/155825630): define ENABLE_FFT after submitting Android.bp for fft2d.
+
+#ifdef ENABLE_FFT
+std::string GetTestDataPath(const std::string& fn) {
+    static std::string exec_dir = android::base::GetExecutableDirectory();
+    return exec_dir + "/test_data/" + fn;
+}
+
+std::string NewFrameFromJpeg(const char* filename) {
+    // Read the jpeg file
+    const std::string full_filename = GetTestDataPath(filename);
+    std::string raw_data;
+    EXPECT_TRUE(base::ReadFileToString(full_filename, &raw_data));
+    return raw_data;
+}
+
+int64_t GetFingerprint(const char* filename) {
+    const auto frame = NewFrameFromJpeg(filename);
+    PhashFingerprinter fingerprinter;
+    return fingerprinter.GenerateFingerprint(reinterpret_cast<const uint8_t*>(frame.c_str()));
+}
+
+TEST(ImageFingerprintTest, ShouldGenerateFingerprintCorrectly) {
+    ASSERT_EQ(5241969330366601001LL, GetFingerprint("120.jpg.raw"));
+    ASSERT_EQ(6191181876346691487LL, GetFingerprint("124.jpg.raw"));
+    ASSERT_EQ(5902951508784914335LL, GetFingerprint("125.jpg.raw"));
+    ASSERT_EQ(5015741588639023054LL, GetFingerprint("126.jpg.raw"));
+}
+#endif
+} // namespace
 
 } // namespace android
