@@ -20,7 +20,11 @@ cc_test {
         "libandroid",
     ],
     static_libs: [
+        "libbase",
         "libextservices",
+        "libgmock_main",
+        "libgmock",
+        "libgtest",
     ],
     clang: true,
     cflags: [
@@ -32,5 +36,11 @@ cc_test {
         "*.cpp",
     ],
 
+    data: [
+        "test_data/*.raw",
+    ],
     compile_multilib: "both",
+    test_options: {
+        unit_test: true,
+    },
 }
