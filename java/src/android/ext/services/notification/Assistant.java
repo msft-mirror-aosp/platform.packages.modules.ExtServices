@@ -64,7 +64,6 @@ public class Assistant extends NotificationAssistantService {
     protected AssistantSettings mSettings;
     private SmsHelper mSmsHelper;
     private SmartSuggestionsHelper mSmartSuggestionsHelper;
-    private NotificationCategorizer mNotificationCategorizer;
 
     public Assistant() {
     }
@@ -77,7 +76,6 @@ public class Assistant extends NotificationAssistantService {
         mPackageManager = getPackageManager();
         mSettings = mSettingsFactory.createAndRegister();
         mSmartSuggestionsHelper = new SmartSuggestionsHelper(this, mSettings);
-        mNotificationCategorizer = new NotificationCategorizer();
         mSmsHelper = new SmsHelper(this);
         mSmsHelper.initialize();
     }
@@ -139,14 +137,6 @@ public class Assistant extends NotificationAssistantService {
         }
         if (!smartReplies.isEmpty()) {
             signals.putCharSequenceArrayList(Adjustment.KEY_TEXT_REPLIES, smartReplies);
-        }
-        if (mNotificationCategorizer.shouldSilence(entry)) {
-            final int importance = entry.getImportance() < IMPORTANCE_LOW
-                    ? entry.getImportance() : IMPORTANCE_LOW;
-            signals.putInt(KEY_IMPORTANCE, importance);
-        } else {
-            // Even if no change is made, send an identity adjustment for metric logging.
-            signals.putInt(KEY_IMPORTANCE, entry.getImportance());
         }
 
         return new Adjustment(
