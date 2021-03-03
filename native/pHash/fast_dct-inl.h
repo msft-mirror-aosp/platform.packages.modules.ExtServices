@@ -23,12 +23,8 @@
 #include "array2d.h"
 #include "fast_dct.h"
 
-// TODO(b/155825630): define ENABLE_FFT after submitting Android.bp for fft2d.
-
-#ifdef ENABLE_FFT
 #include "fft.h"   // external FFT routines
 #include "fft2d.h" // external 2D FFT routines
-#endif
 
 namespace android {
 
@@ -73,9 +69,7 @@ void FastDCT<Torig, Tdct>::ForwardTransform1D(const std::vector<Torig> &v_in,
         ddct_in_out_[i] = static_cast<double>(v_in[i]);
     }
 
-#ifdef ENABLE_FFT
     ddct(block_size_, -1, ddct_in_out_.get(), bit_reversal_workspace_.get(), cos_sin_table_.get());
-#endif
 
     for (int i = 0; i < block_size_; i++) {
         ddct_in_out_[i] *= sqrt_orth_scale_factor_ * intermediate_scale_factor_;
@@ -95,9 +89,7 @@ void FastDCT<Torig, Tdct>::ReverseTransform1D(const std::vector<Tdct> &v_in,
     }
     ddct_in_out_[0] *= sqrt_one_half_;
 
-#ifdef ENABLE_FFT
     ddct(block_size_, 1, ddct_in_out_.get(), bit_reversal_workspace_.get(), cos_sin_table_.get());
-#endif
 
     for (int i = 0; i < block_size_; i++) {
         ddct_in_out_[i] *= sqrt_orth_scale_factor_ / intermediate_scale_factor_;
@@ -117,10 +109,8 @@ void FastDCT<Torig, Tdct>::ForwardTransform2D(const Array2D<Torig> &m_in,
         }
     }
 
-#ifdef ENABLE_FFT
     ddct2d(block_size_, block_size_, -1, ddct2d_in_out_ptr_array_.get(), t_workspace_.get(),
            bit_reversal_workspace_.get(), cos_sin_table_.get());
-#endif
 
     double isf_squared = intermediate_scale_factor_ * intermediate_scale_factor_;
     for (int row = 0; row < block_size_; row++) {
@@ -156,10 +146,8 @@ void FastDCT<Torig, Tdct>::ReverseTransform2D(const Array2D<Tdct> &m_in,
         ddct2d_in_out_ptr_array_[0][i] *= sqrt_one_half_;
     }
 
-#ifdef ENABLE_FFT
     ddct2d(block_size_, block_size_, 1, ddct2d_in_out_ptr_array_.get(), t_workspace_.get(),
            bit_reversal_workspace_.get(), cos_sin_table_.get());
-#endif
 
     double inv_isf_squared = 1.0 / (intermediate_scale_factor_ * intermediate_scale_factor_);
     for (int row = 0; row < block_size_; row++) {
