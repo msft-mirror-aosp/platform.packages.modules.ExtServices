@@ -24,8 +24,8 @@ namespace android {
 
 class ImageHashManager {
 public:
-    static int32_t generateWaveletHash(uint8_t* buf, int32_t width, int32_t height,
-                                       std::array<uint8_t, 8>* outImageHash);
+    static int32_t generatePHash(const uint8_t* buffer, int32_t width, int32_t height,
+                                 std::array<uint8_t, 8>* outImageHash);
 
     static int32_t generateHash(std::string hashAlgorithm, uint8_t* buf,
                                 AHardwareBuffer_Desc bufferDesc, int32_t bytesPerPixel,

@@ -22,23 +22,7 @@
 namespace android {
 class ImageHashManagerTest : public ::testing::Test {};
 
-// TODO: Add real wavelet test
-TEST_F(ImageHashManagerTest, TestWavelet) {
-    std::array<uint8_t, 12> buf = {1, 4, 2, 6, 1, 7, 4, 7, 3, 1, 5, 3};
-    int32_t width = 3;
-    int32_t height = 4;
-    std::array<uint8_t, 8> imageHash;
-    std::array<uint8_t, 8> expectedHash = {buf[0], buf[0], buf[0], buf[0],
-                                           buf[0], buf[0], buf[0], buf[0]};
-
-    ImageHashManager::generateWaveletHash(buf.data(), width, height, &imageHash);
-    ASSERT_EQ(expectedHash, imageHash);
-}
-
 namespace {
-// TODO(b/155825630): define ENABLE_FFT after submitting Android.bp for fft2d.
-
-#ifdef ENABLE_FFT
 std::string GetTestDataPath(const std::string& fn) {
     static std::string exec_dir = android::base::GetExecutableDirectory();
     return exec_dir + "/test_data/" + fn;
@@ -64,7 +48,27 @@ TEST(ImageFingerprintTest, ShouldGenerateFingerprintCorrectly) {
     ASSERT_EQ(5902951508784914335LL, GetFingerprint("125.jpg.raw"));
     ASSERT_EQ(5015741588639023054LL, GetFingerprint("126.jpg.raw"));
 }
-#endif
+
+int64_t CreatePHash(const char* filename) {
+    const auto frame = NewFrameFromJpeg(filename);
+    std::array<uint8_t, 8> outImageHash;
+    const auto buffer = reinterpret_cast<const uint8_t*>(frame.c_str());
+
+    int32_t status = ImageHashManager::generatePHash(buffer, 2, 2, &outImageHash);
+    EXPECT_EQ(-EINVAL, status); // should fail due to wrong size
+
+    status = ImageHashManager::generatePHash(buffer, 32, 32, &outImageHash);
+    EXPECT_EQ(0, status); // should success
+    return *reinterpret_cast<const int64_t*>(outImageHash.data());
+}
+
+TEST(ImageFingerprintTest, ImageHashManagerShouldCreatePHashCorrectly) {
+    ASSERT_EQ(5241969330366601001LL, CreatePHash("120.jpg.raw"));
+    ASSERT_EQ(6191181876346691487LL, CreatePHash("124.jpg.raw"));
+    ASSERT_EQ(5902951508784914335LL, CreatePHash("125.jpg.raw"));
+    ASSERT_EQ(5015741588639023054LL, CreatePHash("126.jpg.raw"));
+}
+
 } // namespace
 
 } // namespace android

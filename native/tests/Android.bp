@@ -22,6 +22,7 @@ cc_test {
     static_libs: [
         "libbase",
         "libextservices",
+        "libfft2d",
         "libgmock_main",
         "libgmock",
         "libgtest",
