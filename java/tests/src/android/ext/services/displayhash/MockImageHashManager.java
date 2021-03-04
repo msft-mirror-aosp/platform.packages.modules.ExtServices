@@ -15,25 +15,15 @@
  */
 
 package android.ext.services.displayhash;
-
 import android.hardware.HardwareBuffer;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.Size;
 
-class ImageHashManager {
-    static {
-        System.loadLibrary("extservices_jni");
-    }
-
-    ImageHashManager() {}
-
-    private static native byte[] nativeGenerateHash(HardwareBuffer hardwareBuffer,
-            String hashAlgorithm);
-
+public class MockImageHashManager extends ImageHashManager {
     @Nullable
-    @Size(8) byte[] generateHash(@NonNull HardwareBuffer hardwareBuffer, String hashAlgorithm) {
-        return nativeGenerateHash(hardwareBuffer, hashAlgorithm);
+    @Override
+    @Size(8) byte[] generateHash(HardwareBuffer hardwareBuffer, String hashAlgorithm) {
+        return new byte[8];
     }
 }
