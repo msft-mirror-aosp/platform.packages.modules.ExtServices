@@ -16,35 +16,110 @@
 
 package android.ext.services.displayhash;
 
+import static android.view.displayhash.DisplayHashResultCallback.DISPLAY_HASH_ERROR_INVALID_HASH_ALGORITHM;
+import static android.view.displayhash.DisplayHashResultCallback.DISPLAY_HASH_ERROR_UNKNOWN;
+
+import android.ext.services.R;
 import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
 import android.service.displayhash.DisplayHasherService;
+import android.util.Log;
 import android.view.displayhash.DisplayHash;
 import android.view.displayhash.DisplayHashResultCallback;
 import android.view.displayhash.VerifiedDisplayHash;
 
 import androidx.annotation.NonNull;
 
+import com.google.common.annotations.VisibleForTesting;
+
 /**
  * The implementation service for {@link DisplayHasherService}
  */
 public class DisplayHasherServiceImpl extends DisplayHasherService {
+    static final String TAG = "DisplayHasherService";
+
+    private String[] mPossibleAlgorithms;
+    private ImageHashManager mImageHashManager = new ImageHashManager();
+    private final HmacKeyManager mHmacKeyManager = new HmacKeyManager();
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        mPossibleAlgorithms = getResources().getStringArray(
+                R.array.displayhash_available_algorithms);
+    }
+
     @Override
     public void onGenerateDisplayHash(@NonNull byte[] salt,
             @NonNull HardwareBuffer buffer, @NonNull Rect bounds,
             @NonNull String hashAlgorithm, @NonNull DisplayHashResultCallback callback) {
-        // TODO: Implement the hashing and hmac functions
-        DisplayHash displayHash = new DisplayHash(System.currentTimeMillis(), bounds,
-                hashAlgorithm, new byte[8], new byte[32]);
-        callback.onDisplayHashResult(displayHash);
+        if (salt == null) {
+            Log.w(TAG, "Failed to generate display hash: salt was null");
+            callback.onDisplayHashError(DISPLAY_HASH_ERROR_UNKNOWN);
+            return;
+        }
+
+        int hashAlgorithmIndex = getIndexForHashAlgorithm(hashAlgorithm);
+        if (hashAlgorithmIndex == -1) {
+            Log.w(TAG, "Failed to generate display hash: invalid hash request");
+            callback.onDisplayHashError(DISPLAY_HASH_ERROR_INVALID_HASH_ALGORITHM);
+            return;
+        }
+
+        if (buffer == null) {
+            Log.w(TAG, "Failed to generate display hash: null buffer");
+            callback.onDisplayHashError(DISPLAY_HASH_ERROR_UNKNOWN);
+            return;
+        }
+
+        long timestamp = System.currentTimeMillis();
+        byte[] imageHash = mImageHashManager.generateHash(buffer, hashAlgorithm);
+        if (imageHash == null) {
+            Log.w(TAG, "Failed to generate display hash: failed to create image hash");
+            callback.onDisplayHashError(DISPLAY_HASH_ERROR_UNKNOWN);
+            return;
+        }
+
+        byte[] hmac = mHmacKeyManager.generateHmac(salt, timestamp, bounds, hashAlgorithmIndex,
+                imageHash);
+        callback.onDisplayHashResult(
+                new DisplayHash(timestamp, bounds, hashAlgorithm, imageHash, hmac));
     }
 
     @Override
     public VerifiedDisplayHash onVerifyDisplayHash(@NonNull byte[] salt,
             @NonNull DisplayHash displayHash) {
-        // TODO: Implement the verification
-        return new VerifiedDisplayHash(displayHash.getTimeMillis(),
-                displayHash.getBoundsInWindow(), displayHash.getHashAlgorithm(),
-                displayHash.getImageHash());
+        if (displayHash == null || salt == null) {
+            Log.w(TAG, "Failed to verify display hash: invalid token or salt");
+            return null;
+        }
+
+        boolean verified = mHmacKeyManager.verifyHmac(salt,
+                displayHash.getTimeMillis(), displayHash.getBoundsInWindow(),
+                getIndexForHashAlgorithm(displayHash.getHashAlgorithm()),
+                displayHash.getImageHash(), displayHash.getHmac());
+
+        if (verified) {
+            return new VerifiedDisplayHash(displayHash.getTimeMillis(),
+                    displayHash.getBoundsInWindow(), displayHash.getHashAlgorithm(),
+                    displayHash.getImageHash());
+        } else {
+            return null;
+        }
     }
+
+    private int getIndexForHashAlgorithm(String hashAlgorithm) {
+        for (int i = 0; i < mPossibleAlgorithms.length; i++) {
+            if (mPossibleAlgorithms[i].equals(hashAlgorithm)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    @VisibleForTesting
+    public void setImageHashManager(ImageHashManager imageHashManager) {
+        mImageHashManager = imageHashManager;
+    }
+
 }
