@@ -46,7 +46,8 @@ android_library {
         "androidx.annotation_annotation",
         "androidx.autofill_autofill",
         "TextClassifierServiceLibNoManifest",
-        "TextClassifierNotificationLibNoManifest"
+        "TextClassifierNotificationLibNoManifest",
+        "androidx.work_work-runtime",
     ],
 
     plugins: ["java_api_finder"],
