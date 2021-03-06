@@ -30,6 +30,7 @@ android_test {
     ],
     jni_libs: [
         "libdexmakerjvmtiagent",
+        "libextservices_jni",
         "libstaticjvmtiagent",
     ],
     test_suites: ["device-tests", "mts-extservices"],
