@@ -27,6 +27,6 @@
     </string-array>
 
     <string-array name="displayhash_available_algorithms" translatable="false">
-        <item>WAVELET</item>
+        <item>PHASH</item>
     </string-array>
 </resources>
