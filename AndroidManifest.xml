@@ -39,7 +39,6 @@
     -->
 
     <application android:label="@string/app_name"
-        android:defaultToDeviceProtectedStorage="true"
         android:forceQueryable="true"
         android:directBootAware="true"
         android:supportsRtl="true">
