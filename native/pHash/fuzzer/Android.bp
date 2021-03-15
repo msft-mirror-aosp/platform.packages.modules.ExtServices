@@ -1,0 +1,21 @@
+cc_fuzz {
+  name: "libPHashFuzzer",
+  srcs: [
+    "fuzzed_phash_fingerprinter.cpp",
+  ],
+  static_libs: [
+    "libextservices",
+    "libfft2d",
+  ],
+  apex_available: [
+      "//apex_available:platform",
+      "com.android.extservices",
+  ],
+  fuzz_config: {
+    cc: ["chaviw@google.com", "wanggang@google.com"],
+
+    // The ID for
+    // Android > Android OS & Apps > Framework (java + native) > SmartOS > ExtServices
+    componentid: 959583,
+  },
+}
