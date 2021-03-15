@@ -138,9 +138,6 @@
             <intent-filter>
                 <action android:name="android.service.displayhash.DisplayHasherService" />
             </intent-filter>
-            <meta-data
-                android:name="android.displayhash.available_algorithms"
-                android:resource="@array/displayhash_available_algorithms" />
         </service>
 
         <!-- Remove the default WorkManager initializer and use on-demand initialization instead.
