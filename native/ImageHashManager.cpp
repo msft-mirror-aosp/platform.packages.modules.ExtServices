@@ -38,8 +38,6 @@ int32_t ImageHashManager::generateHash(std::string hashAlgorithm, uint8_t* buf,
                                        AHardwareBuffer_Desc bufferDesc, int32_t bytesPerPixel,
                                        int32_t bytesPerStride,
                                        std::array<uint8_t, 8>* outImageHash) {
-    // TODO: Add real hashing algorithms here. This just calls a fake function
-    // that just returns some bytes from the buffer.
     if (hashAlgorithm == "phash") {
         return generatePHash(buf, bufferDesc.width, bufferDesc.height, outImageHash);
     }

@@ -19,10 +19,11 @@ package android.ext.services.displayhash;
 import static android.view.displayhash.DisplayHashResultCallback.DISPLAY_HASH_ERROR_INVALID_HASH_ALGORITHM;
 import static android.view.displayhash.DisplayHashResultCallback.DISPLAY_HASH_ERROR_UNKNOWN;
 
-import android.ext.services.R;
 import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
+import android.service.displayhash.DisplayHashParams;
 import android.service.displayhash.DisplayHasherService;
+import android.util.ArrayMap;
 import android.util.Log;
 import android.view.displayhash.DisplayHash;
 import android.view.displayhash.DisplayHashResultCallback;
@@ -32,21 +33,24 @@ import androidx.annotation.NonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import java.util.Map;
+
 /**
  * The implementation service for {@link DisplayHasherService}
  */
 public class DisplayHasherServiceImpl extends DisplayHasherService {
     static final String TAG = "DisplayHasherService";
 
-    private String[] mPossibleAlgorithms;
     private ImageHashManager mImageHashManager = new ImageHashManager();
     private final HmacKeyManager mHmacKeyManager = new HmacKeyManager();
+    private final ArrayMap<String, DisplayHashParams> mDisplayHashParams = new ArrayMap<>();
 
     @Override
     public void onCreate() {
         super.onCreate();
-        mPossibleAlgorithms = getResources().getStringArray(
-                R.array.displayhash_available_algorithms);
+        mDisplayHashParams.put("PHASH",
+                new DisplayHashParams.Builder().setBufferScaleWithFiltering(false)
+                        .setBufferSize(32, 32).setGrayscaleBuffer(true).build());
     }
 
     @Override
@@ -60,7 +64,7 @@ public class DisplayHasherServiceImpl extends DisplayHasherService {
         }
 
         int hashAlgorithmIndex = getIndexForHashAlgorithm(hashAlgorithm);
-        if (hashAlgorithmIndex == -1) {
+        if (hashAlgorithmIndex < 0) {
             Log.w(TAG, "Failed to generate display hash: invalid hash request");
             callback.onDisplayHashError(DISPLAY_HASH_ERROR_INVALID_HASH_ALGORITHM);
             return;
@@ -109,12 +113,7 @@ public class DisplayHasherServiceImpl extends DisplayHasherService {
     }
 
     private int getIndexForHashAlgorithm(String hashAlgorithm) {
-        for (int i = 0; i < mPossibleAlgorithms.length; i++) {
-            if (mPossibleAlgorithms[i].equals(hashAlgorithm)) {
-                return i;
-            }
-        }
-        return -1;
+        return mDisplayHashParams.indexOfKey(hashAlgorithm);
     }
 
     @VisibleForTesting
@@ -122,4 +121,9 @@ public class DisplayHasherServiceImpl extends DisplayHasherService {
         mImageHashManager = imageHashManager;
     }
 
+    @NonNull
+    @Override
+    public Map<String, DisplayHashParams> onGetDisplayHashAlgorithms() {
+        return mDisplayHashParams;
+    }
 }
