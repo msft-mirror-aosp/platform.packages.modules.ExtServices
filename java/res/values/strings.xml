@@ -25,8 +25,4 @@
         <item>EXACT_MATCH</item>
         <item>CREDIT_CARD</item>
     </string-array>
-
-    <string-array name="displayhash_available_algorithms" translatable="false">
-        <item>PHASH</item>
-    </string-array>
 </resources>
