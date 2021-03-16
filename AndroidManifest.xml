@@ -114,9 +114,6 @@
             <intent-filter>
                 <action android:name="android.service.displayhash.DisplayHasherService" />
             </intent-filter>
-            <meta-data
-                android:name="android.displayhash.available_algorithms"
-                android:resource="@array/displayhash_available_algorithms" />
         </service>
 
     </application>
