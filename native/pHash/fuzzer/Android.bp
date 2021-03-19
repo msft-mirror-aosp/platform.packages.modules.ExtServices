@@ -18,4 +18,7 @@ cc_fuzz {
     // Android > Android OS & Apps > Framework (java + native) > SmartOS > ExtServices
     componentid: 959583,
   },
+  corpus: [
+    "corpus/*.raw"
+  ],
 }
