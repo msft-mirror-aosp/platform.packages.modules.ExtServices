@@ -27,6 +27,7 @@ cc_library_static {
     min_sdk_version: "30",
     shared_libs: [
         "libandroid",
+        "liblog",
     ],
     static_libs: [
         "libfft2d",
@@ -44,5 +45,8 @@ cc_library_static {
     apex_available: [
         "//apex_available:platform",
         "com.android.extservices",
+    ],
+    header_libs: [
+        "liblog_headers",
     ],
 }
