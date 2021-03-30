@@ -27,6 +27,7 @@ cc_test {
 
     shared_libs: [
         "libandroid",
+        "liblog",
     ],
     static_libs: [
         "libbase",

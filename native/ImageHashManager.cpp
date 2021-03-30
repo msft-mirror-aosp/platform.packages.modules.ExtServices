@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
+#define LOG_TAG "ImageHashManager"
+
 #include "ImageHashManager.h"
+#include <log/log_main.h>
 #include "pHash/phash_config.h"
 #include "pHash/phash_fingerprinter.h"
 
@@ -25,6 +28,9 @@ namespace android {
 int32_t ImageHashManager::generatePHash(const uint8_t* buffer, int32_t width, int32_t height,
                                         std::array<uint8_t, 8>* outImageHash) {
     if (width != kImageLength || height != kImageLength) {
+        ALOGE("Failed to generate phash algorithm. Incorrect buffer size=%dx%d where %d is "
+              "expected for width and height",
+              width, height, kImageLength);
         return -EINVAL;
     }
 
@@ -35,13 +41,13 @@ int32_t ImageHashManager::generatePHash(const uint8_t* buffer, int32_t width, in
 }
 
 int32_t ImageHashManager::generateHash(std::string hashAlgorithm, uint8_t* buf,
-                                       AHardwareBuffer_Desc bufferDesc, int32_t bytesPerPixel,
-                                       int32_t bytesPerStride,
+                                       AHardwareBuffer_Desc bufferDesc,
                                        std::array<uint8_t, 8>* outImageHash) {
     if (hashAlgorithm == "phash") {
         return generatePHash(buf, bufferDesc.width, bufferDesc.height, outImageHash);
     }
 
+    ALOGE("Failed to generate hash. Invalid hash algorithm sent %s", hashAlgorithm.c_str());
     return -EINVAL;
 }
 
