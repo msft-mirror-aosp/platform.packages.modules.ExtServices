@@ -32,16 +32,16 @@ class BufferWrapper {
 public:
     BufferWrapper(AHardwareBuffer* buffer) : mBuffer(buffer) {}
 
-    int lock(uint8_t** buf, int32_t* outBytesPerPixel, int32_t* outBytesPerStride) {
+    int lock(uint8_t** buf) {
         if (mIsLocked) {
             return -1;
         }
 
-        int status = AHardwareBuffer_lockAndGetInfo(mBuffer,
-                                                    AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN |
-                                                            AHARDWAREBUFFER_USAGE_CPU_WRITE_NEVER,
-                                                    -1, nullptr, reinterpret_cast<void**>(buf),
-                                                    outBytesPerPixel, outBytesPerStride);
+        int status = AHardwareBuffer_lock(mBuffer,
+                                          AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN |
+                                                  AHARDWAREBUFFER_USAGE_CPU_WRITE_NEVER,
+                                          -1 /* fence */, nullptr /* rect */,
+                                          reinterpret_cast<void**>(buf));
         if (!status) {
             mIsLocked = true;
         }
@@ -77,19 +77,18 @@ static jbyteArray nativeGenerateHash(JNIEnv* env, jobject clazz, jobject hardwar
 
     BufferWrapper bufferWrapper(hardwareBuffer);
     uint8_t* buf = nullptr;
-    int32_t bytesPerPixel = 0;
-    int32_t bytesPerStride = 0;
-    int32_t status = bufferWrapper.lock(&buf, &bytesPerPixel, &bytesPerStride);
+    int32_t status = bufferWrapper.lock(&buf);
 
     if (status) {
+        ALOGE("Failed to lock buffer status=%d", status);
         return nullptr;
     }
 
     std::array<uint8_t, 8> imageHash;
-    status = ImageHashManager::generateHash(hashAlgorithm, buf, bufferDesc, bytesPerPixel,
-                                            bytesPerStride, &imageHash);
+    status = ImageHashManager::generateHash(hashAlgorithm, buf, bufferDesc, &imageHash);
 
     if (status) {
+        ALOGE("Failed to generate hash status=%d", status);
         return nullptr;
     }
 
