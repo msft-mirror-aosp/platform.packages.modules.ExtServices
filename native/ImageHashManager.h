@@ -28,8 +28,8 @@ public:
                                  std::array<uint8_t, 8>* outImageHash);
 
     static int32_t generateHash(std::string hashAlgorithm, uint8_t* buf,
-                                AHardwareBuffer_Desc bufferDesc, int32_t bytesPerPixel,
-                                int32_t bytesPerStride, std::array<uint8_t, 8>* outImageHash);
+                                AHardwareBuffer_Desc bufferDesc,
+                                std::array<uint8_t, 8>* outImageHash);
 };
 
 } // namespace android
