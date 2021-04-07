@@ -19,9 +19,13 @@ package android.ext.services.displayhash;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.graphics.Rect;
 
+import androidx.core.os.BuildCompat;
+
+import org.junit.Before;
 import org.junit.Test;
 
 public class HmacKeyManagerTest {
@@ -32,6 +36,12 @@ public class HmacKeyManagerTest {
     private final byte[] mImageHash = {0, 3, 4, 3, 5, 2, 5, 1};
 
     private final HmacKeyManager mHmacKeyManager = new HmacKeyManager();
+
+    @Before
+    public void setup() {
+        // HmacKeyManager was only introduced in S.
+        assumeTrue(BuildCompat.isAtLeastS());
+    }
 
     @Test
     public void testGenerateAndVerifyHmac() {
