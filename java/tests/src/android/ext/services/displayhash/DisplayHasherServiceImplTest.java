@@ -19,18 +19,19 @@ package android.ext.services.displayhash;
 import static android.view.displayhash.DisplayHashResultCallback.DISPLAY_HASH_ERROR_INVALID_HASH_ALGORITHM;
 import static android.view.displayhash.DisplayHashResultCallback.DISPLAY_HASH_ERROR_UNKNOWN;
 
-import static org.mockito.Mockito.spy;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assume.assumeTrue;
 
-import android.content.ContextWrapper;
-import android.content.Intent;
 import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
-import android.test.ServiceTestCase;
 import android.view.displayhash.DisplayHash;
 import android.view.displayhash.DisplayHashResultCallback;
 import android.view.displayhash.VerifiedDisplayHash;
 
 import androidx.annotation.NonNull;
+import androidx.core.os.BuildCompat;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -38,8 +39,9 @@ import org.junit.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-public class DisplayHasherServiceImplTest extends ServiceTestCase<DisplayHasherServiceImpl> {
-    private DisplayHasherServiceImpl mService;
+
+public class DisplayHasherServiceImplTest {
+    private final DisplayHasherServiceImpl mService = new DisplayHasherServiceImpl();
 
     private final byte[] mSalt = "SALT".getBytes();
     private final String mHashAlgorithm = "PHASH";
@@ -49,22 +51,14 @@ public class DisplayHasherServiceImplTest extends ServiceTestCase<DisplayHasherS
 
     private SyncDisplayHashResultCallback mDisplayHashResultCallback;
 
-    public DisplayHasherServiceImplTest() {
-        super(DisplayHasherServiceImpl.class);
-    }
-
     @Before
     public void setUp() throws Exception {
-        super.setUp();
-        mContext = spy(new ContextWrapper(getSystemContext()));
-        setContext(mContext);
-
-        Intent intent = new Intent(getContext(), DisplayHasherServiceImpl.class);
-        startService(intent);
-
-        mService = getService();
+        mService.onCreate();
         mService.setImageHashManager(new MockImageHashManager());
         mDisplayHashResultCallback = new SyncDisplayHashResultCallback();
+
+        // DisplayHasherServiceImpl was only introduced in S.
+        assumeTrue(BuildCompat.isAtLeastS());
     }
 
     @Test
