@@ -22,16 +22,16 @@ import static android.view.displayhash.DisplayHashResultCallback.DISPLAY_HASH_ER
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assume.assumeTrue;
 
 import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
+import android.os.Build;
 import android.view.displayhash.DisplayHash;
 import android.view.displayhash.DisplayHashResultCallback;
 import android.view.displayhash.VerifiedDisplayHash;
 
 import androidx.annotation.NonNull;
-import androidx.core.os.BuildCompat;
+import androidx.test.filters.SdkSuppress;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -39,7 +39,7 @@ import org.junit.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
 public class DisplayHasherServiceImplTest {
     private final DisplayHasherServiceImpl mService = new DisplayHasherServiceImpl();
 
@@ -56,9 +56,6 @@ public class DisplayHasherServiceImplTest {
         mService.onCreate();
         mService.setImageHashManager(new MockImageHashManager());
         mDisplayHashResultCallback = new SyncDisplayHashResultCallback();
-
-        // DisplayHasherServiceImpl was only introduced in S.
-        assumeTrue(BuildCompat.isAtLeastS());
     }
 
     @Test
