@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="5" by="lint 4.1.0" client="cli" variant="all" version="4.1.0">
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 31 (current min is 30): `android.view.displayhash.DisplayHashResultCallback#onDisplayHashError`"
+        errorLine1="            callback.onDisplayHashError(DISPLAY_HASH_ERROR_UNKNOWN);"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHasherServiceImpl.java"
+            line="62"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 31 (current min is 30): `android.view.displayhash.DisplayHashResultCallback#onDisplayHashError`"
+        errorLine1="            callback.onDisplayHashError(DISPLAY_HASH_ERROR_INVALID_HASH_ALGORITHM);"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHasherServiceImpl.java"
+            line="69"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 31 (current min is 30): `android.view.displayhash.DisplayHashResultCallback#onDisplayHashError`"
+        errorLine1="            callback.onDisplayHashError(DISPLAY_HASH_ERROR_UNKNOWN);"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHasherServiceImpl.java"
+            line="75"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 31 (current min is 30): `android.view.displayhash.DisplayHashResultCallback#onDisplayHashError`"
+        errorLine1="            callback.onDisplayHashError(DISPLAY_HASH_ERROR_UNKNOWN);"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHasherServiceImpl.java"
+            line="83"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 31 (current min is 30): `android.view.displayhash.DisplayHashResultCallback#onDisplayHashResult`"
+        errorLine1="        callback.onDisplayHashResult("
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHasherServiceImpl.java"
+            line="89"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 31 (current min is 30): `new android.view.displayhash.VerifiedDisplayHash`"
+        errorLine1="            return new VerifiedDisplayHash(displayHash.getTimeMillis(),"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHasherServiceImpl.java"
+            line="107"
+            column="20"/>
+    </issue>
+
+</issues>
