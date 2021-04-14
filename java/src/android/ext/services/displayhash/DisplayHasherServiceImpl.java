@@ -48,9 +48,9 @@ public class DisplayHasherServiceImpl extends DisplayHasherService {
     @Override
     public void onCreate() {
         super.onCreate();
-        mDisplayHashParams.put("PHASH",
-                new DisplayHashParams.Builder().setBufferScaleWithFiltering(false)
-                        .setBufferSize(32, 32).setGrayscaleBuffer(true).build());
+        mDisplayHashParams.put("PHASH", new DisplayHashParams.Builder()
+                .setBufferSize(32, 32)
+                .setGrayscaleBuffer(true).build());
     }
 
     @Override
