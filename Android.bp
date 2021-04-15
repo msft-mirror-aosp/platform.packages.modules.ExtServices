@@ -59,6 +59,8 @@ android_app {
     min_sdk_version: "30",
     certificate: "platform",
     optimize: {
+        optimize: true,
+        proguard_compatibility: false,
         proguard_flags_files: ["proguard.proguard"],
     },
     privileged: true,
