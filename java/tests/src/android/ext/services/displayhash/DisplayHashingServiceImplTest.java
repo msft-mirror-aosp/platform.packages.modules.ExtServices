@@ -40,8 +40,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
-public class DisplayHasherServiceImplTest {
-    private final DisplayHasherServiceImpl mService = new DisplayHasherServiceImpl();
+public class DisplayHashingServiceImplTest {
+    private final DisplayHashingServiceImpl mService = new DisplayHashingServiceImpl();
 
     private final byte[] mSalt = "SALT".getBytes();
     private final String mHashAlgorithm = "PHASH";
