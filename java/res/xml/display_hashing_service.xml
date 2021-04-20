@@ -14,7 +14,7 @@
      limitations under the License.
 -->
 
-<display-hasher-service
+<display-hashing-service
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:throttleDurationMillis="10000"
 />
