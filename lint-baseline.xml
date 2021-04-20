@@ -7,7 +7,7 @@
         errorLine1="            callback.onDisplayHashError(DISPLAY_HASH_ERROR_UNKNOWN);"
         errorLine2="                     ~~~~~~~~~~~~~~~~~~">
         <location
-            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHasherServiceImpl.java"
+            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHashingServiceImpl.java"
             line="62"
             column="22"/>
     </issue>
@@ -18,7 +18,7 @@
         errorLine1="            callback.onDisplayHashError(DISPLAY_HASH_ERROR_INVALID_HASH_ALGORITHM);"
         errorLine2="                     ~~~~~~~~~~~~~~~~~~">
         <location
-            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHasherServiceImpl.java"
+            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHashingServiceImpl.java"
             line="69"
             column="22"/>
     </issue>
@@ -29,7 +29,7 @@
         errorLine1="            callback.onDisplayHashError(DISPLAY_HASH_ERROR_UNKNOWN);"
         errorLine2="                     ~~~~~~~~~~~~~~~~~~">
         <location
-            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHasherServiceImpl.java"
+            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHashingServiceImpl.java"
             line="75"
             column="22"/>
     </issue>
@@ -40,7 +40,7 @@
         errorLine1="            callback.onDisplayHashError(DISPLAY_HASH_ERROR_UNKNOWN);"
         errorLine2="                     ~~~~~~~~~~~~~~~~~~">
         <location
-            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHasherServiceImpl.java"
+            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHashingServiceImpl.java"
             line="83"
             column="22"/>
     </issue>
@@ -51,7 +51,7 @@
         errorLine1="        callback.onDisplayHashResult("
         errorLine2="                 ~~~~~~~~~~~~~~~~~~~">
         <location
-            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHasherServiceImpl.java"
+            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHashingServiceImpl.java"
             line="89"
             column="18"/>
     </issue>
@@ -62,7 +62,7 @@
         errorLine1="            return new VerifiedDisplayHash(displayHash.getTimeMillis(),"
         errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHasherServiceImpl.java"
+            file="packages/modules/ExtServices/java/src/android/ext/services/displayhash/DisplayHashingServiceImpl.java"
             line="107"
             column="20"/>
     </issue>

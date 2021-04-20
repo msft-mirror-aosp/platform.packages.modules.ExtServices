@@ -22,7 +22,7 @@ import static android.view.displayhash.DisplayHashResultCallback.DISPLAY_HASH_ER
 import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
 import android.service.displayhash.DisplayHashParams;
-import android.service.displayhash.DisplayHasherService;
+import android.service.displayhash.DisplayHashingService;
 import android.util.ArrayMap;
 import android.util.Log;
 import android.view.displayhash.DisplayHash;
@@ -36,10 +36,10 @@ import com.google.common.annotations.VisibleForTesting;
 import java.util.Map;
 
 /**
- * The implementation service for {@link DisplayHasherService}
+ * The implementation service for {@link DisplayHashingService}
  */
-public class DisplayHasherServiceImpl extends DisplayHasherService {
-    static final String TAG = "DisplayHasherService";
+public class DisplayHashingServiceImpl extends DisplayHashingService {
+    static final String TAG = "DisplayHashingService";
 
     private ImageHashManager mImageHashManager = new ImageHashManager();
     private final HmacKeyManager mHmacKeyManager = new HmacKeyManager();
@@ -50,7 +50,7 @@ public class DisplayHasherServiceImpl extends DisplayHasherService {
         super.onCreate();
         mDisplayHashParams.put("PHASH", new DisplayHashParams.Builder()
                 .setBufferSize(32, 32)
-                .setGrayscaleBuffer(true).build());
+                .setUseGrayscale(true).build());
     }
 
     @Override
