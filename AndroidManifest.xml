@@ -108,15 +108,15 @@
             </intent-filter>
         </service>
 
-        <service android:name=".displayhash.DisplayHasherServiceImpl"
+        <service android:name=".displayhash.DisplayHashingServiceImpl"
             android:exported="true"
-            android:permission="android.permission.BIND_DISPLAY_HASHER_SERVICE">
+            android:permission="android.permission.BIND_DISPLAY_HASHING_SERVICE">
             <intent-filter>
-                <action android:name="android.service.displayhash.DisplayHasherService" />
+                <action android:name="android.service.displayhash.DisplayHashingService" />
             </intent-filter>
             <meta-data
-                android:name="android.displayhash.display_hasher_service"
-                android:resource="@xml/display_hasher_service" />
+                android:name="android.displayhash.display_hashing_service"
+                android:resource="@xml/display_hashing_service" />
         </service>
 
     </application>
