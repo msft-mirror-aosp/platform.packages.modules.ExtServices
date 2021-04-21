@@ -25,7 +25,6 @@ import static org.junit.Assert.assertNull;
 
 import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
-import android.os.Build;
 import android.view.displayhash.DisplayHash;
 import android.view.displayhash.DisplayHashResultCallback;
 import android.view.displayhash.VerifiedDisplayHash;
@@ -39,7 +38,7 @@ import org.junit.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+@SdkSuppress(minSdkVersion = 31, codeName = "S")
 public class DisplayHashingServiceImplTest {
     private final DisplayHashingServiceImpl mService = new DisplayHashingServiceImpl();
 
