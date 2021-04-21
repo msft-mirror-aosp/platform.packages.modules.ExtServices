@@ -34,6 +34,7 @@ android_test {
         "libstaticjvmtiagent",
     ],
     test_suites: ["device-tests", "mts-extservices"],
-    platform_apis: true,
+    min_sdk_version: "30",
+    sdk_version: "test_current",
     compile_multilib: "both",
 }
