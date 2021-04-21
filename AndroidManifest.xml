@@ -17,8 +17,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:androidprv="http://schemas.android.com/apk/prv/res/android"
     package="android.ext.services"
-    android:versionCode="310611000"
-    android:versionName="s_aml_310611000"
+    android:versionCode="310612000"
+    android:versionName="s_aml_310612000"
     coreApp="true">
 
     <uses-permission android:name="android.permission.PROVIDE_RESOLVER_RANKER_SERVICE" />
@@ -108,15 +108,15 @@
             </intent-filter>
         </service>
 
-        <service android:name=".displayhash.DisplayHasherServiceImpl"
+        <service android:name=".displayhash.DisplayHashingServiceImpl"
             android:exported="true"
-            android:permission="android.permission.BIND_DISPLAY_HASHER_SERVICE">
+            android:permission="android.permission.BIND_DISPLAY_HASHING_SERVICE">
             <intent-filter>
-                <action android:name="android.service.displayhash.DisplayHasherService" />
+                <action android:name="android.service.displayhash.DisplayHashingService" />
             </intent-filter>
             <meta-data
-                android:name="android.displayhash.display_hasher_service"
-                android:resource="@xml/display_hasher_service" />
+                android:name="android.displayhash.display_hashing_service"
+                android:resource="@xml/display_hashing_service" />
         </service>
 
     </application>

@@ -28,7 +28,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 class HmacKeyManager {
-    private static final String TAG = DisplayHasherServiceImpl.TAG;
+    private static final String TAG = DisplayHashingServiceImpl.TAG;
     private static final String ALGORITHM = "HmacSHA256";
 
     HmacKeyManager() { }
