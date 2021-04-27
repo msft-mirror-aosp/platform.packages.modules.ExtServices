@@ -23,7 +23,7 @@ package {
 
 cc_test {
     name: "libextservices_test",
-    test_suites: ["device-tests"],
+    test_suites: ["general-tests"],
 
     shared_libs: [
         "libandroid",
