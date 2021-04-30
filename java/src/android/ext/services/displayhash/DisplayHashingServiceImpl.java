@@ -50,7 +50,7 @@ public class DisplayHashingServiceImpl extends DisplayHashingService {
         super.onCreate();
         mDisplayHashParams.put("PHASH", new DisplayHashParams.Builder()
                 .setBufferSize(32, 32)
-                .setUseGrayscale(true).build());
+                .setGrayscaleBuffer(true).build());
     }
 
     @Override
