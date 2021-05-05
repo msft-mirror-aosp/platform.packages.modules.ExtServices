@@ -23,7 +23,7 @@ package {
 
 cc_test {
     name: "libextservices_test",
-    test_suites: ["general-tests"],
+    test_suites: ["general-tests", "mts-extservices"],
 
     shared_libs: [
         "libandroid",
@@ -51,6 +51,15 @@ cc_test {
         "test_data/*.raw",
     ],
     compile_multilib: "both",
+    // Remove when the build system properly separates.
+    multilib: {
+        lib32: {
+            suffix: "32",
+        },
+        lib64: {
+            suffix: "64",
+        },
+    },
     test_options: {
         unit_test: true,
     },
