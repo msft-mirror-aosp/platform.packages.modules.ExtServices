@@ -21,6 +21,8 @@ package {
     default_applicable_licenses: ["packages_modules_ExtServices_license"],
 }
 
+// Run this test using "atest libextservices_test -- --all-abi" or it will fail to run on 64 bit
+// devices.
 cc_test {
     name: "libextservices_test",
     test_suites: ["general-tests", "mts-extservices"],
@@ -50,17 +52,5 @@ cc_test {
     data: [
         "test_data/*.raw",
     ],
-    compile_multilib: "both",
-    // Remove when the build system properly separates.
-    multilib: {
-        lib32: {
-            suffix: "32",
-        },
-        lib64: {
-            suffix: "64",
-        },
-    },
-    test_options: {
-        unit_test: true,
-    },
+    compile_multilib: "prefer32",
 }
