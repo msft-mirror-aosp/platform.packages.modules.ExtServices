@@ -15,7 +15,7 @@
   ~ limitations under the License.
   -->
 <configuration description="Config for libextservices_test">
-    <target_preparer class="com.android.tradefed.targetprep.PushFilePreparer">
+    <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
         <option name="cleanup" value="true" />
         <option name="push" value="libextservices_test->/data/local/tmp/libextservices_test" />
     </target_preparer>
