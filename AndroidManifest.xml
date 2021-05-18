@@ -138,9 +138,6 @@
             <intent-filter>
                 <action android:name="android.service.displayhash.DisplayHashingService" />
             </intent-filter>
-            <meta-data
-                android:name="android.displayhash.display_hashing_service"
-                android:resource="@xml/display_hashing_service" />
         </service>
 
         <!-- Remove the default WorkManager initializer and use on-demand initialization instead.
