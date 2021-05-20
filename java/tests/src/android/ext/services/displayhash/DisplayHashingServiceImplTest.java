@@ -128,6 +128,12 @@ public class DisplayHashingServiceImplTest {
         assertNull(verifiedDisplayHash);
     }
 
+    @Test
+    public void testOnGetIntervalBetweenRequestsMillis() {
+        int intervalBetweenRequests = mService.onGetIntervalBetweenRequestsMillis();
+        assertEquals(10000, intervalBetweenRequests);
+    }
+
     private static class SyncDisplayHashResultCallback implements DisplayHashResultCallback {
         private static final int DISPLAY_HASH_WAIT_TIME_S = 1;
         private DisplayHash mDisplayHash;

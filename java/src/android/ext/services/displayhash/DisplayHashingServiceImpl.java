@@ -41,6 +41,8 @@ import java.util.Map;
 public class DisplayHashingServiceImpl extends DisplayHashingService {
     static final String TAG = "DisplayHashingService";
 
+    private static final int INTERVAL_BETWEEN_REQUESTS_MILLIS = 10000;
+
     private ImageHashManager mImageHashManager = new ImageHashManager();
     private final HmacKeyManager mHmacKeyManager = new HmacKeyManager();
     private final ArrayMap<String, DisplayHashParams> mDisplayHashParams = new ArrayMap<>();
@@ -110,6 +112,11 @@ public class DisplayHashingServiceImpl extends DisplayHashingService {
         } else {
             return null;
         }
+    }
+
+    @Override
+    public int onGetIntervalBetweenRequestsMillis() {
+        return INTERVAL_BETWEEN_REQUESTS_MILLIS;
     }
 
     private int getIndexForHashAlgorithm(String hashAlgorithm) {
