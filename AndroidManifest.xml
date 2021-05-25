@@ -17,8 +17,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:androidprv="http://schemas.android.com/apk/prv/res/android"
     package="android.ext.services"
-    android:versionCode="310710000"
-    android:versionName="s_aml_310710000"
+    android:versionCode="310711000"
+    android:versionName="s_aml_310711000"
     coreApp="true">
 
     <uses-permission android:name="android.permission.PROVIDE_RESOLVER_RANKER_SERVICE" />
