@@ -40,7 +40,7 @@ int32_t ImageHashManager::generatePHash(const uint8_t* buffer, int32_t width, in
     return 0;
 }
 
-int32_t ImageHashManager::generateHash(std::string hashAlgorithm, uint8_t* buf,
+int32_t ImageHashManager::generateHash(std::string hashAlgorithm, const uint8_t* buf,
                                        AHardwareBuffer_Desc bufferDesc,
                                        std::array<uint8_t, 8>* outImageHash) {
     if (hashAlgorithm == "phash") {
