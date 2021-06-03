@@ -119,7 +119,7 @@
             </intent-filter>
         </service>
 
-        <service android:name="com.android.textclassifier.ModelDownloaderService"
+        <service android:name="com.android.textclassifier.downloader.ModelDownloaderService"
                  android:exported="false"
                  android:process=":modelDownloaderServiceProcess">
         </service>
