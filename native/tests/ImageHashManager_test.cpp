@@ -42,7 +42,7 @@ int64_t GetFingerprint(const char* filename) {
     return fingerprinter.GenerateFingerprint(reinterpret_cast<const uint8_t*>(frame.c_str()));
 }
 
-TEST(ImageFingerprintTest, ShouldGenerateFingerprintCorrectly) {
+TEST(ImageHashManagerTest, ShouldGenerateFingerprintCorrectly) {
     ASSERT_EQ(5241969330366601001LL, GetFingerprint("120.jpg.raw"));
     ASSERT_EQ(6191181876346691487LL, GetFingerprint("124.jpg.raw"));
     ASSERT_EQ(5902951508784914335LL, GetFingerprint("125.jpg.raw"));
@@ -62,11 +62,47 @@ int64_t CreatePHash(const char* filename) {
     return *reinterpret_cast<const int64_t*>(outImageHash.data());
 }
 
-TEST(ImageFingerprintTest, ImageHashManagerShouldCreatePHashCorrectly) {
+TEST(ImageHashManagerTest, ShouldCreatePHashCorrectly) {
     ASSERT_EQ(5241969330366601001LL, CreatePHash("120.jpg.raw"));
     ASSERT_EQ(6191181876346691487LL, CreatePHash("124.jpg.raw"));
     ASSERT_EQ(5902951508784914335LL, CreatePHash("125.jpg.raw"));
     ASSERT_EQ(5015741588639023054LL, CreatePHash("126.jpg.raw"));
+}
+
+TEST(ImageHashManagerTest, TestGenerateHashWithPhash) {
+    const auto frame = NewFrameFromJpeg("120.jpg.raw");
+    std::array<uint8_t, 8> outImageHash;
+    const auto buffer = reinterpret_cast<const uint8_t*>(frame.c_str());
+
+    AHardwareBuffer_Desc desc = {
+            .width = 32,
+            .height = 32,
+            .layers = 1,
+            .format = AHARDWAREBUFFER_FORMAT_BLOB,
+            .usage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN,
+    };
+
+    int32_t status = ImageHashManager::generateHash("phash", buffer, desc, &outImageHash);
+    EXPECT_EQ(0, status); // should succeed
+
+    ASSERT_EQ(5241969330366601001LL, *reinterpret_cast<const int64_t*>(outImageHash.data()));
+}
+
+TEST(ImageHashManagerTest, TestGenerateHashWithInvalidHash) {
+    const auto frame = NewFrameFromJpeg("120.jpg.raw");
+    std::array<uint8_t, 8> outImageHash;
+    const auto buffer = reinterpret_cast<const uint8_t*>(frame.c_str());
+
+    AHardwareBuffer_Desc desc = {
+            .width = 32,
+            .height = 32,
+            .layers = 1,
+            .format = AHARDWAREBUFFER_FORMAT_BLOB,
+            .usage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN,
+    };
+
+    int32_t status = ImageHashManager::generateHash("fakeHash", buffer, desc, &outImageHash);
+    EXPECT_EQ(-EINVAL, status); // should fail
 }
 
 } // namespace
