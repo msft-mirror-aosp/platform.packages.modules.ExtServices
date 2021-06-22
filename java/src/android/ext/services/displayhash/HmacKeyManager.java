@@ -17,8 +17,11 @@
 package android.ext.services.displayhash;
 
 import android.graphics.Rect;
+import android.os.Build;
 import android.os.Parcel;
 import android.util.Log;
+
+import androidx.annotation.RequiresApi;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -27,6 +30,7 @@ import java.util.Arrays;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+@RequiresApi(Build.VERSION_CODES.S)
 class HmacKeyManager {
     private static final String TAG = DisplayHashingServiceImpl.TAG;
     private static final String ALGORITHM = "HmacSHA256";
