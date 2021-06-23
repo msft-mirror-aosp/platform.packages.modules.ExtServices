@@ -17,11 +17,14 @@
 package android.ext.services.displayhash;
 
 import android.hardware.HardwareBuffer;
+import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.Size;
 
+@RequiresApi(Build.VERSION_CODES.S)
 class ImageHashManager {
     static {
         System.loadLibrary("extservices_jni");
