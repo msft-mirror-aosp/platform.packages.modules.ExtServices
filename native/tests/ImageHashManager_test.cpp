@@ -23,6 +23,20 @@ namespace android {
 class ImageHashManagerTest : public ::testing::Test {};
 
 namespace {
+
+static std::array<uint8_t, kImageSize * 4> convert1ByteBufferTo4Bytes(const uint8_t* buffer) {
+    std::array<uint8_t, kImageSize * 4> newBuffer;
+    for (int i = 0; i < kImageSize; i++) {
+        const uint8_t* p = buffer + i;
+        size_t index = i * 4;
+        newBuffer[index] = *p;
+        newBuffer[index + 1] = *p;
+        newBuffer[index + 2] = *p;
+        newBuffer[index + 3] = 0xFF;
+    }
+    return newBuffer;
+}
+
 std::string GetTestDataPath(const std::string& fn) {
     static std::string exec_dir = android::base::GetExecutableDirectory();
     return exec_dir + "/test_data/" + fn;
@@ -53,11 +67,12 @@ int64_t CreatePHash(const char* filename) {
     const auto frame = NewFrameFromJpeg(filename);
     std::array<uint8_t, 8> outImageHash;
     const auto buffer = reinterpret_cast<const uint8_t*>(frame.c_str());
+    const auto expandedBuffer = convert1ByteBufferTo4Bytes(buffer);
 
-    int32_t status = ImageHashManager::generatePHash(buffer, 2, 2, &outImageHash);
+    int32_t status = ImageHashManager::generatePHash(expandedBuffer.data(), 2, 2, 2, &outImageHash);
     EXPECT_EQ(-EINVAL, status); // should fail due to wrong size
 
-    status = ImageHashManager::generatePHash(buffer, 32, 32, &outImageHash);
+    status = ImageHashManager::generatePHash(expandedBuffer.data(), 32, 32, 32, &outImageHash);
     EXPECT_EQ(0, status); // should success
     return *reinterpret_cast<const int64_t*>(outImageHash.data());
 }
@@ -73,6 +88,7 @@ TEST(ImageHashManagerTest, TestGenerateHashWithPhash) {
     const auto frame = NewFrameFromJpeg("120.jpg.raw");
     std::array<uint8_t, 8> outImageHash;
     const auto buffer = reinterpret_cast<const uint8_t*>(frame.c_str());
+    auto expandedBuffer = convert1ByteBufferTo4Bytes(buffer);
 
     AHardwareBuffer_Desc desc = {
             .width = 32,
@@ -82,7 +98,8 @@ TEST(ImageHashManagerTest, TestGenerateHashWithPhash) {
             .usage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN,
     };
 
-    int32_t status = ImageHashManager::generateHash("phash", buffer, desc, &outImageHash);
+    int32_t status =
+            ImageHashManager::generateHash("phash", expandedBuffer.data(), desc, &outImageHash);
     EXPECT_EQ(0, status); // should succeed
 
     ASSERT_EQ(5241969330366601001LL, *reinterpret_cast<const int64_t*>(outImageHash.data()));
@@ -92,6 +109,7 @@ TEST(ImageHashManagerTest, TestGenerateHashWithInvalidHash) {
     const auto frame = NewFrameFromJpeg("120.jpg.raw");
     std::array<uint8_t, 8> outImageHash;
     const auto buffer = reinterpret_cast<const uint8_t*>(frame.c_str());
+    auto expandedBuffer = convert1ByteBufferTo4Bytes(buffer);
 
     AHardwareBuffer_Desc desc = {
             .width = 32,
@@ -101,7 +119,8 @@ TEST(ImageHashManagerTest, TestGenerateHashWithInvalidHash) {
             .usage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN,
     };
 
-    int32_t status = ImageHashManager::generateHash("fakeHash", buffer, desc, &outImageHash);
+    int32_t status =
+            ImageHashManager::generateHash("fakeHash", expandedBuffer.data(), desc, &outImageHash);
     EXPECT_EQ(-EINVAL, status); // should fail
 }
 
