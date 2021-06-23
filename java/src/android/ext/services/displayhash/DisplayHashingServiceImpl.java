@@ -21,6 +21,7 @@ import static android.view.displayhash.DisplayHashResultCallback.DISPLAY_HASH_ER
 
 import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
+import android.os.Build;
 import android.service.displayhash.DisplayHashParams;
 import android.service.displayhash.DisplayHashingService;
 import android.util.ArrayMap;
@@ -30,6 +31,7 @@ import android.view.displayhash.DisplayHashResultCallback;
 import android.view.displayhash.VerifiedDisplayHash;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -38,6 +40,7 @@ import java.util.Map;
 /**
  * The implementation service for {@link DisplayHashingService}
  */
+@RequiresApi(Build.VERSION_CODES.S)
 public class DisplayHashingServiceImpl extends DisplayHashingService {
     static final String TAG = "DisplayHashingService";
 
