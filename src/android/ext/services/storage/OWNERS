@@ -1,1 +1,2 @@
 include platform/frameworks/base:/core/java/android/app/usage/OWNERS
+include platform/frameworks/base:/core/java/android/os/storage/OWNERS
