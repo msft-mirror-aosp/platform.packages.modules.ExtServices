@@ -1,10 +1,10 @@
-// Copyright (C) 2020 The Android Open Source Project
+// Copyright 2020 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,14 +21,32 @@ package {
     default_applicable_licenses: ["packages_modules_ExtServices_license"],
 }
 
-apex_test {
-    name: "test_com.android.extservices",
-    visibility: [
-        "//system/apex/tests",
+cc_library_static {
+    name: "libextservices",
+    sdk_version: "current",
+    min_sdk_version: "30",
+    shared_libs: [
+        "libandroid",
+        "liblog",
     ],
-    defaults: ["com.android.extservices-defaults"],
-    manifest: "test_manifest.json",
-    file_contexts: ":com.android.extservices-file_contexts",
-    // Test APEX, should never be installed
-    installable: false,
+    static_libs: [
+        "libfft2d",
+    ],
+    srcs: [
+        "*.cpp",
+        "pHash/*.cpp",
+    ],
+    cflags: [
+        "-Wno-unused-parameter",
+        "-Wno-unused-function",
+    ],
+    export_include_dirs: ["."],
+    stl: "libc++_static",
+    apex_available: [
+        "//apex_available:platform",
+        "com.android.extservices",
+    ],
+    header_libs: [
+        "liblog_headers",
+    ],
 }
