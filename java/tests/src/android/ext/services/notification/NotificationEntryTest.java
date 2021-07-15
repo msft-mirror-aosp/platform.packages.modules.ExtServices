@@ -16,7 +16,6 @@
 
 package android.ext.services.notification;
 
-import static android.app.Notification.FLAG_CAN_COLORIZE;
 import static android.app.Notification.FLAG_FOREGROUND_SERVICE;
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
 import static android.media.AudioAttributes.USAGE_ALARM;
@@ -78,8 +77,8 @@ public class NotificationEntryTest {
                 .setContentTitle("foo")
                 .build();
 
-        return new StatusBarNotification(mPkg, mPkg, 0, "tag", mUid, mUid, n,
-                UserHandle.SYSTEM, null, 0);
+        return new StatusBarNotification(mPkg, mPkg, 0, "tag", mUid, mUid, 0, n,
+                UserHandle.SYSTEM, 0);
     }
 
     private StatusBarNotification generateSbn(String channelId, String packageName) {
@@ -87,13 +86,13 @@ public class NotificationEntryTest {
                 .setContentTitle("foo")
                 .build();
 
-        return new StatusBarNotification(packageName, packageName, 0, "tag", mUid, mUid, n,
-                UserHandle.SYSTEM, null, 0);
+        return new StatusBarNotification(packageName, packageName, 0, "tag", mUid, mUid, 0, n,
+                UserHandle.SYSTEM, 0);
     }
 
     private StatusBarNotification generateSbn(Notification n) {
-        return new StatusBarNotification(mPkg, mPkg, 0, "tag", mUid, mUid, n,
-                UserHandle.SYSTEM, null, 0);
+        return new StatusBarNotification(mPkg, mPkg, 0, "tag", mUid, mUid, 0, n,
+                UserHandle.SYSTEM, 0);
     }
 
     @Before
@@ -236,7 +235,7 @@ public class NotificationEntryTest {
         NotificationChannel channel = new NotificationChannel("", "", IMPORTANCE_HIGH);
 
         Notification n = new Notification.Builder(mContext, channel.getId())
-                .setFlag(FLAG_CAN_COLORIZE, true)
+                .setFlag(0x00000800 /* FLAG_CAN_COLORIZE */, true)
                 .build();
         NotificationEntry entry = new NotificationEntry(
                 mContext, mPackageManager, generateSbn(n), channel, mSmsHelper);
