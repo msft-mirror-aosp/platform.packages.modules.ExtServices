@@ -20,7 +20,6 @@
         <option name="push" value="libextservices_test->/data/local/tmp/libextservices_test" />
         <option name="push" value="test_data->/data/local/tmp/test_data" />
     </target_preparer>
-    <target_preparer class="com.android.tradefed.targetprep.RootTargetPreparer"/>
 
     <option name="config-descriptor:metadata" key="mainline-param" value="com.google.android.extservices.apex" />
     <option name="test-suite-tag" value="apct" />
