@@ -30,10 +30,13 @@ apex {
 apex_defaults {
     name: "com.android.extservices-defaults",
     updatable: true,
-    min_sdk_version: "current",
+    min_sdk_version: "30",
     key: "com.android.extservices.key",
     certificate: ":com.android.extservices.certificate",
     apps: ["ExtServices"],
+    // Indicates that pre-installed version of this apex can be compressed.
+    // Whether it actually will be compressed is controlled on per-device basis.
+    compressible: true,
 }
 
 apex_key {
