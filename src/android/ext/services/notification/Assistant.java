@@ -261,16 +261,6 @@ public class Assistant extends NotificationAssistantService {
         if (!smartReplies.isEmpty()) {
             signals.putCharSequenceArrayList(Adjustment.KEY_TEXT_REPLIES, smartReplies);
         }
-        if (mSettings.mNewInterruptionModel) {
-            if (mNotificationCategorizer.shouldSilence(entry)) {
-                final int importance = entry.getImportance() < IMPORTANCE_LOW
-                        ? entry.getImportance() : IMPORTANCE_LOW;
-                signals.putInt(KEY_IMPORTANCE, importance);
-            } else {
-                // Even if no change is made, send an identity adjustment for metric logging.
-                signals.putInt(KEY_IMPORTANCE, entry.getImportance());
-            }
-        }
 
         return new Adjustment(
                 entry.getSbn().getPackageName(),
