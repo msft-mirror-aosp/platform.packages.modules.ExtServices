@@ -60,7 +60,6 @@ android_app {
     name: "ExtServices",
     sdk_version: "system_current",
     min_sdk_version: "30",
-    certificate: "platform",
     optimize: {
         optimize: true,
         proguard_compatibility: false,
