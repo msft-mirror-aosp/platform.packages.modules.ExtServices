@@ -99,6 +99,34 @@ public class CacheQuotaServiceImpl extends CacheQuotaService {
                         builder.setQuota(Math.round(share * reservedSize));
                         processed.add(builder.build());
                     }
+
+                    // Calculate the median of quotas of uids with >0 foreground time
+                    int midPoint = flattenedRequests.size() / 2;
+                    double medianValue, share;
+                    long medianQuota;
+                    if (flattenedRequests.size() % 2 == 0) {
+                        medianValue = (getFairShareForPosition(midPoint - 1)
+                                + getFairShareForPosition(midPoint)) / 2;
+                    } else {
+                        medianValue = getFairShareForPosition(midPoint);
+                    }
+                    share = medianValue / sum;
+                    medianQuota = Math.round(share * reservedSize);
+                    // Allot median quota to uids with foreground time =0
+                    List<CacheQuotaHintExtend> flattenedRequestsForegroundZero =
+                            byUid.values()
+                               .stream()
+                               .map(entryList -> entryList.get(0))
+                               .filter(entry -> entry.mTotalTimeInForeground == 0)
+                               .sorted(sCacheQuotaRequestComparator)
+                               .collect(Collectors.toList());
+                    for (int count = 0; count < flattenedRequestsForegroundZero.size(); count++) {
+                        CacheQuotaHint entry = flattenedRequestsForegroundZero.get(count)
+                                .mCacheQuotaHint;
+                        CacheQuotaHint.Builder builder = new CacheQuotaHint.Builder(entry);
+                        builder.setQuota(medianQuota);
+                        processed.add(builder.build());
+                    }
                 }
         );
 
