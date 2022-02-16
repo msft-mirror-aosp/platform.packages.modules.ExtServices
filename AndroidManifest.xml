@@ -140,17 +140,13 @@
             </intent-filter>
         </service>
 
-        <!-- Remove the default WorkManager and Startup initializers and use on-demand
-             initialization instead. This gives us more control on when initialization
-             happens, e.g. when the user is unlocked.
+        <!-- Remove the default WorkManager initializer and use on-demand initialization instead.
+             This gives us more control on when initialization happens, e.g. when the user is
+             unlocked.
         -->
         <provider
             android:name="androidx.work.impl.WorkManagerInitializer"
             android:authorities="${applicationId}.workmanager-init"
-            tools:node="remove" />
-        <provider
-            android:name="androidx.startup.InitializationProvider"
-            android:authorities="${applicationId}.androidx-startup"
             tools:node="remove" />
 
     </application>
