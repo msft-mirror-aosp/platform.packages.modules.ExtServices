@@ -18,8 +18,8 @@
     xmlns:androidprv="http://schemas.android.com/apk/prv/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="android.ext.services"
-    android:versionCode="330200000"
-    android:versionName="t_frc_ext_330200000"
+    android:versionCode="330210000"
+    android:versionName="t_frc_ext_330210000"
     coreApp="true">
 
     <uses-permission android:name="android.permission.PROVIDE_RESOLVER_RANKER_SERVICE" />
@@ -140,13 +140,17 @@
             </intent-filter>
         </service>
 
-        <!-- Remove the default WorkManager initializer and use on-demand initialization instead.
-             This gives us more control on when initialization happens, e.g. when the user is
-             unlocked.
+        <!-- Remove the default WorkManager and Startup initializers and use on-demand
+             initialization instead. This gives us more control on when initialization
+             happens, e.g. when the user is unlocked.
         -->
         <provider
             android:name="androidx.work.impl.WorkManagerInitializer"
             android:authorities="${applicationId}.workmanager-init"
+            tools:node="remove" />
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
             tools:node="remove" />
 
     </application>
