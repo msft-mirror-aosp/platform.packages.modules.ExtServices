@@ -71,6 +71,7 @@ android_app {
     ],
     jni_libs: ["libtextclassifier", "libextservices_jni"],
     use_embedded_native_libs: true,
+    required: ["privapp_allowlist_android.ext.services.xml"],
     apex_available: [
         "//apex_available:platform",
         "com.android.extservices",
