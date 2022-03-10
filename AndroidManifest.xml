@@ -18,8 +18,8 @@
     xmlns:androidprv="http://schemas.android.com/apk/prv/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="android.ext.services"
-    android:versionCode="311610000"
-    android:versionName="aml_ext_311610000"
+    android:versionCode="311710000"
+    android:versionName="aml_ext_311710000"
     coreApp="true">
 
     <uses-permission android:name="android.permission.PROVIDE_RESOLVER_RANKER_SERVICE" />
@@ -45,7 +45,6 @@
         android:name=".ExtServicesApplication"
         android:label="@string/app_name"
         android:forceQueryable="true"
-        android:directBootAware="true"
         android:supportsRtl="true">
 
         <processes>
@@ -59,6 +58,7 @@
 
         <service android:name=".storage.CacheQuotaServiceImpl"
              android:exported="true"
+             android:directBootAware="true"
              android:permission="android.permission.BIND_CACHE_QUOTA_SERVICE">
             <intent-filter>
                 <action android:name="android.app.usage.CacheQuotaService" />
@@ -67,6 +67,7 @@
 
         <service android:name=".resolver.LRResolverRankerService"
                  android:exported="true"
+                 android:directBootAware="true"
                  android:permission="android.permission.BIND_RESOLVER_RANKER_SERVICE">
             <intent-filter android:priority="-1">
                 <action android:name="android.service.resolver.ResolverRankerService" />
@@ -75,6 +76,7 @@
 
         <service android:name=".notification.Assistant"
                  android:label="@string/notification_assistant"
+                 android:directBootAware="true"
                  android:permission="android.permission.BIND_NOTIFICATION_ASSISTANT_SERVICE"
                  android:exported="true">
             <intent-filter>
@@ -84,6 +86,7 @@
 
         <service android:name=".autofill.AutofillFieldClassificationServiceImpl"
              android:exported="true"
+             android:directBootAware="true"
              android:permission="android.permission.BIND_AUTOFILL_FIELD_CLASSIFICATION_SERVICE">
             <intent-filter>
                 <action android:name="android.service.autofill.AutofillFieldClassificationService" />
@@ -98,6 +101,7 @@
 
         <service android:name=".watchdog.ExplicitHealthCheckServiceImpl"
                  android:exported="true"
+                 android:directBootAware="true"
                  android:permission="android.permission.BIND_EXPLICIT_HEALTH_CHECK_SERVICE">
             <intent-filter>
                 <action android:name="android.service.watchdog.ExplicitHealthCheckService" />
@@ -106,6 +110,7 @@
 
         <activity android:name="com.android.textclassifier.notification.CopyCodeActivity"
                   android:exported="false"
+                  android:directBootAware="true"
                   android:theme="@android:style/Theme.NoDisplay"/>
 
         <!-- DirectBootAware is disabled below as it shouldn't be used if the device is locked -->
@@ -121,11 +126,13 @@
 
         <service android:name="com.android.textclassifier.downloader.ModelDownloaderService"
                  android:exported="false"
+                 android:directBootAware="false"
                  android:process=":modelDownloaderServiceProcess">
         </service>
 
         <service android:name=".autofill.InlineSuggestionRenderServiceImpl"
                  android:exported="true"
+                 android:directBootAware="true"
                  android:permission="android.permission.BIND_INLINE_SUGGESTION_RENDER_SERVICE">
             <intent-filter>
                 <action android:name="android.service.autofill.InlineSuggestionRenderService" />
@@ -134,6 +141,7 @@
 
         <service android:name=".displayhash.DisplayHashingServiceImpl"
             android:exported="true"
+            android:directBootAware="true"
             android:permission="android.permission.BIND_DISPLAY_HASHING_SERVICE">
             <intent-filter>
                 <action android:name="android.service.displayhash.DisplayHashingService" />
