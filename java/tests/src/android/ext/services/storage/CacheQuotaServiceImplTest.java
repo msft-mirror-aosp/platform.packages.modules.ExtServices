@@ -31,8 +31,6 @@ import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
 import android.test.ServiceTestCase;
 
-import androidx.test.filters.SdkSuppress;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Answers;
@@ -44,7 +42,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-@SdkSuppress(minSdkVersion = 31, codeName = "S")
 public class CacheQuotaServiceImplTest extends ServiceTestCase<CacheQuotaServiceImpl> {
     private static final String sTestVolUuid = "uuid";
     private static final String sSecondTestVolUuid = "otherUuid";
@@ -148,21 +145,16 @@ public class CacheQuotaServiceImplTest extends ServiceTestCase<CacheQuotaService
 
     private CacheQuotaHint makeNewRequest(String packageName, String uuid, int uid,
             long foregroundTime) {
-        UsageStats stats = new UsageStats.Builder()
-                .setPackageName(packageName)
-                .setTotalTimeInForeground(foregroundTime)
-                .build();
+        UsageStats stats = new UsageStats();
+        stats.mPackageName = packageName;
+        stats.mTotalTimeInForeground = foregroundTime;
         return new CacheQuotaHint.Builder()
                 .setVolumeUuid(uuid).setUid(uid).setUsageStats(stats).setQuota(-1).build();
     }
 
     private StorageVolume makeNewStorageVolume(String id, File path, String fsUuid) {
-        return new StorageVolume.Builder(id, path, "description", UserHandle.CURRENT,
-                Environment.MEDIA_MOUNTED)
-                .setPrimary(false)
-                .setRemovable(false)
-                .setEmulated(true)
-                .setUuid(fsUuid)
-                .build();
+        return new StorageVolume(id, path, path, /* description */ "", /* primary */ false,
+                /* removable */ false, /* emulated */ true, /* allowMassStorage */ false,
+                /* maxFileSize */ -1, UserHandle.CURRENT, fsUuid, Environment.MEDIA_MOUNTED);
     }
 }

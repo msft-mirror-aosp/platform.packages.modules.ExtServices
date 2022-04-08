@@ -16,7 +16,6 @@
 package android.ext.services.autofill;
 
 import android.app.PendingIntent;
-import android.content.Context;
 import android.content.IntentSender;
 import android.os.Bundle;
 import android.service.autofill.InlinePresentation;
@@ -64,10 +63,5 @@ public class InlineSuggestionRenderServiceImpl extends InlineSuggestionRenderSer
             });
         }
         return suggestionView;
-    }
-
-    @Override
-    protected void attachBaseContext(Context newBase) {
-        super.attachBaseContext(newBase);
     }
 }
