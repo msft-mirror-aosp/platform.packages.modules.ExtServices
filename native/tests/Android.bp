@@ -25,10 +25,7 @@ package {
 // devices.
 cc_test {
     name: "libextservices_test",
-    test_suites: [
-        "general-tests",
-        "mts-extservices",
-    ],
+    test_suites: ["general-tests", "mts-extservices"],
 
     shared_libs: [
         "libandroid",
@@ -42,7 +39,7 @@ cc_test {
         "libgmock",
         "libgtest",
     ],
-
+    clang: true,
     cflags: [
         "-Wall",
         "-Werror",
