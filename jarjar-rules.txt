@@ -1,0 +1,1 @@
+rule android.view.displayhash** com.android.ext.internal.@0
