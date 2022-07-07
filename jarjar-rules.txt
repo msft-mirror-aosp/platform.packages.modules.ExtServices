@@ -1,0 +1,2 @@
+rule android.view.displayhash** com.android.ext.internal.@0
+rule com.android.modules.utils.build.** com.android.ext.internal.@0
