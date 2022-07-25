@@ -18,8 +18,8 @@
     xmlns:androidprv="http://schemas.android.com/apk/prv/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="android.ext.services"
-    android:versionCode="330910000"
-    android:versionName="aml_ext_330910000"
+    android:versionCode="330911000"
+    android:versionName="aml_ext_330911000"
     coreApp="true">
 
     <uses-permission android:name="android.permission.PROVIDE_RESOLVER_RANKER_SERVICE" />
@@ -38,7 +38,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove" />
 
     <uses-sdk
-        android:targetSdkVersion="30"
+        android:targetSdkVersion="33"
     />
 
     <application
