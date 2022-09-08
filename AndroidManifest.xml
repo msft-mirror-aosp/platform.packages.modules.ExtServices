@@ -38,7 +38,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove" />
 
     <uses-sdk
-        android:targetSdkVersion="33"
+        android:targetSdkVersion="30"
     />
 
     <application
