@@ -51,9 +51,11 @@ android_library {
         "modules-utils-build",
     ],
 
-    libs : ["framework-connectivity"],
+    libs : [
+        "framework-configinfrastructure",
+        "framework-connectivity",
+    ],
 
-    plugins: ["java_api_finder"],
     lint: {
         strict_updatability_linting: true,
     },
