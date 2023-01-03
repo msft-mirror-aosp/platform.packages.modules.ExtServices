@@ -67,6 +67,7 @@ android_app {
     min_sdk_version: "30",
     optimize: {
         optimize: true,
+        shrink_resources: true,
         proguard_compatibility: false,
         proguard_flags_files: ["proguard.proguard"],
     },
