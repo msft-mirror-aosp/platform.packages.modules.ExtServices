@@ -34,7 +34,7 @@ android_library {
     srcs: [
         "java/src/**/*.java",
     ],
-    sdk_version: "system_current",
+    sdk_version: "module_current",
     min_sdk_version: "30",
     resource_dirs: [
         "java/res",
@@ -46,10 +46,16 @@ android_library {
         "androidx.annotation_annotation",
         "androidx.autofill_autofill",
         "TextClassifierServiceLibNoManifest",
-        "TextClassifierNotificationLibNoManifest"
+        "TextClassifierNotificationLibNoManifest",
+        "androidx.work_work-runtime",
+        "modules-utils-build",
     ],
 
-    plugins: ["java_api_finder"],
+    libs : [
+        "framework-configinfrastructure",
+        "framework-connectivity",
+    ],
+
     lint: {
         strict_updatability_linting: true,
     },
@@ -57,9 +63,8 @@ android_library {
 
 android_app {
     name: "ExtServices",
-    sdk_version: "system_current",
+    sdk_version: "module_current",
     min_sdk_version: "30",
-    certificate: "platform",
     optimize: {
         optimize: true,
         proguard_compatibility: false,
