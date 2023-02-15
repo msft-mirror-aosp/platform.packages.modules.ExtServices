@@ -34,8 +34,6 @@ import android.testing.TestableContext;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.modules.utils.build.SdkLevel;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -50,8 +48,6 @@ public class AssistantSettingsTest {
             "device_config delete " + DeviceConfig.NAMESPACE_SYSTEMUI;
     private static final String WRITE_DEVICE_CONFIG_PERMISSION =
             "android.permission.WRITE_DEVICE_CONFIG";
-    private static final String ALLOWLISTED_WRITE_DEVICE_CONFIG_PERMISSION =
-            "android.permission.ALLOWLISTED_WRITE_DEVICE_CONFIG";
 
     private static final String READ_DEVICE_CONFIG_PERMISSION =
             "android.permission.READ_DEVICE_CONFIG";
@@ -68,17 +64,10 @@ public class AssistantSettingsTest {
 
     @Before
     public void setUp() {
-        if (SdkLevel.isAtLeastU()) {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .adoptShellPermissionIdentity(
-                            ALLOWLISTED_WRITE_DEVICE_CONFIG_PERMISSION,
-                            READ_DEVICE_CONFIG_PERMISSION);
-        } else {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .adoptShellPermissionIdentity(
-                            WRITE_DEVICE_CONFIG_PERMISSION,
-                            READ_DEVICE_CONFIG_PERMISSION);
-        }
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        WRITE_DEVICE_CONFIG_PERMISSION,
+                        READ_DEVICE_CONFIG_PERMISSION);
         mAssistantSettings = new AssistantSettings();
     }
 

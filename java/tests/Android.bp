@@ -27,7 +27,6 @@ android_test {
         "truth-prebuilt",
         "testables",
         "testng",
-	"modules-utils-build",
     ],
     jni_libs: [
         "libdexmakerjvmtiagent",
