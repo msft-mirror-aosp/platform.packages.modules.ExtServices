@@ -32,7 +32,9 @@ apex_defaults {
     defaults: ["r-launched-apex-module"],
     key: "com.android.extservices.key",
     certificate: ":com.android.extservices.certificate",
-    apps: ["ExtServices"],
+    apps: ["ExtServices", "AdExtServicesApk"],
+    java_libs: ["android.ext.adservices"],
+    jni_libs: ["libtflite_support_classifiers_native", "libhpke_jni"],
     prebuilts: [
         "current_sdkinfo",
         "privapp_allowlist_android.ext.services.xml",
