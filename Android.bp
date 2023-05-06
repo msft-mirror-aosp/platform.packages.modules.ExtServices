@@ -59,6 +59,7 @@ android_library {
     lint: {
         strict_updatability_linting: true,
     },
+    apex_available: ["com.android.extservices"],
 }
 
 android_app {
