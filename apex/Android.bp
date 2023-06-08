@@ -35,10 +35,7 @@ apex_defaults {
     apps: ["ExtServices", "AdExtServicesApk"],
     java_libs: ["android.ext.adservices"],
     jni_libs: ["libtflite_support_classifiers_native", "libhpke_jni"],
-    prebuilts: [
-        "current_sdkinfo",
-        "privapp_allowlist_android.ext.services.xml",
-    ],
+    prebuilts: ["current_sdkinfo"],
     // Indicates that pre-installed version of this apex can be compressed.
     // Whether it actually will be compressed is controlled on per-device basis.
     compressible: true,
