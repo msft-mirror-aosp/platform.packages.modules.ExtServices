@@ -72,13 +72,13 @@ android_app {
         proguard_flags_files: ["proguard.proguard"],
     },
     privileged: true,
+    privapp_allowlist: ":privapp_allowlist_android.ext.services.xml",
     static_libs: [
         "ExtServices-core",
     ],
     jarjar_rules: "jarjar-rules.txt",
     jni_libs: ["libtextclassifier", "libextservices_jni"],
     use_embedded_native_libs: true,
-    required: ["privapp_allowlist_android.ext.services.xml"],
     apex_available: [
         "//apex_available:platform",
         "com.android.extservices",
