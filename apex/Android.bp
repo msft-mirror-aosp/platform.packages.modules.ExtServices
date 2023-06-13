@@ -24,18 +24,27 @@ package {
 apex {
     name: "com.android.extservices",
     defaults: ["com.android.extservices-defaults"],
-    manifest: "apex_manifest.json",
+    apps: ["ExtServices"],
+    variant_version: "3",
+}
+
+apex {
+    name: "com.android.extservices_sminus",
+    apex_available_name: "com.android.extservices",
+    defaults: ["com.android.extservices-defaults"],
+    apps: ["ExtServices", "AdExtServicesApk"],
+    java_libs: ["android.ext.adservices"],
+    jni_libs: ["libtflite_support_classifiers_native", "libhpke_jni"],
 }
 
 apex_defaults {
     name: "com.android.extservices-defaults",
     defaults: ["r-launched-apex-module"],
+    manifest: "apex_manifest.json",
     key: "com.android.extservices.key",
     certificate: ":com.android.extservices.certificate",
-    apps: ["ExtServices", "AdExtServicesApk"],
-    java_libs: ["android.ext.adservices"],
-    jni_libs: ["libtflite_support_classifiers_native", "libhpke_jni"],
     prebuilts: ["current_sdkinfo"],
+    file_contexts: ":com.android.extservices-file_contexts",
     // Indicates that pre-installed version of this apex can be compressed.
     // Whether it actually will be compressed is controlled on per-device basis.
     compressible: true,
