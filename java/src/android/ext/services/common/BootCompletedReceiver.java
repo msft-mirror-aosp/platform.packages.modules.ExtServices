@@ -51,7 +51,7 @@ public class BootCompletedReceiver extends BroadcastReceiver {
     private static final String ADEXTBOOTCOMPLETEDRECEIVER_CLASS_NAME =
             "com.android.adservices.service.common.AdExtBootCompletedReceiver";
     private static final String REBROADCAST_INTENT_ACTION =
-            "android.intent.action.INIT_EXT_SERVICES";
+            "android.adservices.action.INIT_EXT_SERVICES";
     private static final String ADSERVICES_SETTINGS_MAINACTIVITY =
             "com.android.adservices.ui.settings.activities.AdServicesSettingsMainActivity";
 
