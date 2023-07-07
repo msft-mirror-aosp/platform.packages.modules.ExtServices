@@ -54,6 +54,9 @@
             <process android:process=":modelDownloaderServiceProcess">
                 <allow-permission android:name="android.permission.INTERNET" />
             </process>
+            <process android:process=".adservices">
+                <allow-permission android:name="android.permission.INTERNET" />
+            </process>
         </processes>
 
         <service android:name=".storage.CacheQuotaServiceImpl"
@@ -162,9 +165,10 @@
             tools:node="remove" />
 
         <!-- Boot completed receiver sends privileged startup broadcast. -->
+        <!-- TODO: Remove BootCompletedReceiver. -->
         <receiver android:name=".common.BootCompletedReceiver"
-                  android:enabled="@bool/enableBootCompletedReceiver"
-                  android:exported="true">
+                  android:enabled="false"
+                  android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
             </intent-filter>
