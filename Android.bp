@@ -35,16 +35,14 @@ android_library {
         "java/src/**/*.java",
     ],
 
-    // Need to use empty manifest to avoid getting INSTALL_FAILED_DUPLICATE_PERMISSION when running
-    // unit tests, because the manifest is included in this library which is statically included in
-    // the test module. The actual manifest is included in the android_app target below.
-    manifest: "EmptyManifest.xml",
-
     sdk_version: "module_current",
     min_sdk_version: "30",
     resource_dirs: [
         "java/res",
     ],
+
+    manifest: "AndroidManifest.xml",
+
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.autofill_autofill",
@@ -94,7 +92,6 @@ android_app {
     name: "ExtServices-sminus",
     sdk_version: "module_current",
     min_sdk_version: "30",
-    manifest: "AndroidManifest.xml",
     optimize: {
         optimize: true,
         shrink_resources: true,
