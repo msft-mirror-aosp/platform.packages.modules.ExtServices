@@ -50,6 +50,9 @@
             <process android:process=":modelDownloaderServiceProcess">
                 <allow-permission android:name="android.permission.INTERNET" />
             </process>
+            <process android:process=".adservices">
+                <allow-permission android:name="android.permission.INTERNET" />
+            </process>
         </processes>
 
         <service android:name=".storage.CacheQuotaServiceImpl"
@@ -156,7 +159,5 @@
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
             tools:node="remove" />
-
     </application>
-
 </manifest>
