@@ -22,15 +22,15 @@ package {
 }
 
 apex {
-    name: "com.android.extservices_tplus",
-    apex_available_name: "com.android.extservices",
+    name: "com.android.extservices",
     defaults: ["com.android.extservices-defaults"],
-    apps: ["ExtServices-tplus"],
+    apps: ["ExtServices"],
     variant_version: "3",
 }
 
 apex {
-    name: "com.android.extservices",
+    name: "com.android.extservices_sminus",
+    apex_available_name: "com.android.extservices",
     defaults: ["com.android.extservices-defaults"],
     apps: ["ExtServices-sminus"],
     java_libs: ["android.ext.adservices"],

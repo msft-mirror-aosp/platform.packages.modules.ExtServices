@@ -65,7 +65,7 @@ android_library {
 }
 
 android_app {
-    name: "ExtServices-tplus",
+    name: "ExtServices",
     sdk_version: "module_current",
     min_sdk_version: "30",
     manifest: "AndroidManifest.xml",
@@ -76,7 +76,7 @@ android_app {
         proguard_flags_files: ["proguard.proguard"],
     },
     privileged: true,
-    privapp_allowlist: ":privapp_allowlist_android.ext_tplus.services.xml",
+    privapp_allowlist: ":privapp_allowlist_android.ext.services.xml",
     static_libs: [
         "ExtServices-core",
     ],
