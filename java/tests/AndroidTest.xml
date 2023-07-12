@@ -18,7 +18,7 @@
         <option name="test-file-name" value="ExtServicesUnitTests.apk" />
     </target_preparer>
 
-    <option name="config-descriptor:metadata" key="mainline-param" value="com.google.android.extservices_tplus.apex" />
+    <option name="config-descriptor:metadata" key="mainline-param" value="com.google.android.extservices.apex" />
     <option name="test-suite-tag" value="apct" />
     <option name="test-suite-tag" value="framework-base-presubmit" />
     <option name="test-tag" value="ExtServicesUnitTests" />
