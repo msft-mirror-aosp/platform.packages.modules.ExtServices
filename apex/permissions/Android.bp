@@ -22,8 +22,8 @@ package {
 }
 
 filegroup {
-    name: "privapp_allowlist_android.ext_tplus.services.xml",
-    srcs: ["android.ext_tplus.services.xml"],
+    name: "privapp_allowlist_android.ext.services.xml",
+    srcs: ["android.ext.services.xml"],
 }
 
 filegroup {
