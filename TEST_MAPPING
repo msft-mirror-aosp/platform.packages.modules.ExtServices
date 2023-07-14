@@ -14,10 +14,10 @@
   ],
   "mainline-presubmit": [
     {
-      "name": "ExtServicesUnitTests[com.google.android.extservices.apex]"
+      "name": "ExtServicesUnitTests[com.google.android.extservices_tplus.apex]"
     },
     {
-      "name": "libextservices_test[com.google.android.extservices.apex]"
+      "name": "libextservices_test[com.google.android.extservices_tplus.apex]"
     }
   ]
 }
