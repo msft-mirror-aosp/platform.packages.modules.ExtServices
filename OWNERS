@@ -1,12 +1,6 @@
-augale@google.com
-hackbod@google.com
-narayan@google.com
-svetoslavganov@google.com
-lpeter@google.com
+adarshsridhar@google.com
 # Autofill
-adamhe@google.com
-joannechung@google.com
-tymtsai@google.com
+include platform/frameworks/base:/core/java/android/service/autofill/OWNERS
 # PackageWatchdog
 gavincorkery@google.com
 # Notification
@@ -16,7 +10,5 @@ juliacr@google.com
 toki@google.com
 tonymak@google.com
 licha@google.com
-# AdServices
-npattan@google.com
 
 include platform/packages/modules/common:/MODULES_OWNERS  # see go/mainline-owners-policy
