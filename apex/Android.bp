@@ -27,6 +27,7 @@ apex {
     defaults: ["com.android.extservices-defaults"],
     apps: ["ExtServices-tplus"],
     variant_version: "3",
+    min_sdk_version: "33",
 }
 
 apex {
