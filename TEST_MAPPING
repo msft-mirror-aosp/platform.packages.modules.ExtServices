@@ -1,10 +1,16 @@
 {
   "presubmit": [
     {
-      "name": "ExtServicesUnitTests"
+      "name": "ExtServicesUnitTests-tplus"
     },
     {
-      "name": "libextservices_test"
+      "name": "ExtServicesUnitTests-sminus"
+    },
+    {
+      "name": "libextservices_test-tplus"
+    },
+    {
+      "name": "libextservices_test-sminus"
     }
   ],
   "imports": [
@@ -14,10 +20,16 @@
   ],
   "mainline-presubmit": [
     {
-      "name": "ExtServicesUnitTests[com.google.android.extservices_tplus.apex]"
+      "name": "ExtServicesUnitTests-tplus[com.google.android.extservices_tplus.apex]"
     },
     {
-      "name": "libextservices_test[com.google.android.extservices_tplus.apex]"
+      "name": "libextservices_test-tplus[com.google.android.extservices_tplus.apex]"
+    },
+    {
+      "name": "ExtServicesUnitTests-sminus[com.google.android.extservices.apex]"
+    },
+    {
+      "name": "libextservices_test-sminus[com.google.android.extservices.apex]"
     }
   ]
 }
