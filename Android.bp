@@ -69,6 +69,7 @@ android_app {
     min_sdk_version: "30",
     optimize: {
         optimize: true,
+        shrink_resources: true,
         proguard_compatibility: false,
         proguard_flags_files: ["proguard.proguard"],
     },
@@ -77,6 +78,7 @@ android_app {
     static_libs: [
         "ExtServices-core",
     ],
+    jarjar_rules: "jarjar-rules.txt",
     jni_libs: ["libtextclassifier", "libextservices_jni"],
     use_embedded_native_libs: true,
     apex_available: [
