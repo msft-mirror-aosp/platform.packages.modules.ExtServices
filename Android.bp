@@ -41,7 +41,7 @@ android_library {
         "java/res",
     ],
 
-    manifest: "AndroidManifest.xml",
+    manifest: "EmptyManifest.xml",
 
     static_libs: [
         "androidx.annotation_annotation",
@@ -94,6 +94,7 @@ android_app {
     name: "ExtServices-sminus",
     sdk_version: "module_current",
     min_sdk_version: "30",
+    manifest: "AndroidManifest.xml",
     optimize: {
         optimize: true,
         shrink_resources: true,
