@@ -18,8 +18,8 @@
     xmlns:androidprv="http://schemas.android.com/apk/prv/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="android.ext.services"
-    android:versionCode="341018000"
-    android:versionName="aml_ext_341018000"
+    android:versionCode="341019000"
+    android:versionName="aml_ext_341019000"
     coreApp="true">
 
     <uses-permission android:name="android.permission.PROVIDE_RESOLVER_RANKER_SERVICE" />
@@ -36,6 +36,8 @@
     <!-- Remove unused permissions merged from WorkManager library -->
     <uses-permission android:name="android.permission.WAKE_LOCK" tools:node="remove" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove" />
+    <!-- Need this permission to receive the Boot-Completed broadcast -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".ExtServicesApplication"
@@ -159,5 +161,13 @@
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
             tools:node="remove" />
+
+        <receiver android:name=".common.AdServicesFilesCleanupBootCompleteReceiver"
+                  android:enabled="@bool/enableAdServicesDataCleanupReceiver"
+                  android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>
