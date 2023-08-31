@@ -93,6 +93,7 @@ public final class AdServicesFilesCleanupBootCompleteReceiverTest {
                 .startMocking();
 
         doReturn(mPackageManager).when(mContext).getPackageManager();
+        doNothing().when(mReceiver).scheduleAppsearchDeleteJob(any());
     }
 
     @After
@@ -116,6 +117,7 @@ public final class AdServicesFilesCleanupBootCompleteReceiverTest {
 
         verify(mContext, never()).getDataDir();
         verify(mContext, never()).getPackageManager();
+        verify(mReceiver, never()).scheduleAppsearchDeleteJob(any());
     }
 
     @Test
@@ -125,7 +127,7 @@ public final class AdServicesFilesCleanupBootCompleteReceiverTest {
         doReturn(true).when(mReceiver).deleteAdServicesFiles(any());
 
         mReceiver.onReceive(mContext, /* intent= */ null);
-
+        verify(mReceiver).scheduleAppsearchDeleteJob(any());
         verifyDisableComponentCalled();
     }
 
@@ -135,7 +137,7 @@ public final class AdServicesFilesCleanupBootCompleteReceiverTest {
         doReturn(false).when(mReceiver).deleteAdServicesFiles(any());
 
         mReceiver.onReceive(mContext, /* intent= */ null);
-
+        verify(mReceiver).scheduleAppsearchDeleteJob(any());
         verifyDisableComponentCalled();
     }
 
