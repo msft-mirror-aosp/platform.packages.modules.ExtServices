@@ -28,13 +28,7 @@
         <option name="jar" value="CtsExtServicesHostTests-sminus.jar" />
     </test>
 
-    <!-- TODO(b/297207132) use AdServicesFlagsSetterRule instead of the target preparer -->
-    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
-        <option name="run-command" value="setprop log.tag.extservices VERBOSE"/>
-        <!-- Temporarily disable Device Config sync -->
-        <option name="run-command" value="device_config set_sync_disabled_for_tests persistent" />
-        <option name="teardown-command" value="device_config set_sync_disabled_for_tests none" />
-    </target_preparer>
+    <!-- NOTE: DeviceConfig and SystemProperties are handled by AdServicesFlagsSetterRule -->
 
     <!-- Prevent tests from running on Android Q- -->
     <object type="module_controller"
