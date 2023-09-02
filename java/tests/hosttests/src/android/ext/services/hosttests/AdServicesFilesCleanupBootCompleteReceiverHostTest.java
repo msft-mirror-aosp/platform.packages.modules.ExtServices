@@ -16,19 +16,27 @@
 
 package android.ext.services.hosttests;
 
+import static com.android.adservices.common.TestDeviceHelper.runShellCommand;
+
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.ext.services.hosttests.utils.ExtServicesLogcatReceiver;
 
+import com.android.adservices.common.AdServicesHostSideFlagsSetterRule;
+import com.android.adservices.common.AdServicesHostSideTestCase;
+import com.android.adservices.common.HostSideSdkLevelSupportRule;
+import com.android.adservices.common.RequiresSdkLevelAtLeastT;
+import com.android.adservices.common.RequiresSdkLevelLessThanT;
+import com.android.adservices.common.TestDeviceHelper;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.device.PackageInfo;
+import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
-import com.android.tradefed.testtype.IDeviceTest;
 
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -37,9 +45,8 @@ import java.util.Locale;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-// TODO(b/297207132) - extend AdServicesHostSideTestCase instead.
 @RunWith(DeviceJUnit4ClassRunner.class)
-public class AdServicesFilesCleanupBootCompleteReceiverHostTest implements IDeviceTest {
+public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServicesHostSideTestCase {
     private static final String EXTSERVICES_PACKAGE_SUFFIX = "android.ext.services";
     private static final String CLEANUP_RECEIVER_CLASS_NAME =
             "android.ext.services.common.AdServicesFilesCleanupBootCompleteReceiver";
@@ -48,25 +55,23 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest implements IDevi
             "Disabled AdServices files cleanup receiver";
     private static final String RECEIVER_EXECUTED_LOG_TEXT = "AdServices files cleanup receiver";
 
-    private ITestDevice mDevice;
     private String mAdServicesFilePath;
     private String mExtServicesPackageName;
 
-    @Override
-    public void setDevice(ITestDevice device) {
-        mDevice = device;
-    }
+    @Rule
+    public final HostSideSdkLevelSupportRule sdkLevelSupportRule =
+            HostSideSdkLevelSupportRule.forAnyLevel();
 
-    @Override
-    public ITestDevice getDevice() {
-        return mDevice;
-    }
+    @Rule
+    public final AdServicesHostSideFlagsSetterRule flags =
+            AdServicesHostSideFlagsSetterRule.forGlobalKillSwitchDisabledTests()
+                    .setLogcatTag("extservices", "VERBOSE");
 
     @Before
     public void setUp() throws Exception {
-        overridePhSync();
-
         ITestDevice device = getDevice();
+
+        logDeviceMetadata();
 
         // Find the extservices package
         PackageInfo extServicesPackage =
@@ -82,8 +87,7 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest implements IDevi
                 String.format(
                         "/data/user/%d/%s/adservices_data.txt",
                         device.getCurrentUser(), extServicesPackage.getPackageName());
-        String dataPutCommand = String.format("echo \"Hello\" > %s", mAdServicesFilePath);
-        device.executeShellCommand(dataPutCommand);
+        runShellCommand("echo \"Hello\" > %s", mAdServicesFilePath);
         assertWithMessage("%s exists", mAdServicesFilePath)
                 .that(device.doesFileExist(mAdServicesFilePath))
                 .isTrue();
@@ -91,8 +95,6 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest implements IDevi
 
     @After
     public void tearDown() throws Exception {
-        resetPhSync();
-
         if (mDevice != null && mAdServicesFilePath != null
                 && mDevice.doesFileExist(mAdServicesFilePath)) {
             mDevice.deleteFile(mAdServicesFilePath);
@@ -100,10 +102,8 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest implements IDevi
     }
 
     @Test
+    @RequiresSdkLevelLessThanT(reason = "Testing functionality that only runs on S-")
     public void testReceiver_doesNotExecuteOnSMinus() throws Exception {
-        // TODO(b/297207132) - use SdkLevelSupportRule instead of this manual check
-        Assume.assumeTrue(getDevice().getApiLevel() < 33); // Run only on Android S-
-
         ITestDevice device = getDevice();
 
         // TODO(b/297207132) - use a rule instead of this shell command
@@ -122,14 +122,12 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest implements IDevi
     }
 
     @Test
+    @RequiresSdkLevelAtLeastT(reason = "Testing functionality that only runs on T+")
     public void testReceiver_deletesFiles() throws Exception {
-        // TODO(b/297207132) - use SdkLevelSupportRule instead of this manual check
-        Assume.assumeTrue(getDevice().getApiLevel() >= 33); // Run only on Android T+
-
         ITestDevice device = getDevice();
 
         // Re-enable the cleanup receiver in case it's been disabled due to a prior run
-        enableReceiver(device);
+        enableReceiver();
 
         // Enable the flag that the receiver checks. By default, the flag is enabled in the binary,
         // so it's enough to just delete the flag override, if any.
@@ -155,14 +153,12 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest implements IDevi
     }
 
     @Test
+    @RequiresSdkLevelAtLeastT(reason = "Testing functionality that only runs on T+")
     public void testReceiver_doesNotExecuteIfFlagDisabled() throws Exception {
-        // TODO(b/297207132) - use SdkLevelSupportRule instead of this manual check
-        Assume.assumeTrue(getDevice().getApiLevel() >= 33); // Run only on Android T+
-
         ITestDevice device = getDevice();
 
         // Re-enable the cleanup receiver in case it's been disabled due to a prior run
-        enableReceiver(device);
+        enableReceiver();
 
         // Disable the flag that the receiver checks
         device.executeShellCommand(
@@ -213,9 +209,7 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest implements IDevi
         device.reboot();
         device.waitForDeviceAvailable();
 
-        // Enable verbose logs
-        // TODO(b/297207132) - add to the rule instead of this shell command
-        device.executeShellCommand("setprop log.tag.extservices VERBOSE");
+        flags.setLogcatTag("extservices", "VERBOSE");
 
         // Start log collection
         ExtServicesLogcatReceiver logcatReceiver =
@@ -224,7 +218,13 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest implements IDevi
                         .setLogCatCommand(LOGCAT_COMMAND)
                         .setEarlyStopCondition(stopIfTextOccurs(text))
                         .build();
-        logcatReceiver.collectLogs(/* timeoutMilliseconds= */ 5 * 60 * 1000); // Wait up to 5 mins
+
+        // Collect logs for up to 5 minutes
+        boolean isEarlyExit = logcatReceiver.collectLogs(/* timeoutMilliseconds= */ 5 * 60 * 1000);
+
+        CLog.d("Finished collecting logs. Early exit = %s, collected logs = %s", isEarlyExit,
+                logcatReceiver.getCollectedLogs());
+
         return logcatReceiver;
     }
 
@@ -232,22 +232,18 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest implements IDevi
         return ".*" + text + ".*";
     }
 
-    private void overridePhSync() throws DeviceNotAvailableException {
-        getDevice()
-                .executeShellCommand(
-                        "device_config put adservices set_sync_disabled_for_tests persistent");
+    private void enableReceiver() {
+        TestDeviceHelper.enableComponent(mExtServicesPackageName, CLEANUP_RECEIVER_CLASS_NAME);
     }
 
-    private void resetPhSync() throws DeviceNotAvailableException {
-        getDevice()
-                .executeShellCommand(
-                        "device_config put adservices set_sync_disabled_for_tests none");
-    }
-
-    private void enableReceiver(ITestDevice device) throws DeviceNotAvailableException {
-        String enableCommand =
-                String.format(
-                        "pm enable %s/%s", mExtServicesPackageName, CLEANUP_RECEIVER_CLASS_NAME);
-        device.executeShellCommand(enableCommand);
+    private void logDeviceMetadata() {
+        String apexVersion = TestDeviceHelper.runShellCommand(
+                "pm list packages --apex-only --show-versioncode extservices").trim();
+        String apkVersion = TestDeviceHelper.runShellCommand(
+                "pm list packages --show-versioncode ext.services").trim();
+        String privAppName = TestDeviceHelper.runShellCommand(
+                "ls /apex/com.android.extservices/priv-app").trim();
+        CLog.d("ExtServices apex version = <%s>, apk version = <%s>, priv-app = <%s>", apexVersion,
+                apkVersion, privAppName);
     }
 }
