@@ -20,6 +20,9 @@ import com.android.ddmlib.MultiLineReceiver;
 import com.android.tradefed.device.BackgroundDeviceAction;
 import com.android.tradefed.device.ITestDevice;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +35,7 @@ import java.util.regex.Pattern;
 // TODO(b/288892905) consolidate with existing logcat receiver
 public final class ExtServicesLogcatReceiver extends MultiLineReceiver {
     private volatile boolean mCancelled;
-    private final StringBuilder mLogOutputStringBuilder = new StringBuilder();
+    private final List<String> mLines = new ArrayList<>();
     private final CountDownLatch mCountDownLatch = new CountDownLatch(1);
     private final String mName;
     private final String mLogcatCmd;
@@ -53,7 +56,8 @@ public final class ExtServicesLogcatReceiver extends MultiLineReceiver {
         if (lines.length == 0) {
             return;
         }
-        mLogOutputStringBuilder.append(String.join("\n", lines));
+
+        Arrays.stream(lines).filter(s -> !s.trim().isEmpty()).forEach(mLines::add);
 
         if (mEarlyStopCondition != null && mEarlyStopCondition.test(lines)) {
             mCountDownLatch.countDown();
@@ -96,8 +100,12 @@ public final class ExtServicesLogcatReceiver extends MultiLineReceiver {
     }
 
     public boolean patternMatches(Pattern pattern) {
-        return mLogOutputStringBuilder.length() > 0
-                && pattern.matcher(mLogOutputStringBuilder).find();
+        String joined = String.join("\n", mLines);
+        return joined.length() > 0 && pattern.matcher(joined).find();
+    }
+
+    public List<String> getCollectedLogs() {
+        return mLines;
     }
 
     public static final class Builder {
