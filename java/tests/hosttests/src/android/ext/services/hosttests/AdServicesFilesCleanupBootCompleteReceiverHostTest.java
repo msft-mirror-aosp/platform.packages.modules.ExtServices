@@ -35,6 +35,7 @@ import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -71,6 +72,9 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServic
     public void setUp() throws Exception {
         ITestDevice device = getDevice();
 
+        // Enabling the boot-completed receiver throws a SecurityException unless adb runs as root
+        Assume.assumeTrue("Needs adb root to enable the receiver", device.enableAdbRoot());
+
         logDeviceMetadata();
 
         // Find the extservices package
@@ -95,9 +99,12 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServic
 
     @After
     public void tearDown() throws Exception {
-        if (mDevice != null && mAdServicesFilePath != null
-                && mDevice.doesFileExist(mAdServicesFilePath)) {
-            mDevice.deleteFile(mAdServicesFilePath);
+        if (mDevice != null) {
+            if (mAdServicesFilePath != null && mDevice.doesFileExist(mAdServicesFilePath)) {
+                mDevice.deleteFile(mAdServicesFilePath);
+            }
+
+            mDevice.disableAdbRoot();
         }
     }
 
