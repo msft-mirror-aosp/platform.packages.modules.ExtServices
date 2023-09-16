@@ -50,6 +50,8 @@ android_library {
         "TextClassifierNotificationLibNoManifest",
         "androidx.work_work-runtime",
         "modules-utils-build",
+        "androidx.appsearch_appsearch",
+        "androidx.appsearch_appsearch-platform-storage",
     ],
 
     libs : [
