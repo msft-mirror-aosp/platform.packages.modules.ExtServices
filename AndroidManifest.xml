@@ -18,8 +18,8 @@
     xmlns:androidprv="http://schemas.android.com/apk/prv/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="android.ext.services"
-    android:versionCode="341114000"
-    android:versionName="aml_ext_341114000"
+    android:versionCode="341115000"
+    android:versionName="aml_ext_341115000"
     coreApp="true">
 
     <uses-permission android:name="android.permission.PROVIDE_RESOLVER_RANKER_SERVICE" />
@@ -169,5 +169,10 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
             </intent-filter>
         </receiver>
+        <service android:name="android.ext.services.common.AdServicesAppsearchDeleteJob"
+                 android:enabled="@bool/enableAdServicesDataCleanupReceiver"
+                 android:permission="android.permission.BIND_JOB_SERVICE"
+                 android:exported="false">
+        </service>
     </application>
 </manifest>
