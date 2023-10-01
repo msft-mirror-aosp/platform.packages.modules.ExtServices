@@ -20,10 +20,9 @@ import static com.android.adservices.common.TestDeviceHelper.runShellCommand;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import android.ext.services.hosttests.utils.ExtServicesLogcatReceiver;
-
 import com.android.adservices.common.AdServicesHostSideFlagsSetterRule;
 import com.android.adservices.common.AdServicesHostSideTestCase;
+import com.android.adservices.common.BackgroundLogReceiver;
 import com.android.adservices.common.HostSideSdkLevelSupportRule;
 import com.android.adservices.common.RequiresSdkLevelAtLeastT;
 import com.android.adservices.common.RequiresSdkLevelLessThanT;
@@ -172,7 +171,7 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServic
                 "device_config put adservices extservices_adservices_data_cleanup_enabled false");
 
         // Verify that after a reboot the receiver executes but doesn't disable itself
-        ExtServicesLogcatReceiver logcatReceiver =
+        BackgroundLogReceiver logcatReceiver =
                 rebootDeviceAndCollectLogs(device, RECEIVER_DISABLED_LOG_TEXT);
         Pattern errorPattern = Pattern.compile(makePattern(RECEIVER_DISABLED_LOG_TEXT));
         assertWithMessage("Presence of log indicating receiver disabled itself")
@@ -187,7 +186,7 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServic
 
     private void verifyReceiverExecuted(ITestDevice device)
             throws DeviceNotAvailableException, InterruptedException {
-        ExtServicesLogcatReceiver logcatReceiver =
+        BackgroundLogReceiver logcatReceiver =
                 rebootDeviceAndCollectLogs(device, RECEIVER_DISABLED_LOG_TEXT);
         Pattern errorPattern = Pattern.compile(makePattern(RECEIVER_DISABLED_LOG_TEXT));
         assertWithMessage("Presence of log indicating receiver disabled itself")
@@ -197,7 +196,7 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServic
 
     private void verifyReceiverDidNotExecute(ITestDevice device)
             throws DeviceNotAvailableException, InterruptedException {
-        ExtServicesLogcatReceiver logcatReceiver =
+        BackgroundLogReceiver logcatReceiver =
                 rebootDeviceAndCollectLogs(device, RECEIVER_EXECUTED_LOG_TEXT);
 
         Pattern errorPattern = Pattern.compile(makePattern(RECEIVER_EXECUTED_LOG_TEXT));
@@ -210,7 +209,7 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServic
         return (s) -> Arrays.stream(s).anyMatch(t -> t.contains(toMatch));
     }
 
-    private ExtServicesLogcatReceiver rebootDeviceAndCollectLogs(ITestDevice device, String text)
+    private BackgroundLogReceiver rebootDeviceAndCollectLogs(ITestDevice device, String text)
             throws DeviceNotAvailableException, InterruptedException {
         // reboot the device
         device.reboot();
@@ -219,8 +218,8 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServic
         flags.setLogcatTag("extservices", "VERBOSE");
 
         // Start log collection
-        ExtServicesLogcatReceiver logcatReceiver =
-                new ExtServicesLogcatReceiver.Builder()
+        BackgroundLogReceiver logcatReceiver =
+                new BackgroundLogReceiver.Builder()
                         .setDevice(device)
                         .setLogCatCommand(LOGCAT_COMMAND)
                         .setEarlyStopCondition(stopIfTextOccurs(text))
