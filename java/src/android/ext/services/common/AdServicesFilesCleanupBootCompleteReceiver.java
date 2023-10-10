@@ -72,6 +72,8 @@ public class AdServicesFilesCleanupBootCompleteReceiver extends BroadcastReceive
             ToIntBiFunction<String, String> function = success ? Log::d : Log::e;
             function.applyAsInt(TAG,
                     "AdServices files cleanup receiver data deletion success: " + success);
+
+            scheduleAppsearchDeleteJob(context);
         } finally {
             unregisterSelf(context);
         }
@@ -193,5 +195,18 @@ public class AdServicesFilesCleanupBootCompleteReceiver extends BroadcastReceive
             Log.e(TAG, message, e);
             return false;
         }
+    }
+
+    /**
+     * Schedules background periodic job AdservicesAppsearchDeleteJob
+     * to delete Appsearch data after OTA and data migration
+     *
+     * @param context the android context
+     **/
+    @VisibleForTesting
+    public void scheduleAppsearchDeleteJob(Context context) {
+        AdServicesAppsearchDeleteJob
+                .scheduleAdServicesAppsearchDeletePeriodicJob(context,
+                        new AdservicesPhFlags());
     }
 }
