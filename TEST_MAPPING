@@ -30,6 +30,12 @@
     },
     {
       "name": "libextservices_test-sminus[com.google.android.extservices.apex]"
+    },
+    {
+      "name": "CtsExtServicesHostTests-tplus[com.google.android.extservices_tplus.apex]"
+    },
+    {
+      "name": "CtsExtServicesHostTests-sminus[com.google.android.extservices.apex]"
     }
   ]
 }
