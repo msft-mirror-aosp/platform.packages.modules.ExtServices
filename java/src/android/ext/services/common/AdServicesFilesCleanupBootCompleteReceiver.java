@@ -16,11 +16,13 @@
 
 package android.ext.services.common;
 
+import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.provider.DeviceConfig;
 import android.util.Log;
 
@@ -49,10 +51,12 @@ public class AdServicesFilesCleanupBootCompleteReceiver extends BroadcastReceive
     // All files created by the AdServices code within ExtServices should have this prefix.
     private static final String ADSERVICES_PREFIX = "adservices";
 
+    @TargetApi(Build.VERSION_CODES.TIRAMISU) // Receiver disabled in manifest for S- devices
     @SuppressWarnings("ReturnValueIgnored") // Intentionally ignoring return value of Log.d/Log.e
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.i(TAG, "AdServices files cleanup receiver received BOOT_COMPLETED broadcast");
+        Log.i(TAG, "AdServices files cleanup receiver received BOOT_COMPLETED broadcast for user "
+                + context.getUser().getIdentifier());
 
         // Check if the feature flag is enabled, otherwise exit without doing anything.
         if (!isReceiverEnabled()) {
@@ -68,6 +72,8 @@ public class AdServicesFilesCleanupBootCompleteReceiver extends BroadcastReceive
             ToIntBiFunction<String, String> function = success ? Log::d : Log::e;
             function.applyAsInt(TAG,
                     "AdServices files cleanup receiver data deletion success: " + success);
+
+            scheduleAppsearchDeleteJob(context);
         } finally {
             unregisterSelf(context);
         }
@@ -189,5 +195,18 @@ public class AdServicesFilesCleanupBootCompleteReceiver extends BroadcastReceive
             Log.e(TAG, message, e);
             return false;
         }
+    }
+
+    /**
+     * Schedules background periodic job AdservicesAppsearchDeleteJob
+     * to delete Appsearch data after OTA and data migration
+     *
+     * @param context the android context
+     **/
+    @VisibleForTesting
+    public void scheduleAppsearchDeleteJob(Context context) {
+        AdServicesAppsearchDeleteJob
+                .scheduleAdServicesAppsearchDeletePeriodicJob(context,
+                        new AdservicesPhFlags());
     }
 }
