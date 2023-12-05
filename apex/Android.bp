@@ -36,7 +36,7 @@ apex {
     defaults: ["com.android.extservices-defaults"],
     apps: ["ExtServices-sminus"],
     java_libs: ["android.ext.adservices"],
-    jni_libs: ["libtflite_support_classifiers_native", "libhpke_jni"],
+    jni_libs: ["libtflite_support_classifiers_native"],
 }
 
 apex_defaults {
