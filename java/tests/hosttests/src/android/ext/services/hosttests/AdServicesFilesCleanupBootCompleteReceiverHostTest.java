@@ -17,6 +17,8 @@
 package android.ext.services.hosttests;
 
 import static com.android.adservices.common.AndroidSdk.PRE_T;
+import static com.android.adservices.common.TestDeviceHelper.ACTION_BOOT_COMPLETED;
+import static com.android.adservices.common.TestDeviceHelper.isActiveReceiver;
 import static com.android.adservices.common.TestDeviceHelper.runShellCommand;
 
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -188,11 +190,22 @@ public final class AdServicesFilesCleanupBootCompleteReceiverHostTest
 
     private void verifyReceiverExecuted(ITestDevice device)
             throws DeviceNotAvailableException, InterruptedException {
+        // Verify the receiver is enabled
+        assertWithMessage("%s is present in list of active receivers", CLEANUP_RECEIVER_CLASS_NAME)
+                .that(isActiveReceiver(ACTION_BOOT_COMPLETED, mExtServicesPackageName,
+                        CLEANUP_RECEIVER_CLASS_NAME))
+                .isTrue();
+
         BackgroundLogReceiver logcatReceiver =
                 rebootDeviceAndCollectLogs(device, RECEIVER_DISABLED_LOG_TEXT);
         Pattern errorPattern = Pattern.compile(makePattern(RECEIVER_DISABLED_LOG_TEXT));
-        assertWithMessage("Presence of log indicating receiver disabled itself")
-                .that(logcatReceiver.patternMatches(errorPattern))
+
+        // Verify the receiver is no longer enabled
+        assertWithMessage("Proof that receiver disabled itself")
+                .that(logcatReceiver.patternMatches(errorPattern)
+                        || !isActiveReceiver(
+                        ACTION_BOOT_COMPLETED, mExtServicesPackageName,
+                        CLEANUP_RECEIVER_CLASS_NAME))
                 .isTrue();
     }
 
