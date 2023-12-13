@@ -50,6 +50,8 @@ android_library {
         "TextClassifierNotificationLibNoManifest",
         "androidx.work_work-runtime",
         "modules-utils-build",
+        "androidx.appsearch_appsearch",
+        "androidx.appsearch_appsearch-platform-storage",
     ],
 
     libs : [
@@ -79,7 +81,7 @@ android_app {
         "ExtServices-core",
     ],
     jarjar_rules: "jarjar-rules.txt",
-    jni_libs: ["libtextclassifier", "libextservices_jni"],
+    jni_libs: ["libtextclassifier", "libextservices_jni", "libhpke_jni"],
     use_embedded_native_libs: true,
     apex_available: [
         "//apex_available:platform",
@@ -106,7 +108,7 @@ android_app {
         "AdServices-core",
     ],
     jarjar_rules: "jarjar-rules.txt",
-    jni_libs: ["libtextclassifier", "libextservices_jni"],
+    jni_libs: ["libtextclassifier", "libextservices_jni", "libhpke_jni"],
     libs: ["android.ext.adservices"],
     optional_uses_libs: ["android.ext.adservices"],
     use_embedded_native_libs: true,
