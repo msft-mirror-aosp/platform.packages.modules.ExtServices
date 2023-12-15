@@ -16,6 +16,7 @@
 
 package android.ext.services.hosttests;
 
+import static com.android.adservices.common.AndroidSdk.PRE_T;
 import static com.android.adservices.common.TestDeviceHelper.runShellCommand;
 
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -25,7 +26,7 @@ import com.android.adservices.common.AdServicesHostSideTestCase;
 import com.android.adservices.common.BackgroundLogReceiver;
 import com.android.adservices.common.HostSideSdkLevelSupportRule;
 import com.android.adservices.common.RequiresSdkLevelAtLeastT;
-import com.android.adservices.common.RequiresSdkLevelLessThanT;
+import com.android.adservices.common.RequiresSdkRange;
 import com.android.adservices.common.TestDeviceHelper;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
@@ -46,7 +47,8 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
-public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServicesHostSideTestCase {
+public final class AdServicesFilesCleanupBootCompleteReceiverHostTest
+        extends AdServicesHostSideTestCase {
     private static final String EXTSERVICES_PACKAGE_SUFFIX = "android.ext.services";
     private static final String CLEANUP_RECEIVER_CLASS_NAME =
             "android.ext.services.common.AdServicesFilesCleanupBootCompleteReceiver";
@@ -108,7 +110,7 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServic
     }
 
     @Test
-    @RequiresSdkLevelLessThanT(reason = "Testing functionality that only runs on S-")
+    @RequiresSdkRange(atMost = PRE_T, reason = "Testing functionality that only runs on S-")
     public void testReceiver_doesNotExecuteOnSMinus() throws Exception {
         ITestDevice device = getDevice();
 
