@@ -16,6 +16,9 @@
 
 package android.ext.services.hosttests;
 
+import static com.android.adservices.common.AndroidSdk.PRE_T;
+import static com.android.adservices.common.TestDeviceHelper.ACTION_BOOT_COMPLETED;
+import static com.android.adservices.common.TestDeviceHelper.isActiveReceiver;
 import static com.android.adservices.common.TestDeviceHelper.runShellCommand;
 
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -25,7 +28,7 @@ import com.android.adservices.common.AdServicesHostSideTestCase;
 import com.android.adservices.common.BackgroundLogReceiver;
 import com.android.adservices.common.HostSideSdkLevelSupportRule;
 import com.android.adservices.common.RequiresSdkLevelAtLeastT;
-import com.android.adservices.common.RequiresSdkLevelLessThanT;
+import com.android.adservices.common.RequiresSdkRange;
 import com.android.adservices.common.TestDeviceHelper;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
@@ -46,7 +49,8 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
-public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServicesHostSideTestCase {
+public final class AdServicesFilesCleanupBootCompleteReceiverHostTest
+        extends AdServicesHostSideTestCase {
     private static final String EXTSERVICES_PACKAGE_SUFFIX = "android.ext.services";
     private static final String CLEANUP_RECEIVER_CLASS_NAME =
             "android.ext.services.common.AdServicesFilesCleanupBootCompleteReceiver";
@@ -108,7 +112,7 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServic
     }
 
     @Test
-    @RequiresSdkLevelLessThanT(reason = "Testing functionality that only runs on S-")
+    @RequiresSdkRange(atMost = PRE_T, reason = "Testing functionality that only runs on S-")
     public void testReceiver_doesNotExecuteOnSMinus() throws Exception {
         ITestDevice device = getDevice();
 
@@ -186,11 +190,22 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServic
 
     private void verifyReceiverExecuted(ITestDevice device)
             throws DeviceNotAvailableException, InterruptedException {
+        // Verify the receiver is enabled
+        assertWithMessage("%s is present in list of active receivers", CLEANUP_RECEIVER_CLASS_NAME)
+                .that(isActiveReceiver(ACTION_BOOT_COMPLETED, mExtServicesPackageName,
+                        CLEANUP_RECEIVER_CLASS_NAME))
+                .isTrue();
+
         BackgroundLogReceiver logcatReceiver =
                 rebootDeviceAndCollectLogs(device, RECEIVER_DISABLED_LOG_TEXT);
         Pattern errorPattern = Pattern.compile(makePattern(RECEIVER_DISABLED_LOG_TEXT));
-        assertWithMessage("Presence of log indicating receiver disabled itself")
-                .that(logcatReceiver.patternMatches(errorPattern))
+
+        // Verify the receiver is no longer enabled
+        assertWithMessage("Proof that receiver disabled itself")
+                .that(logcatReceiver.patternMatches(errorPattern)
+                        || !isActiveReceiver(
+                        ACTION_BOOT_COMPLETED, mExtServicesPackageName,
+                        CLEANUP_RECEIVER_CLASS_NAME))
                 .isTrue();
     }
 
