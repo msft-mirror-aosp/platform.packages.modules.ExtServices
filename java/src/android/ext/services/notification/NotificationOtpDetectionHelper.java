@@ -36,6 +36,8 @@ import com.android.modules.utils.build.SdkLevel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class with helper methods related to detecting OTP codes in notifications
@@ -47,6 +49,95 @@ public class NotificationOtpDetectionHelper {
             List.of(CATEGORY_MESSAGE, CATEGORY_EMAIL, CATEGORY_SOCIAL));
 
     private static final int MAX_SENSITIVE_TEXT_LEN = 600;
+
+    // A regex matching a line start, space, open paren, or colon
+    private static final String START = "(^|[\\s\\(:])";
+
+
+    // One single OTP char. An alphanumeric code, (Specifically "not a non-word character,
+    // underscore, or dash"), followed by an optional dash
+    private static final String OTP_CHAR = "([\\p{IsAlphabetic}0-9]-?)";
+
+    // Performs a lookahead to find a digit after 0 to 7 OTP_CHARs. This ensures that our potential
+    // OTP code contains at least one number
+    private static final String FIND_DIGIT = "(?=" + OTP_CHAR + "{0,7}\\d)";
+
+    // Matches between 5 and 8 OTP_CHARs. Here, we are assuming an OTP code is 5-8 characters long
+    private static final String OTP_CHARS = "(" + OTP_CHAR + "{5,8})";
+
+    // A regex matching a line end or non-word char (except dash or underscore)
+    private static final String END = "(\\W|$)";
+
+    // A regex matching four digit numerical codes, excluding the common years of 19XX and 20XX
+    private static final String FOUR_DIGIT_EXCLUDE_YEAR =
+            "(1[0-8]\\d\\d|2[1-9]\\d\\d|[03-9]\\d\\d\\d)";
+
+    private static final String ALPHANUM_OTP = "(" + START + FIND_DIGIT + OTP_CHARS + END + ")";
+
+    private static final String FOUR_DIGIT_OTP = "(" + START + FOUR_DIGIT_EXCLUDE_YEAR + END + ")";
+
+    /**
+     * Combining the 5 regular expressions above, we get an OTP regex:
+     * 1. start with START
+     * 2. lookahead to find a digit mixed in with OTP_CHARs
+     * 3. find 4-8 OTP_CHARs
+     * 4. finish with END
+     */
+    private static final Pattern OTP_REGEX =
+            Pattern.compile(ALPHANUM_OTP + "|" + FOUR_DIGIT_OTP);
+    /**
+     * A Date regular expression. Looks for dates with the month, day, and year separated by dashes.
+     * Handles one and two digit months and days, and four or two-digit years. It makes the
+     * following assumptions:
+     * Dates and months will never be higher than 39
+     * If a four digit year is used, the leading digit will be 1 or 2
+     * It must begin with the START regex from the OTP regex, and finish with the END regex.
+     * This regex is used to eliminate the most common false positive of the OTP regex.
+     */
+    private static final Pattern DATE_WITH_DASHES =
+            Pattern.compile(START + "[0-3]?\\d-[0-3]?\\d-([12]\\d)?\\d\\d" + END);
+
+    /**
+     * Checks if the sensitive parts of a notification might contain an OTP, based on a regular
+     * expression.
+     * @param notification The notification whose content should be checked
+     * @param ensureNotDate If true, will ensure the content does not match the date regex
+     * @return True if the regex matches and ensureNotDate is false, or the date regex failed to
+     * match, false otherwise.
+     */
+    public static boolean matchesOtpRegex(Notification notification, boolean ensureNotDate) {
+        if (notification == null || !SdkLevel.isAtLeastV()) {
+            return false;
+        }
+
+        String sensitiveText = getTextForDetection(notification);
+        Matcher otpMatcher = OTP_REGEX.matcher(sensitiveText);
+        boolean optMatch = otpMatcher.find();
+        if (!ensureNotDate || !optMatch) {
+            return optMatch;
+        }
+        Matcher dateMatcher = DATE_WITH_DASHES.matcher(sensitiveText);
+        if (!dateMatcher.find()) {
+            return true;
+        }
+        // Both the OTP and the date regex match. Now to verify that they match on the same text.
+        otpMatcher.reset();
+        dateMatcher.reset();
+        while (otpMatcher.find()) {
+            int otpStart = otpMatcher.start();
+            int dateMatcherStart = -1;
+            while (!dateMatcher.hitEnd() && dateMatcherStart < otpStart) {
+                dateMatcherStart =
+                        dateMatcher.find() ? dateMatcher.start() : Integer.MAX_VALUE;
+            }
+            if (dateMatcherStart != otpStart) {
+                // There's at least one OTP that is not matched exactly by a date.
+                return true;
+            }
+        }
+        // Every OTP match has a corresponding date match
+        return false;
+    }
 
     /**
      * Gets the sections of text in a notification that should be checked for sensitive content.
@@ -98,6 +189,7 @@ public class NotificationOtpDetectionHelper {
         return SENSITIVE_NOTIFICATION_CATEGORIES.contains(notification.category)
                 || isStyle(notification, Notification.MessagingStyle.class)
                 || isStyle(notification, Notification.InboxStyle.class)
+                || matchesOtpRegex(notification, false)
                 || shouldCheckForOtp(notification.publicVersion);
     }
 

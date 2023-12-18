@@ -169,6 +169,7 @@ class NotificationOtpDetectionHelperTest {
         assertWithMessage("Valid non-messaging non-inbox style should not be checked")
                 .that(shouldCheck).isFalse()
     }
+
     @Test
     fun testShouldCheckForOtp_categories() {
         var shouldCheck = NotificationOtpDetectionHelper
@@ -186,6 +187,13 @@ class NotificationOtpDetectionHelperTest {
     }
 
     @Test
+    fun testShouldCheckForOtp_regex() {
+        var shouldCheck = NotificationOtpDetectionHelper
+                .shouldCheckForOtp(createNotification(text = OTP_MESSAGE_BASIC, category = ""))
+        assertWithMessage("Regex matches should be checked").that(shouldCheck).isTrue()
+    }
+
+    @Test
     fun testShouldCheckForOtp_publicVersion() {
         var publicVersion = createNotification(category = CATEGORY_MESSAGE)
         var shouldCheck = NotificationOtpDetectionHelper
@@ -198,6 +206,111 @@ class NotificationOtpDetectionHelperTest {
         assertWithMessage("notifications with a checked style in their public version should " +
                 "be checked").that(shouldCheck).isTrue()
     }
+
+
+    @Test
+    fun testMatchesOtpRegex_length() {
+        val tooShortAlphaNum = "123G"
+        val tooShortNumOnly = "123"
+        val minLenAlphaNum = "123G5"
+        val minLenNumOnly = "123G5"
+        val maxLen = "123456F8"
+        val tooLong = "123T56789"
+        assertWithMessage("$minLenAlphaNum should match").that(matches(minLenAlphaNum)).isTrue()
+        assertWithMessage("$minLenNumOnly should match").that(matches(minLenNumOnly)).isTrue()
+        assertWithMessage("$maxLen should match").that(matches(maxLen)).isTrue()
+        assertWithMessage("$tooShortAlphaNum should not match (too short)")
+            .that(matches(tooShortAlphaNum)).isFalse()
+        assertWithMessage("$tooShortNumOnly should not match (too short)")
+            .that(matches(tooShortNumOnly)).isFalse()
+        assertWithMessage("$tooLong should not match (too long)").that(matches(tooLong)).isFalse()
+    }
+
+    @Test
+    fun testMatchesOtpRegex_mustHaveNumber() {
+        val noNums = "TEFHXES"
+        assertWithMessage("$noNums should not match").that(matches(noNums)).isFalse()
+    }
+
+    @Test
+    fun testMatchesOtpRegex_commonYearsDontMatch() {
+        val twentyXX = "2009"
+        val twentyOneXX = "2109"
+        val thirtyXX = "3035"
+        val nineteenXX = "1945"
+        val eighteenXX = "1899"
+        assertWithMessage("$twentyXX should not match").that(matches(twentyXX)).isFalse()
+        assertWithMessage("$twentyOneXX should match").that(matches(twentyOneXX)).isTrue()
+        assertWithMessage("$thirtyXX should match").that(matches(thirtyXX)).isTrue()
+        assertWithMessage("$nineteenXX should not match").that(matches(nineteenXX)).isFalse()
+        assertWithMessage("$eighteenXX should match").that(matches(eighteenXX)).isTrue()
+    }
+
+    @Test
+    fun testMatchesOtpRegex_dateExclusion() {
+        val date = "01-01-2001"
+        val singleDigitDate = "1-1-2001"
+        val twoDigitYear = "1-1-01"
+        val dateWithOtpAfter = "1-1-01 is the date of your code T3425"
+        val dateWithOtpBefore = "your code 54-234-3 was sent on 1-1-01"
+        val otpWithDashesButInvalidDate = "34-58-30"
+        val otpWithDashesButInvalidYear = "12-1-3089"
+
+        assertWithMessage("$date should match if ensureNotDate is false")
+                .that(matches(date, false)).isTrue()
+        assertWithMessage("$date should not match if ensureNotDate is true")
+                .that(matches(date, true)).isFalse()
+        assertWithMessage("$singleDigitDate should not match").that(matches(singleDigitDate))
+                .isFalse()
+        assertWithMessage("$twoDigitYear should not match").that(matches(twoDigitYear)).isFalse()
+        assertWithMessage("$dateWithOtpAfter should match").that(matches(dateWithOtpAfter)).isTrue()
+        assertWithMessage("$dateWithOtpBefore should match").that(matches(dateWithOtpBefore))
+                .isTrue()
+        assertWithMessage("$otpWithDashesButInvalidDate should match").that(matches(
+            otpWithDashesButInvalidDate)).isTrue()
+        assertWithMessage("$otpWithDashesButInvalidYear should match").that(matches(
+            otpWithDashesButInvalidYear)).isTrue()
+    }
+
+    @Test
+    fun testMatchesOtpRegex_dashes() {
+        val oneDash = "G-3d523"
+        val manyDashes = "G-FD-745"
+        val tooManyDashes = "6--7893"
+        val oopsAllDashes = "------"
+        assertWithMessage("$oneDash should match").that(matches(oneDash)).isTrue()
+        assertWithMessage("$manyDashes should match").that(matches(manyDashes)).isTrue()
+        assertWithMessage("$tooManyDashes should not match").that(matches(tooManyDashes)).isFalse()
+        assertWithMessage("$oopsAllDashes should not match").that(matches(oopsAllDashes)).isFalse()
+    }
+
+    @Test
+    fun testMatchesOtpRegex_startAndEnd() {
+        val noSpaceStart = "your code isG-345821"
+        val noSpaceEnd = "your code is G-345821for real"
+        val colonStart = "your code is:G-345821"
+        val parenStart = "your code is (G-345821"
+        val newLineStart = "your code is \nG-345821"
+        val periodEnd = "you code is G-345821."
+        val parenEnd = "you code is (G-345821)"
+        assertWithMessage("$noSpaceStart should not match").that(matches(noSpaceStart)).isFalse()
+        assertWithMessage("$noSpaceEnd should not match").that(matches(noSpaceEnd)).isFalse()
+        assertWithMessage("$colonStart should match").that(matches(colonStart)).isTrue()
+        assertWithMessage("$parenStart should match").that(matches(parenStart)).isTrue()
+        assertWithMessage("$newLineStart should match").that(matches(newLineStart)).isTrue()
+        assertWithMessage("$periodEnd should match").that(matches(periodEnd)).isTrue()
+        assertWithMessage("$parenEnd should match").that(matches(parenEnd)).isTrue()
+    }
+
+    @Test
+    fun testMatchesOtpRegex_lookaheadMustBeOtpChar() {
+        val validLookahead = "g4zy75"
+        val spaceLookahead = "GVRXY 2"
+        assertWithMessage("$validLookahead should match").that(matches(validLookahead)).isTrue()
+        assertWithMessage("$spaceLookahead should not match")
+            .that(matches(spaceLookahead)).isFalse()
+    }
+
 
     private fun createNotification(
         text: String? = "",
@@ -230,6 +343,11 @@ class NotificationOtpDetectionHelperTest {
         return nb.build()
     }
 
+    private fun matches(text: String, ensureNotDate: Boolean = true): Boolean {
+        return NotificationOtpDetectionHelper
+                .matchesOtpRegex(createNotification(text), ensureNotDate)
+    }
+
     private fun createTestPendingIntent(): PendingIntent {
         val intent = Intent(Intent.ACTION_MAIN)
         intent.setFlags(
@@ -237,7 +355,7 @@ class NotificationOtpDetectionHelperTest {
                     or Intent.FLAG_ACTIVITY_CLEAR_TOP
         )
         intent.setAction(Intent.ACTION_MAIN)
-        intent.setPackage(context.getPackageName())
+        intent.setPackage(context.packageName)
 
         return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_MUTABLE)
     }
