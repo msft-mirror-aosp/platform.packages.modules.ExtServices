@@ -36,11 +36,9 @@
     <!-- Remove unused permissions merged from WorkManager library -->
     <uses-permission android:name="android.permission.WAKE_LOCK" tools:node="remove" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove" />
+    <!-- Need this permission to receive the Boot-Completed broadcast -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    <permission android:name="android.permission.INIT_EXT_SERVICES"
-        android:protectionLevel="signature"/>
-    <uses-permission android:name="android.permission.INIT_EXT_SERVICES" />
     <application
         android:name=".ExtServicesApplication"
         android:label="@string/app_name"
@@ -164,14 +162,17 @@
             android:authorities="${applicationId}.androidx-startup"
             tools:node="remove" />
 
-        <!-- Boot completed receiver sends privileged startup broadcast. -->
-        <!-- TODO: Remove BootCompletedReceiver. -->
-        <receiver android:name=".common.BootCompletedReceiver"
-                  android:enabled="false"
-                  android:exported="false">
+        <receiver android:name=".common.AdServicesFilesCleanupBootCompleteReceiver"
+                  android:enabled="@bool/enableAdServicesDataCleanupReceiver"
+                  android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
             </intent-filter>
         </receiver>
+        <service android:name="android.ext.services.common.AdServicesAppsearchDeleteJob"
+                 android:enabled="@bool/enableAdServicesDataCleanupReceiver"
+                 android:permission="android.permission.BIND_JOB_SERVICE"
+                 android:exported="false">
+        </service>
     </application>
 </manifest>
