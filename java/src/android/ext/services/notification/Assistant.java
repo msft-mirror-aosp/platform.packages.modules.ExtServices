@@ -16,12 +16,18 @@
 
 package android.ext.services.notification;
 
+import static android.content.pm.PackageManager.FEATURE_WATCH;
+import static android.view.textclassifier.TextClassifier.TYPE_FLIGHT_NUMBER;
 import static android.view.textclassifier.TextClassifier.TYPE_OTP_CODE;
+import static android.view.textclassifier.TextClassifier.TYPE_PHONE;
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
+import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.content.pm.PackageManager;
+import android.icu.util.ULocale;
 import android.os.Bundle;
 import android.os.UserHandle;
 import android.service.notification.Adjustment;
@@ -33,11 +39,13 @@ import android.util.Log;
 import android.view.textclassifier.TextClassificationManager;
 import android.view.textclassifier.TextClassifier;
 import android.view.textclassifier.TextClassifier.EntityConfig;
+import android.view.textclassifier.TextLanguage;
 import android.view.textclassifier.TextLinks;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
 
+import com.android.modules.utils.build.SdkLevel;
 import com.android.textclassifier.notification.SmartSuggestions;
 import com.android.textclassifier.notification.SmartSuggestionsHelper;
 
@@ -45,6 +53,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Notification assistant that provides guidance on notification channel blocking
@@ -52,17 +61,24 @@ import java.util.concurrent.Executors;
 @SuppressLint("OverrideAbstract")
 public class Assistant extends NotificationAssistantService {
     private static final String TAG = "ExtAssistant";
-
     private static final float TC_THRESHOLD = 0.6f;
+    private static final ArrayList<String> OTP_SUPPORTED_LANGS = new ArrayList<>(List.of("en"));
     private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
 
     // SBN key : entry
     protected ArrayMap<String, NotificationEntry> mLiveNotifications = new ArrayMap<>();
 
-    private PackageManager mPackageManager;
+    @VisibleForTesting
+    protected boolean mUseTextClassifier = true;
 
     @VisibleForTesting
+    protected PackageManager mPm;
+
+    @VisibleForTesting
+    protected ActivityManager mAm;
+
     protected final ExecutorService mSingleThreadExecutor = Executors.newSingleThreadExecutor();
+    private final ExecutorService mClassificationExecutor = Executors.newSingleThreadExecutor();
     @VisibleForTesting
     protected AssistantSettings.Factory mSettingsFactory = AssistantSettings.FACTORY;
     @VisibleForTesting
@@ -82,12 +98,20 @@ public class Assistant extends NotificationAssistantService {
         super.onCreate();
         // Contexts are correctly hooked up by the creation step, which is required for the observer
         // to be hooked up/initialized.
-        mPackageManager = getPackageManager();
+        mPm = getPackageManager();
+        mAm = getSystemService(ActivityManager.class);
         mTcm = getSystemService(TextClassificationManager.class);
         mSettings = mSettingsFactory.createAndRegister();
         mSmartSuggestionsHelper = new SmartSuggestionsHelper(this, mSettings);
         mSmsHelper = new SmsHelper(this);
         mSmsHelper.initialize();
+        setUseTextClassifier();
+    }
+
+    @VisibleForTesting
+    protected void setUseTextClassifier() {
+        mUseTextClassifier = !(mAm.isLowRamDevice() || mPm.hasSystemFeature(FEATURE_WATCH));
+
     }
 
     @Override
@@ -101,19 +125,19 @@ public class Assistant extends NotificationAssistantService {
     }
 
     @Override
-    public Adjustment onNotificationEnqueued(StatusBarNotification sbn) {
+    public Adjustment onNotificationEnqueued(@NonNull StatusBarNotification sbn) {
         // we use the version with channel, so this is never called.
         return null;
     }
 
     @Override
-    public Adjustment onNotificationEnqueued(StatusBarNotification sbn,
-            NotificationChannel channel) {
+    public Adjustment onNotificationEnqueued(@NonNull StatusBarNotification sbn,
+            @NonNull NotificationChannel channel) {
         if (DEBUG) Log.i(TAG, "ENQUEUED " + sbn.getKey() + " on " + channel.getId());
         if (!isForCurrentUser(sbn)) {
             return null;
         }
-        mSingleThreadExecutor.submit(() -> {
+        Future<?> ignored = mClassificationExecutor.submit(() -> {
             SmartSuggestions suggestions = mSmartSuggestionsHelper.onNotificationEnqueued(sbn);
             if (DEBUG) {
                 Log.d(TAG, String.format(
@@ -122,11 +146,15 @@ public class Assistant extends NotificationAssistantService {
                         suggestions.getActions().size(),
                         suggestions.getReplies().size()));
             }
+            Boolean containsOtp = null;
+            if (NotificationOtpDetectionHelper.shouldCheckForOtp(sbn.getNotification())) {
+                containsOtp = containsOtpWithTc(sbn);
+            }
             Adjustment adjustment = createEnqueuedNotificationAdjustment(
                     sbn,
                     new ArrayList<>(suggestions.getActions()),
                     new ArrayList<>(suggestions.getReplies()),
-                    containsOtpCode(sbn));
+                    containsOtp);
             if (adjustment != null) {
                 adjustNotification(adjustment);
             }
@@ -140,7 +168,7 @@ public class Assistant extends NotificationAssistantService {
             StatusBarNotification sbn,
             ArrayList<Notification.Action> smartActions,
             ArrayList<CharSequence> smartReplies,
-            boolean hasSensitiveContent) {
+            Boolean hasSensitiveContent) {
         if (sbn == null) {
             return null;
         }
@@ -154,31 +182,74 @@ public class Assistant extends NotificationAssistantService {
             signals.putCharSequenceArrayList(Adjustment.KEY_TEXT_REPLIES, smartReplies);
         }
 
-        if (hasSensitiveContent) {
-            signals.putBoolean(Adjustment.KEY_SENSITIVE_CONTENT, true);
+        if (hasSensitiveContent != null) {
+            signals.putBoolean(Adjustment.KEY_SENSITIVE_CONTENT, hasSensitiveContent);
         }
 
         return new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
                 sbn.getUser().getIdentifier());
     }
 
-    private boolean containsOtpCode(StatusBarNotification sbn) {
-        if (!NotificationOtpDetectionHelper.shouldCheckForOtp(sbn.getNotification())) {
+    @TargetApi(35)
+    private boolean containsOtpWithTc(StatusBarNotification sbn) {
+        String content = NotificationOtpDetectionHelper.getTextForDetection(sbn.getNotification());
+        if (!SdkLevel.isAtLeastV() || content.isEmpty()) {
             return false;
         }
-        String content = NotificationOtpDetectionHelper.getTextForDetection(sbn.getNotification());
-        ArrayList<String> entities = new ArrayList<>();
-        entities.add(TYPE_OTP_CODE);
 
         TextClassifier tc = mTcm.getTextClassifier();
-        TextClassifier.EntityConfig config =
-                new EntityConfig.Builder().setIncludedTypes(entities).build();
-        TextLinks.Request request =
-                new TextLinks.Request.Builder(content).setEntityConfig(config).build();
-        TextLinks links = tc.generateLinks(request);
-        for (TextLinks.TextLink link: links.getLinks()) {
-            // The current OTP model is binary, but other models may not be
-            if (link.getConfidenceScore(TYPE_OTP_CODE) >= TC_THRESHOLD) {
+        if (shouldUseTcForOtpDetection(content, tc)) {
+            List<String> included = new ArrayList<>(List.of(TYPE_OTP_CODE));
+            List<String> excluded = new ArrayList<>(List.of(TYPE_FLIGHT_NUMBER, TYPE_PHONE));
+            TextClassifier.EntityConfig config = new EntityConfig.Builder().setIncludedTypes(
+                            included)
+                    .setExcludedTypes(excluded).build();
+            TextLinks.Request request =
+                    new TextLinks.Request.Builder(content).setEntityConfig(config).build();
+            TextLinks links = tc.generateLinks(request);
+            for (TextLinks.TextLink link : links.getLinks()) {
+                // The current OTP model is binary, but other models may not be
+                if (link.getConfidenceScore(TYPE_OTP_CODE) > TC_THRESHOLD) {
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            if (!NotificationOtpDetectionHelper.matchesOtpRegex(sbn.getNotification(), true)) {
+                return false;
+            }
+
+            if (mUseTextClassifier) {
+                // Use TC to eliminate false positives from a regex match, namely: flight codes
+                List<String> included = new ArrayList<>(List.of(TYPE_FLIGHT_NUMBER));
+                List<String> excluded = new ArrayList<>(List.of(TYPE_OTP_CODE, TYPE_PHONE));
+                TextClassifier.EntityConfig config = new EntityConfig.Builder().setIncludedTypes(
+                        included).setExcludedTypes(excluded).build();
+                TextLinks.Request request =
+                        new TextLinks.Request.Builder(content).setEntityConfig(config).build();
+                TextLinks links = tc.generateLinks(request);
+                for (TextLinks.TextLink link : links.getLinks()) {
+                    if (link.getConfidenceScore(TYPE_FLIGHT_NUMBER) > TC_THRESHOLD) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+    }
+
+    @VisibleForTesting
+    protected boolean shouldUseTcForOtpDetection(String text, TextClassifier tc) {
+        if (!mUseTextClassifier) {
+            // low ram devices and watches should always use the regex
+            return false;
+        }
+        TextLanguage.Request langRequest = new TextLanguage.Request.Builder(text).build();
+        TextLanguage lang = tc.detectLanguage(langRequest);
+        for (int i = 0; i < lang.getLocaleHypothesisCount(); i++) {
+            ULocale locale = lang.getLocale(i);
+            if (OTP_SUPPORTED_LANGS.contains(locale.toLanguageTag())
+                    && lang.getConfidenceScore(locale) >= TC_THRESHOLD) {
                 return true;
             }
         }
@@ -193,9 +264,9 @@ public class Assistant extends NotificationAssistantService {
                 return;
             }
             Ranking ranking = new Ranking();
-            rankingMap.getRanking(sbn.getKey(), ranking);
-            if (ranking != null && ranking.getChannel() != null) {
-                NotificationEntry entry = new NotificationEntry(this, mPackageManager,
+            boolean found = rankingMap.getRanking(sbn.getKey(), ranking);
+            if (found && ranking.getChannel() != null) {
+                NotificationEntry entry = new NotificationEntry(this, mPm,
                         sbn, ranking.getChannel(), mSmsHelper);
                 mLiveNotifications.put(sbn.getKey(), entry);
             }
@@ -220,12 +291,12 @@ public class Assistant extends NotificationAssistantService {
     }
 
     @Override
-    public void onNotificationSnoozedUntilContext(StatusBarNotification sbn,
-            String snoozeCriterionId) {
+    public void onNotificationSnoozedUntilContext(@NonNull StatusBarNotification sbn,
+            @NonNull String snoozeCriterionId) {
     }
 
     @Override
-    public void onNotificationsSeen(List<String> keys) {
+    public void onNotificationsSeen(@NonNull List<String> keys) {
     }
 
     @Override
@@ -248,7 +319,8 @@ public class Assistant extends NotificationAssistantService {
     @Override
     public void onNotificationDirectReplied(@NonNull String key) {
         if (DEBUG) Log.i(TAG, "onNotificationDirectReplied " + key);
-        mSingleThreadExecutor.submit(() -> mSmartSuggestionsHelper.onNotificationDirectReplied(key));
+        mSingleThreadExecutor.submit(
+                () -> mSmartSuggestionsHelper.onNotificationDirectReplied(key));
     }
 
     @Override

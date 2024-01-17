@@ -16,18 +16,23 @@
 
 package android.ext.services.notification
 
+import android.app.ActivityManager
 import android.app.Notification
 import android.app.Notification.CATEGORY_MESSAGE
 import android.app.NotificationChannel
 import android.app.NotificationManager.IMPORTANCE_DEFAULT
 import android.app.PendingIntent
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.pm.PackageManager.FEATURE_WATCH
 import android.os.Process
 import android.service.notification.Adjustment.KEY_SENSITIVE_CONTENT
 import android.service.notification.StatusBarNotification
 import android.view.textclassifier.TextClassificationManager
 import android.view.textclassifier.TextClassifier
+import android.view.textclassifier.TextClassifier.TYPE_FLIGHT_NUMBER
 import android.view.textclassifier.TextClassifier.TYPE_OTP_CODE
+import android.view.textclassifier.TextLanguage
 import android.view.textclassifier.TextLinks
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.modules.utils.build.SdkLevel
@@ -35,6 +40,7 @@ import com.android.textclassifier.notification.SmartSuggestions
 import com.android.textclassifier.notification.SmartSuggestionsHelper
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
+import org.junit.Assert.assertFalse
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
@@ -45,6 +51,7 @@ import org.mockito.ArgumentMatchers.eq
 import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.never
 import org.mockito.Mockito.spy
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
@@ -57,6 +64,8 @@ class AssistantTest {
     lateinit var mockSuggestions: SmartSuggestionsHelper
     lateinit var mockTc: TextClassifier
     lateinit var assistant: Assistant
+    lateinit var mockPm: PackageManager
+    lateinit var mockAm: ActivityManager
     val EXECUTOR_AWAIT_TIME = 200L
 
     private fun <T> Stubber.whenKt(mock: T): T = `when`(mock)
@@ -67,6 +76,10 @@ class AssistantTest {
         assistant = spy(Assistant())
         mockSuggestions = mock(SmartSuggestionsHelper::class.java)
         mockTc = mock(TextClassifier::class.java)
+        mockAm = mock(ActivityManager::class.java)
+        mockPm = mock(PackageManager::class.java)
+        assistant.mAm = mockAm
+        assistant.mPm = mockPm
         assistant.mSmartSuggestionsHelper = mockSuggestions
         doReturn(SmartSuggestions(emptyList(), emptyList()))
                 .whenKt(mockSuggestions).onNotificationEnqueued(any())
@@ -86,11 +99,69 @@ class AssistantTest {
             entities = request.entityConfig!!.resolveEntityListModifications(emptyList()).toList()
             return@doAnswer TextLinks.Builder(request.text.toString()).build()
         }.whenKt(mockTc).generateLinks(any())
+        doReturn(true).whenKt(assistant).shouldUseTcForOtpDetection(any(), any())
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
         assertWithMessage("Expected entities to contain otp_code").that(entities).contains(
             TYPE_OTP_CODE)
         verify(mockTc, times(1)).generateLinks(any())
+        verify(assistant.mSmartSuggestionsHelper, times(1)).onNotificationEnqueued(eq(sbn))
+    }
+
+    @Test
+    fun onNotificationEnqueued_doesntUseTcForOtpIfLanguageNotSupported() {
+        val sbn = createSbn(TEXT_WITH_OTP)
+        // Empty list of detected languages means that the notification language didn't match
+        doReturn(TextLanguage.Builder().build())
+            .whenKt(mockTc).detectLanguage(any())
+        var entities: List<String> = emptyList()
+        doAnswer { invocation: InvocationOnMock ->
+            val request = invocation.getArgument<TextLinks.Request>(0)
+            assertWithMessage("Expected a non-null entity config")
+                .that(request.entityConfig).isNotNull()
+            entities = request.entityConfig!!.resolveEntityListModifications(emptyList()).toList()
+            return@doAnswer TextLinks.Builder(request.text.toString()).build()
+        }.whenKt(mockTc).generateLinks(any())
+        assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
+        Thread.sleep(EXECUTOR_AWAIT_TIME)
+        assertWithMessage("Expected entities not to contain otp_code").that(entities)
+            .doesNotContain(TYPE_OTP_CODE)
+        // The TC should be used here to detect false positives for flight numbers
+        assertWithMessage("Expected entities to contain \"flight\"").that(entities).contains(
+            TYPE_FLIGHT_NUMBER)
+        verify(assistant.mSmartSuggestionsHelper, times(1)).onNotificationEnqueued(eq(sbn))
+    }
+
+    @Test
+    fun onNotificationEnqueued_doesntUseTcIfWatch() {
+        val sbn = createSbn(TEXT_WITH_OTP)
+        doReturn(true).whenKt(mockPm).hasSystemFeature(eq(FEATURE_WATCH))
+        assistant.setUseTextClassifier()
+        doReturn(false).whenKt(assistant).shouldUseTcForOtpDetection(any(), any())
+        // Empty list of detected languages means that the notification language didn't match
+        doReturn(TextLanguage.Builder().build())
+            .whenKt(mockTc).detectLanguage(any())
+        assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
+        Thread.sleep(EXECUTOR_AWAIT_TIME)
+        verify(mockTc, never()).generateLinks(any())
+        // Never calls generateLinks, but still gets an adjustment, due to regex
+        verify(assistant).createEnqueuedNotificationAdjustment(any(), any(), any(), eq(true))
+        verify(assistant.mSmartSuggestionsHelper, times(1)).onNotificationEnqueued(eq(sbn))
+    }
+
+    @Test
+    fun onNotificationEnqueued_doesntUseTcIfLowRamDevice() {
+        val sbn = createSbn(TEXT_WITH_OTP)
+        doReturn(true).whenKt(mockAm).isLowRamDevice
+        assistant.setUseTextClassifier()
+        doReturn(false).whenKt(assistant).shouldUseTcForOtpDetection(any(), any())
+        // Empty list of detected languages means that the notification language didn't match
+        doReturn(TextLanguage.Builder().build())
+            .whenKt(mockTc).detectLanguage(any())
+        assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
+        Thread.sleep(EXECUTOR_AWAIT_TIME)
+        verify(mockTc, never()).generateLinks(any())
+        verify(assistant).createEnqueuedNotificationAdjustment(any(), any(), any(), eq(true))
         verify(assistant.mSmartSuggestionsHelper, times(1)).onNotificationEnqueued(eq(sbn))
     }
 
@@ -103,6 +174,7 @@ class AssistantTest {
             return@doAnswer TextLinks.Builder(request.text.toString())
 
         }.whenKt(mockTc).generateLinks(any())
+        doReturn(true).whenKt(assistant).shouldUseTcForOtpDetection(any(), any())
         val sbn = createSbn(text = "text", title = "title", subtext = "subtext")
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
@@ -113,6 +185,7 @@ class AssistantTest {
 
     @Test
     fun onNotificationEnqueued_checksHelperBeforeClassifying() {
+        doReturn(true).whenKt(assistant).shouldUseTcForOtpDetection(any(), any())
         // Category, Style, Regex all don't match
         var sbn = createSbn(text = "text", title = "title", subtext = "subtext", category = "")
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
@@ -137,6 +210,7 @@ class AssistantTest {
         val sbn = createSbn()
         doReturn(TextLinks.Builder("   ").addLink(0, 1, mapOf(TYPE_OTP_CODE to 0.59f)).build())
             .whenKt(mockTc).generateLinks(any(TextLinks.Request::class.java))
+        doReturn(true).whenKt(assistant).shouldUseTcForOtpDetection(any(), any())
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
         verify(assistant).createEnqueuedNotificationAdjustment(any(StatusBarNotification::class.java), any(), any(), eq(false))
@@ -147,14 +221,14 @@ class AssistantTest {
         val sbn = createSbn()
         doReturn(TextLinks.Builder("   ").addLink(0, 1, mapOf(TYPE_OTP_CODE to 0.7f)).build())
             .whenKt(mockTc).generateLinks(any(TextLinks.Request::class.java))
+        doReturn(true).whenKt(assistant).shouldUseTcForOtpDetection(any(), any())
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
         verify(assistant).createEnqueuedNotificationAdjustment(eq(sbn),
             eq(ArrayList<Notification.Action>()), eq(ArrayList<CharSequence>()), eq(true))
     }
-
     @Test
-    fun createEnqueuedNotificationAdjustment_hasAdjustmentIfContainsOtpCode() {
+    fun createEnqueuedNotificationAdjustment_hasAdjustmentIfCheckedForOtpCode() {
         val adjustment = assistant.createEnqueuedNotificationAdjustment(
             createSbn(),
             arrayListOf<Notification.Action>(),
@@ -166,7 +240,13 @@ class AssistantTest {
             arrayListOf<Notification.Action>(),
             arrayListOf<CharSequence>(),
             false)
-        assertThat(adjustment2.signals.containsKey(KEY_SENSITIVE_CONTENT)).isFalse()
+        assertThat(adjustment2.signals.getBoolean(KEY_SENSITIVE_CONTENT)).isFalse()
+        val adjustment3 = assistant.createEnqueuedNotificationAdjustment(
+            createSbn(),
+            arrayListOf<Notification.Action>(),
+            arrayListOf<CharSequence>(),
+            null)
+        assertThat(adjustment3.signals.containsKey(KEY_SENSITIVE_CONTENT)).isFalse()
     }
 
     private fun createSbn(
@@ -207,6 +287,10 @@ class AssistantTest {
         intent.setPackage(context.packageName)
 
         return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_MUTABLE)
+    }
+
+    companion object {
+        const val TEXT_WITH_OTP = "Your login code is 345454"
     }
 
 }
