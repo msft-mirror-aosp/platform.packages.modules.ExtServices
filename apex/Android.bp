@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_android_rubidium",
     // See: http://go/android-license-faq
     // A large-scale-change added 'default_applicable_licenses' to import
     // all of the 'license_kinds' from "packages_modules_ExtServices_license"
@@ -32,9 +33,15 @@ apex_defaults {
     defaults: ["r-launched-apex-module"],
     key: "com.android.extservices.key",
     certificate: ":com.android.extservices.certificate",
-    apps: ["ExtServices", "AdExtServicesApk"],
+    apps: [
+        "ExtServices",
+        "AdExtServicesApk",
+    ],
     java_libs: ["android.ext.adservices"],
-    jni_libs: ["libtflite_support_classifiers_native", "libhpke_jni"],
+    jni_libs: [
+        "libtflite_support_classifiers_native",
+        "libhpke_jni",
+    ],
     prebuilts: ["current_sdkinfo"],
     // Indicates that pre-installed version of this apex can be compressed.
     // Whether it actually will be compressed is controlled on per-device basis.
