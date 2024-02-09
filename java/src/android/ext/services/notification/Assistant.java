@@ -16,6 +16,8 @@
 
 package android.ext.services.notification;
 
+import static android.view.textclassifier.TextClassifier.TYPE_OTP_CODE;
+
 import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -34,7 +36,6 @@ import android.view.textclassifier.TextClassifier.EntityConfig;
 import android.view.textclassifier.TextLinks;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
 import com.android.textclassifier.notification.SmartSuggestions;
@@ -53,8 +54,6 @@ public class Assistant extends NotificationAssistantService {
     private static final String TAG = "ExtAssistant";
 
     private static final float TC_THRESHOLD = 0.6f;
-
-    private static final String OTP_CODE = "otp_code";
     private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
 
     // SBN key : entry
@@ -62,15 +61,18 @@ public class Assistant extends NotificationAssistantService {
 
     private PackageManager mPackageManager;
 
-    private final ExecutorService mSingleThreadExecutor = Executors.newSingleThreadExecutor();
+    @VisibleForTesting
+    protected final ExecutorService mSingleThreadExecutor = Executors.newSingleThreadExecutor();
     @VisibleForTesting
     protected AssistantSettings.Factory mSettingsFactory = AssistantSettings.FACTORY;
     @VisibleForTesting
     protected AssistantSettings mSettings;
     private SmsHelper mSmsHelper;
-    private SmartSuggestionsHelper mSmartSuggestionsHelper;
+    @VisibleForTesting
+    protected SmartSuggestionsHelper mSmartSuggestionsHelper;
 
-    private TextClassificationManager mTcm;
+    @VisibleForTesting
+    protected TextClassificationManager mTcm;
 
     public Assistant() {
     }
@@ -112,8 +114,6 @@ public class Assistant extends NotificationAssistantService {
             return null;
         }
         mSingleThreadExecutor.submit(() -> {
-            NotificationEntry entry =
-                    new NotificationEntry(this, mPackageManager, sbn, channel, mSmsHelper);
             SmartSuggestions suggestions = mSmartSuggestionsHelper.onNotificationEnqueued(sbn);
             if (DEBUG) {
                 Log.d(TAG, String.format(
@@ -123,29 +123,34 @@ public class Assistant extends NotificationAssistantService {
                         suggestions.getReplies().size()));
             }
             Adjustment adjustment = createEnqueuedNotificationAdjustment(
-                    entry,
+                    sbn,
                     new ArrayList<>(suggestions.getActions()),
                     new ArrayList<>(suggestions.getReplies()),
                     containsOtpCode(sbn));
-            adjustNotification(adjustment);
+            if (adjustment != null) {
+                adjustNotification(adjustment);
+            }
         });
         return null;
     }
 
     /** A convenience helper for creating an adjustment for an SBN. */
     @VisibleForTesting
-    @Nullable
-    Adjustment createEnqueuedNotificationAdjustment(
-            @NonNull NotificationEntry entry,
-            @NonNull ArrayList<Notification.Action> smartActions,
-            @NonNull ArrayList<CharSequence> smartReplies,
+    protected Adjustment createEnqueuedNotificationAdjustment(
+            StatusBarNotification sbn,
+            ArrayList<Notification.Action> smartActions,
+            ArrayList<CharSequence> smartReplies,
             boolean hasSensitiveContent) {
+        if (sbn == null) {
+            return null;
+        }
+
         Bundle signals = new Bundle();
 
-        if (!smartActions.isEmpty()) {
+        if (smartActions != null && !smartActions.isEmpty()) {
             signals.putParcelableArrayList(Adjustment.KEY_CONTEXTUAL_ACTIONS, smartActions);
         }
-        if (!smartReplies.isEmpty()) {
+        if (smartReplies != null && !smartReplies.isEmpty()) {
             signals.putCharSequenceArrayList(Adjustment.KEY_TEXT_REPLIES, smartReplies);
         }
 
@@ -153,23 +158,19 @@ public class Assistant extends NotificationAssistantService {
             signals.putBoolean(Adjustment.KEY_SENSITIVE_CONTENT, true);
         }
 
-        return new Adjustment(
-                entry.getSbn().getPackageName(),
-                entry.getSbn().getKey(),
-                signals,
-                "",
-                entry.getSbn().getUserId());
+        return new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
+                sbn.getUser().getIdentifier());
     }
 
     private boolean containsOtpCode(StatusBarNotification sbn) {
         if (!NotificationOtpDetectionHelper.shouldCheckForOtp(sbn.getNotification())) {
             return false;
         }
-        String content =
-            NotificationOtpDetectionHelper.getTextForDetection(sbn.getNotification());
+        String content = NotificationOtpDetectionHelper.getTextForDetection(sbn.getNotification());
+        ArrayList<String> entities = new ArrayList<>();
+        entities.add(TYPE_OTP_CODE);
+
         TextClassifier tc = mTcm.getTextClassifier();
-        List<String> entities = new ArrayList<>();
-        entities.add(OTP_CODE);
         TextClassifier.EntityConfig config =
                 new EntityConfig.Builder().setIncludedTypes(entities).build();
         TextLinks.Request request =
@@ -177,7 +178,7 @@ public class Assistant extends NotificationAssistantService {
         TextLinks links = tc.generateLinks(request);
         for (TextLinks.TextLink link: links.getLinks()) {
             // The current OTP model is binary, but other models may not be
-            if (link.getConfidenceScore(OTP_CODE) >= TC_THRESHOLD) {
+            if (link.getConfidenceScore(TYPE_OTP_CODE) >= TC_THRESHOLD) {
                 return true;
             }
         }
