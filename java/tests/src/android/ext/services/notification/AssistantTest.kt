@@ -48,6 +48,8 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.eq
+import org.mockito.ArgumentMatchers.isNull
+import org.mockito.Mockito.atLeast
 import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
@@ -106,6 +108,12 @@ class AssistantTest {
             TYPE_OTP_CODE)
         verify(mockTc, times(1)).generateLinks(any())
         verify(assistant.mSmartSuggestionsHelper, times(1)).onNotificationEnqueued(eq(sbn))
+        // A false result shouldn't result in an adjustment call for the otp
+        verify(assistant, never())
+            .createEnqueuedNotificationAdjustment(any(), isNull(), isNull(), eq(false))
+        // One adjustment for the suggestions and OTP together
+        verify(assistant).createEnqueuedNotificationAdjustment(any(),
+            eq(ArrayList<Notification.Action>()), eq(ArrayList<CharSequence>()), eq(false))
     }
 
     @Test
@@ -145,7 +153,8 @@ class AssistantTest {
         Thread.sleep(EXECUTOR_AWAIT_TIME)
         verify(mockTc, never()).generateLinks(any())
         // Never calls generateLinks, but still gets an adjustment, due to regex
-        verify(assistant).createEnqueuedNotificationAdjustment(any(), any(), any(), eq(true))
+        verify(assistant, atLeast(1))
+            .createEnqueuedNotificationAdjustment(any(), any(), any(), eq(true))
         verify(assistant.mSmartSuggestionsHelper, times(1)).onNotificationEnqueued(eq(sbn))
     }
 
@@ -161,7 +170,8 @@ class AssistantTest {
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
         verify(mockTc, never()).generateLinks(any())
-        verify(assistant).createEnqueuedNotificationAdjustment(any(), any(), any(), eq(true))
+        verify(assistant, atLeast(1))
+            .createEnqueuedNotificationAdjustment(any(), any(), any(), eq(true))
         verify(assistant.mSmartSuggestionsHelper, times(1)).onNotificationEnqueued(eq(sbn))
     }
 
@@ -213,7 +223,8 @@ class AssistantTest {
         doReturn(true).whenKt(assistant).shouldUseTcForOtpDetection(any(), any())
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
-        verify(assistant).createEnqueuedNotificationAdjustment(any(StatusBarNotification::class.java), any(), any(), eq(false))
+        verify(assistant, atLeast(1)).createEnqueuedNotificationAdjustment(
+            any(StatusBarNotification::class.java), any(), any(), eq(false))
     }
 
     @Test
@@ -224,8 +235,8 @@ class AssistantTest {
         doReturn(true).whenKt(assistant).shouldUseTcForOtpDetection(any(), any())
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
-        verify(assistant).createEnqueuedNotificationAdjustment(eq(sbn),
-            eq(ArrayList<Notification.Action>()), eq(ArrayList<CharSequence>()), eq(true))
+        verify(assistant, atLeast(1)).createEnqueuedNotificationAdjustment(
+            any(StatusBarNotification::class.java), any(), any(), eq(true))
     }
     @Test
     fun createEnqueuedNotificationAdjustment_hasAdjustmentIfCheckedForOtpCode() {

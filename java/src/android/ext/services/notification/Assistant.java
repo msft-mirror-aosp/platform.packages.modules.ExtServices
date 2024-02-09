@@ -138,6 +138,19 @@ public class Assistant extends NotificationAssistantService {
             return null;
         }
         Future<?> ignored = mClassificationExecutor.submit(() -> {
+            Boolean containsOtp = null;
+            if (NotificationOtpDetectionHelper.shouldCheckForOtp(sbn.getNotification())) {
+                containsOtp = containsOtpWithTc(sbn);
+            }
+
+            // If we found an otp, send an adjustment early
+            if (Boolean.TRUE.equals(containsOtp)) {
+                Adjustment otpAdj = createEnqueuedNotificationAdjustment(sbn, null, null, true);
+                if (otpAdj != null) {
+                    adjustNotification(otpAdj);
+                }
+            }
+
             SmartSuggestions suggestions = mSmartSuggestionsHelper.onNotificationEnqueued(sbn);
             if (DEBUG) {
                 Log.d(TAG, String.format(
@@ -146,10 +159,7 @@ public class Assistant extends NotificationAssistantService {
                         suggestions.getActions().size(),
                         suggestions.getReplies().size()));
             }
-            Boolean containsOtp = null;
-            if (NotificationOtpDetectionHelper.shouldCheckForOtp(sbn.getNotification())) {
-                containsOtp = containsOtpWithTc(sbn);
-            }
+
             Adjustment adjustment = createEnqueuedNotificationAdjustment(
                     sbn,
                     new ArrayList<>(suggestions.getActions()),
@@ -159,6 +169,7 @@ public class Assistant extends NotificationAssistantService {
                 adjustNotification(adjustment);
             }
         });
+
         return null;
     }
 
