@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_android_rubidium",
     default_applicable_licenses: ["packages_modules_ExtServices_license"],
 }
 
@@ -34,13 +35,14 @@ android_library {
     srcs: [
         "java/src/**/*.java",
     ],
+
     sdk_version: "module_current",
     min_sdk_version: "30",
     resource_dirs: [
         "java/res",
     ],
 
-    manifest: "AndroidManifest.xml",
+    manifest: "EmptyManifest.xml",
 
     static_libs: [
         "androidx.annotation_annotation",
@@ -49,22 +51,30 @@ android_library {
         "TextClassifierNotificationLibNoManifest",
         "androidx.work_work-runtime",
         "modules-utils-build",
+        "androidx.appsearch_appsearch",
+        "androidx.appsearch_appsearch-platform-storage",
     ],
 
-    libs : [
+    libs: [
         "framework-configinfrastructure",
         "framework-connectivity",
     ],
 
     lint: {
         strict_updatability_linting: true,
+        error_checks: ["Recycle"],
     },
+    apex_available: [
+        "//apex_available:platform",
+        "com.android.extservices",
+    ],
 }
 
 android_app {
-    name: "ExtServices",
+    name: "ExtServices-tplus",
     sdk_version: "module_current",
     min_sdk_version: "30",
+    manifest: "AndroidManifest.xml",
     optimize: {
         optimize: true,
         shrink_resources: true,
@@ -72,13 +82,49 @@ android_app {
         proguard_flags_files: ["proguard.proguard"],
     },
     privileged: true,
+    privapp_allowlist: ":privapp_allowlist_android.ext_tplus.services.xml",
     static_libs: [
         "ExtServices-core",
     ],
     jarjar_rules: "jarjar-rules.txt",
-    jni_libs: ["libtextclassifier", "libextservices_jni"],
+    jni_libs: [
+        "libtextclassifier",
+        "libextservices_jni",
+    ],
     use_embedded_native_libs: true,
-    required: ["privapp_allowlist_android.ext.services.xml"],
+    apex_available: [
+        "//apex_available:platform",
+        "com.android.extservices",
+        "test_com.android.extservices",
+    ],
+}
+
+android_app {
+    name: "ExtServices-sminus",
+    sdk_version: "module_current",
+    min_sdk_version: "30",
+    manifest: "AndroidManifest.xml",
+    optimize: {
+        optimize: true,
+        shrink_resources: true,
+        proguard_compatibility: false,
+        proguard_flags_files: ["proguard.proguard"],
+    },
+    privileged: true,
+    privapp_allowlist: ":privapp_allowlist_android.ext_sminus.services.xml",
+    static_libs: [
+        "ExtServices-core",
+        "AdServices-core",
+    ],
+    jarjar_rules: "jarjar-rules.txt",
+    jni_libs: [
+        "libtextclassifier",
+        "libextservices_jni",
+        "libhpke_jni",
+    ],
+    libs: ["android.ext.adservices"],
+    optional_uses_libs: ["android.ext.adservices"],
+    use_embedded_native_libs: true,
     apex_available: [
         "//apex_available:platform",
         "com.android.extservices",

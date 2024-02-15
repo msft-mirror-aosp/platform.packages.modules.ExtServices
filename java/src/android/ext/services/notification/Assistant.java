@@ -16,8 +16,7 @@
 
 package android.ext.services.notification;
 
-import static android.app.NotificationManager.IMPORTANCE_LOW;
-import static android.service.notification.Adjustment.KEY_IMPORTANCE;
+import static android.view.textclassifier.TextClassifier.TYPE_OTP_CODE;
 
 import android.annotation.SuppressLint;
 import android.app.Notification;
@@ -31,9 +30,12 @@ import android.service.notification.NotificationStats;
 import android.service.notification.StatusBarNotification;
 import android.util.ArrayMap;
 import android.util.Log;
+import android.view.textclassifier.TextClassificationManager;
+import android.view.textclassifier.TextClassifier;
+import android.view.textclassifier.TextClassifier.EntityConfig;
+import android.view.textclassifier.TextLinks;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
 import com.android.textclassifier.notification.SmartSuggestions;
@@ -50,6 +52,8 @@ import java.util.concurrent.Executors;
 @SuppressLint("OverrideAbstract")
 public class Assistant extends NotificationAssistantService {
     private static final String TAG = "ExtAssistant";
+
+    private static final float TC_THRESHOLD = 0.6f;
     private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
 
     // SBN key : entry
@@ -57,13 +61,18 @@ public class Assistant extends NotificationAssistantService {
 
     private PackageManager mPackageManager;
 
-    private final ExecutorService mSingleThreadExecutor = Executors.newSingleThreadExecutor();
+    @VisibleForTesting
+    protected final ExecutorService mSingleThreadExecutor = Executors.newSingleThreadExecutor();
     @VisibleForTesting
     protected AssistantSettings.Factory mSettingsFactory = AssistantSettings.FACTORY;
     @VisibleForTesting
     protected AssistantSettings mSettings;
     private SmsHelper mSmsHelper;
-    private SmartSuggestionsHelper mSmartSuggestionsHelper;
+    @VisibleForTesting
+    protected SmartSuggestionsHelper mSmartSuggestionsHelper;
+
+    @VisibleForTesting
+    protected TextClassificationManager mTcm;
 
     public Assistant() {
     }
@@ -74,6 +83,7 @@ public class Assistant extends NotificationAssistantService {
         // Contexts are correctly hooked up by the creation step, which is required for the observer
         // to be hooked up/initialized.
         mPackageManager = getPackageManager();
+        mTcm = getSystemService(TextClassificationManager.class);
         mSettings = mSettingsFactory.createAndRegister();
         mSmartSuggestionsHelper = new SmartSuggestionsHelper(this, mSettings);
         mSmsHelper = new SmsHelper(this);
@@ -104,8 +114,6 @@ public class Assistant extends NotificationAssistantService {
             return null;
         }
         mSingleThreadExecutor.submit(() -> {
-            NotificationEntry entry =
-                    new NotificationEntry(this, mPackageManager, sbn, channel, mSmsHelper);
             SmartSuggestions suggestions = mSmartSuggestionsHelper.onNotificationEnqueued(sbn);
             if (DEBUG) {
                 Log.d(TAG, String.format(
@@ -115,36 +123,66 @@ public class Assistant extends NotificationAssistantService {
                         suggestions.getReplies().size()));
             }
             Adjustment adjustment = createEnqueuedNotificationAdjustment(
-                    entry,
-                    new ArrayList<Notification.Action>(suggestions.getActions()),
-                    new ArrayList<>(suggestions.getReplies()));
-            adjustNotification(adjustment);
+                    sbn,
+                    new ArrayList<>(suggestions.getActions()),
+                    new ArrayList<>(suggestions.getReplies()),
+                    containsOtpCode(sbn));
+            if (adjustment != null) {
+                adjustNotification(adjustment);
+            }
         });
         return null;
     }
 
     /** A convenience helper for creating an adjustment for an SBN. */
     @VisibleForTesting
-    @Nullable
-    Adjustment createEnqueuedNotificationAdjustment(
-            @NonNull NotificationEntry entry,
-            @NonNull ArrayList<Notification.Action> smartActions,
-            @NonNull ArrayList<CharSequence> smartReplies) {
+    protected Adjustment createEnqueuedNotificationAdjustment(
+            StatusBarNotification sbn,
+            ArrayList<Notification.Action> smartActions,
+            ArrayList<CharSequence> smartReplies,
+            boolean hasSensitiveContent) {
+        if (sbn == null) {
+            return null;
+        }
+
         Bundle signals = new Bundle();
 
-        if (!smartActions.isEmpty()) {
+        if (smartActions != null && !smartActions.isEmpty()) {
             signals.putParcelableArrayList(Adjustment.KEY_CONTEXTUAL_ACTIONS, smartActions);
         }
-        if (!smartReplies.isEmpty()) {
+        if (smartReplies != null && !smartReplies.isEmpty()) {
             signals.putCharSequenceArrayList(Adjustment.KEY_TEXT_REPLIES, smartReplies);
         }
 
-        return new Adjustment(
-                entry.getSbn().getPackageName(),
-                entry.getSbn().getKey(),
-                signals,
-                "",
-                entry.getSbn().getUserId());
+        if (hasSensitiveContent) {
+            signals.putBoolean(Adjustment.KEY_SENSITIVE_CONTENT, true);
+        }
+
+        return new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
+                sbn.getUser().getIdentifier());
+    }
+
+    private boolean containsOtpCode(StatusBarNotification sbn) {
+        if (!NotificationOtpDetectionHelper.shouldCheckForOtp(sbn.getNotification())) {
+            return false;
+        }
+        String content = NotificationOtpDetectionHelper.getTextForDetection(sbn.getNotification());
+        ArrayList<String> entities = new ArrayList<>();
+        entities.add(TYPE_OTP_CODE);
+
+        TextClassifier tc = mTcm.getTextClassifier();
+        TextClassifier.EntityConfig config =
+                new EntityConfig.Builder().setIncludedTypes(entities).build();
+        TextLinks.Request request =
+                new TextLinks.Request.Builder(content).setEntityConfig(config).build();
+        TextLinks links = tc.generateLinks(request);
+        for (TextLinks.TextLink link: links.getLinks()) {
+            // The current OTP model is binary, but other models may not be
+            if (link.getConfidenceScore(TYPE_OTP_CODE) >= TC_THRESHOLD) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
