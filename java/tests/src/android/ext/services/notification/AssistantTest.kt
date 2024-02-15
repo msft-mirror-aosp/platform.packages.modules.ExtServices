@@ -26,7 +26,9 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.FEATURE_WATCH
 import android.os.Process
+import android.service.notification.Adjustment
 import android.service.notification.Adjustment.KEY_SENSITIVE_CONTENT
+import android.service.notification.Adjustment.KEY_TEXT_REPLIES
 import android.service.notification.StatusBarNotification
 import android.view.textclassifier.TextClassificationManager
 import android.view.textclassifier.TextClassifier
@@ -40,7 +42,6 @@ import com.android.textclassifier.notification.SmartSuggestions
 import com.android.textclassifier.notification.SmartSuggestionsHelper
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
-import org.junit.Assert.assertFalse
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
@@ -110,9 +111,9 @@ class AssistantTest {
         verify(assistant.mSmartSuggestionsHelper, times(1)).onNotificationEnqueued(eq(sbn))
         // A false result shouldn't result in an adjustment call for the otp
         verify(assistant, never())
-            .createEnqueuedNotificationAdjustment(any(), isNull(), isNull(), eq(false))
+            .createNotificationAdjustment(any(), isNull(), isNull(), eq(false))
         // One adjustment for the suggestions and OTP together
-        verify(assistant).createEnqueuedNotificationAdjustment(any(),
+        verify(assistant).createNotificationAdjustment(any(),
             eq(ArrayList<Notification.Action>()), eq(ArrayList<CharSequence>()), eq(false))
     }
 
@@ -141,6 +142,35 @@ class AssistantTest {
     }
 
     @Test
+    fun onNotificationEnqueued_usesBothRegexAndTc() {
+        val sbn = createSbn(TEXT_WITH_OTP)
+        doReturn(true).whenKt(assistant).shouldUseTcForOtpDetection(any(), any())
+        val directReturn =
+            assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
+        // Expect an adjustment to be returned, due to regex
+        assertThat(directReturn).isNotNull()
+        assertThat(directReturn!!.signals.getBoolean(KEY_SENSITIVE_CONTENT)).isTrue()
+        assertThat(directReturn.signals.getCharSequenceArrayList(KEY_TEXT_REPLIES)).isNull()
+        Thread.sleep(EXECUTOR_AWAIT_TIME)
+        // Expect a call to the TC, that returns false, and thus, doesn't send an early adjustment
+        verify(mockTc).generateLinks(any())
+        verify(assistant, never())
+            .createNotificationAdjustment(any(), isNull(), isNull(), eq(false))
+        // Expect adjustment for the suggestions and OTP together, with a false value
+        verify(assistant).createNotificationAdjustment(any(),
+            eq(ArrayList<Notification.Action>()), eq(ArrayList<CharSequence>()), eq(false))
+    }
+
+    @Test
+    fun onNotificationEnqueued_returnsNullIfRegexDoesntMatch() {
+        val sbn = createSbn(text = "")
+        val directReturn =
+            assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
+        // Expect an adjustment to be returned, due to regex
+        assertThat(directReturn).isNull()
+    }
+
+    @Test
     fun onNotificationEnqueued_doesntUseTcIfWatch() {
         val sbn = createSbn(TEXT_WITH_OTP)
         doReturn(true).whenKt(mockPm).hasSystemFeature(eq(FEATURE_WATCH))
@@ -154,7 +184,7 @@ class AssistantTest {
         verify(mockTc, never()).generateLinks(any())
         // Never calls generateLinks, but still gets an adjustment, due to regex
         verify(assistant, atLeast(1))
-            .createEnqueuedNotificationAdjustment(any(), any(), any(), eq(true))
+            .createNotificationAdjustment(any(), any(), any(), eq(true))
         verify(assistant.mSmartSuggestionsHelper, times(1)).onNotificationEnqueued(eq(sbn))
     }
 
@@ -171,7 +201,7 @@ class AssistantTest {
         Thread.sleep(EXECUTOR_AWAIT_TIME)
         verify(mockTc, never()).generateLinks(any())
         verify(assistant, atLeast(1))
-            .createEnqueuedNotificationAdjustment(any(), any(), any(), eq(true))
+            .createNotificationAdjustment(any(), any(), any(), eq(true))
         verify(assistant.mSmartSuggestionsHelper, times(1)).onNotificationEnqueued(eq(sbn))
     }
 
@@ -223,7 +253,7 @@ class AssistantTest {
         doReturn(true).whenKt(assistant).shouldUseTcForOtpDetection(any(), any())
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
-        verify(assistant, atLeast(1)).createEnqueuedNotificationAdjustment(
+        verify(assistant, atLeast(1)).createNotificationAdjustment(
             any(StatusBarNotification::class.java), any(), any(), eq(false))
     }
 
@@ -235,24 +265,24 @@ class AssistantTest {
         doReturn(true).whenKt(assistant).shouldUseTcForOtpDetection(any(), any())
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
-        verify(assistant, atLeast(1)).createEnqueuedNotificationAdjustment(
+        verify(assistant, atLeast(1)).createNotificationAdjustment(
             any(StatusBarNotification::class.java), any(), any(), eq(true))
     }
     @Test
     fun createEnqueuedNotificationAdjustment_hasAdjustmentIfCheckedForOtpCode() {
-        val adjustment = assistant.createEnqueuedNotificationAdjustment(
+        val adjustment = assistant.createNotificationAdjustment(
             createSbn(),
             arrayListOf<Notification.Action>(),
             arrayListOf<CharSequence>(),
             true)
         assertThat(adjustment.signals.getBoolean(KEY_SENSITIVE_CONTENT)).isTrue()
-        val adjustment2 = assistant.createEnqueuedNotificationAdjustment(
+        val adjustment2 = assistant.createNotificationAdjustment(
             createSbn(),
             arrayListOf<Notification.Action>(),
             arrayListOf<CharSequence>(),
             false)
         assertThat(adjustment2.signals.getBoolean(KEY_SENSITIVE_CONTENT)).isFalse()
-        val adjustment3 = assistant.createEnqueuedNotificationAdjustment(
+        val adjustment3 = assistant.createNotificationAdjustment(
             createSbn(),
             arrayListOf<Notification.Action>(),
             arrayListOf<CharSequence>(),

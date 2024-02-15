@@ -43,6 +43,7 @@ import android.view.textclassifier.TextLanguage;
 import android.view.textclassifier.TextLinks;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
 import com.android.modules.utils.build.SdkLevel;
@@ -137,18 +138,25 @@ public class Assistant extends NotificationAssistantService {
         if (!isForCurrentUser(sbn)) {
             return null;
         }
+
+        final boolean shouldCheckForOtp =
+                NotificationOtpDetectionHelper.shouldCheckForOtp(sbn.getNotification());
+        boolean foundOtpWithRegex = shouldCheckForOtp
+                && NotificationOtpDetectionHelper.matchesOtpRegex(sbn.getNotification(), true);
+        Adjustment earlyOtpReturn = null;
+        if (foundOtpWithRegex) {
+            earlyOtpReturn = createNotificationAdjustment(sbn, null, null, true);
+        }
+
         Future<?> ignored = mClassificationExecutor.submit(() -> {
             Boolean containsOtp = null;
-            if (NotificationOtpDetectionHelper.shouldCheckForOtp(sbn.getNotification())) {
+            if (shouldCheckForOtp) {
                 containsOtp = containsOtpWithTc(sbn);
             }
 
-            // If we found an otp, send an adjustment early
-            if (Boolean.TRUE.equals(containsOtp)) {
-                Adjustment otpAdj = createEnqueuedNotificationAdjustment(sbn, null, null, true);
-                if (otpAdj != null) {
-                    adjustNotification(otpAdj);
-                }
+            // If we found an otp (and didn't already send an adjustment), send an adjustment early
+            if (Boolean.TRUE.equals(containsOtp) && !foundOtpWithRegex) {
+                adjustNotificationIfNotNull(createNotificationAdjustment(sbn, null, null, true));
             }
 
             SmartSuggestions suggestions = mSmartSuggestionsHelper.onNotificationEnqueued(sbn);
@@ -160,27 +168,33 @@ public class Assistant extends NotificationAssistantService {
                         suggestions.getReplies().size()));
             }
 
-            Adjustment adjustment = createEnqueuedNotificationAdjustment(
+            adjustNotificationIfNotNull(createNotificationAdjustment(
                     sbn,
                     new ArrayList<>(suggestions.getActions()),
                     new ArrayList<>(suggestions.getReplies()),
-                    containsOtp);
-            if (adjustment != null) {
-                adjustNotification(adjustment);
-            }
+                    containsOtp));
         });
 
-        return null;
+        return earlyOtpReturn;
+    }
+
+    // Due to Mockito setup, some methods marked @NonNull can sometimes be called with a
+    // null parameter. This method accounts for that.
+    private void adjustNotificationIfNotNull(@Nullable Adjustment adjustment) {
+        if (adjustment != null) {
+            adjustNotification(adjustment);
+        }
     }
 
     /** A convenience helper for creating an adjustment for an SBN. */
     @VisibleForTesting
-    protected Adjustment createEnqueuedNotificationAdjustment(
+    protected Adjustment createNotificationAdjustment(
             StatusBarNotification sbn,
             ArrayList<Notification.Action> smartActions,
             ArrayList<CharSequence> smartReplies,
             Boolean hasSensitiveContent) {
         if (sbn == null) {
+            // Only happens during mocking tests, when setting up `verify` calls
             return null;
         }
 
