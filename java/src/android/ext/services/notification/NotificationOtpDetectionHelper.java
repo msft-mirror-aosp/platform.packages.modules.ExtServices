@@ -83,8 +83,8 @@ public class NotificationOtpDetectionHelper {
      * 3. find 4-8 OTP_CHARs
      * 4. finish with END
      */
-    private static final Pattern OTP_REGEX =
-            Pattern.compile(ALPHANUM_OTP + "|" + FOUR_DIGIT_OTP);
+    private static final Matcher OTP_REGEX =
+            Pattern.compile(ALPHANUM_OTP + "|" + FOUR_DIGIT_OTP).matcher("");
     /**
      * A Date regular expression. Looks for dates with the month, day, and year separated by dashes.
      * Handles one and two digit months and days, and four or two-digit years. It makes the
@@ -94,8 +94,8 @@ public class NotificationOtpDetectionHelper {
      * It must begin with the START regex from the OTP regex, and finish with the END regex.
      * This regex is used to eliminate the most common false positive of the OTP regex.
      */
-    private static final Pattern DATE_WITH_DASHES =
-            Pattern.compile(START + "[0-3]?\\d-[0-3]?\\d-([12]\\d)?\\d\\d" + END);
+    private static final Matcher DATE_WITH_DASHES =
+            Pattern.compile(START + "[0-3]?\\d-[0-3]?\\d-([12]\\d)?\\d\\d" + END).matcher("");
 
     /**
      * Checks if the sensitive parts of a notification might contain an OTP, based on a regular
@@ -111,12 +111,12 @@ public class NotificationOtpDetectionHelper {
         }
 
         String sensitiveText = getTextForDetection(notification);
-        Matcher otpMatcher = OTP_REGEX.matcher(sensitiveText);
+        Matcher otpMatcher = OTP_REGEX.reset(sensitiveText);
         boolean optMatch = otpMatcher.find();
         if (!ensureNotDate || !optMatch) {
             return optMatch;
         }
-        Matcher dateMatcher = DATE_WITH_DASHES.matcher(sensitiveText);
+        Matcher dateMatcher = DATE_WITH_DASHES.reset(sensitiveText);
         if (!dateMatcher.find()) {
             return true;
         }
