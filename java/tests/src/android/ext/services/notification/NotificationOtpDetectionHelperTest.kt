@@ -26,10 +26,14 @@ import android.app.Person
 import android.content.Intent
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.modules.utils.build.SdkLevel
+import android.platform.test.flag.junit.SetFlagsRule
+import android.service.notification.Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS
 import com.google.common.truth.Truth.assertWithMessage
 import org.junit.Assume.assumeTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TestRule
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
@@ -37,10 +41,31 @@ import org.junit.runners.JUnit4
 class NotificationOtpDetectionHelperTest {
     val context = InstrumentationRegistry.getInstrumentation().targetContext!!
 
+    @get:Rule
+    val setFlagsRule = if (SdkLevel.isAtLeastV()) {
+        SetFlagsRule()
+    } else {
+        // On < V, have a test rule that does nothing
+        TestRule { statement, description -> statement}
+    }
+
     @Before
     fun enableFlag() {
         assumeTrue(SdkLevel.isAtLeastV())
     }
+
+    @Test
+    fun testGetTextForDetection_emptyIfFlagDisabled() {
+        (setFlagsRule as SetFlagsRule)
+            .disableFlags(FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
+        val text = "text"
+        val title = "title"
+        val subtext = "subtext"
+        val sensitive = NotificationOtpDetectionHelper.getTextForDetection(
+            createNotification(text = text, title = title, subtext = subtext))
+        assertWithMessage("expected sensitive text to be empty").that(sensitive).isEmpty()
+    }
+
 
     @Test
     fun testGetTextForDetection_textFieldsIncluded() {
@@ -148,6 +173,16 @@ class NotificationOtpDetectionHelperTest {
             NotificationOtpDetectionHelper.getTextForDetection(createNotification(text = text))
         assertWithMessage("Expected to be 600 chars or fewer").that(sensitive.length).isAtMost(600)
     }
+
+    @Test
+    fun testShouldCheckForOtp_falseIfFlagDisabled() {
+        (setFlagsRule as SetFlagsRule)
+            .disableFlags(FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
+        val shouldCheck = NotificationOtpDetectionHelper
+            .shouldCheckForOtp(createNotification(category = CATEGORY_MESSAGE))
+        assertWithMessage("$CATEGORY_MESSAGE should not be checked").that(shouldCheck).isFalse()
+    }
+
 
     @Test
     fun testShouldCheckForOtp_styles() {

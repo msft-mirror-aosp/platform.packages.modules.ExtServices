@@ -30,6 +30,7 @@ import android.app.Notification.MessagingStyle;
 import android.app.Notification.MessagingStyle.Message;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.service.notification.Flags;
 
 import com.android.modules.utils.build.SdkLevel;
 
@@ -146,7 +147,8 @@ public class NotificationOtpDetectionHelper {
      * @return The extracted text fields
      */
     public static String getTextForDetection(Notification notification) {
-        if (notification.extras == null || !SdkLevel.isAtLeastV()) {
+        if (notification.extras == null || !SdkLevel.isAtLeastV()
+                || !Flags.redactSensitiveNotificationsFromUntrustedListeners()) {
             return "";
         }
         Bundle extras = notification.extras;
@@ -183,7 +185,8 @@ public class NotificationOtpDetectionHelper {
      * @return true, if further checks for OTP codes should be performed, false otherwise
      */
     public static boolean shouldCheckForOtp(Notification notification) {
-        if (notification == null || !SdkLevel.isAtLeastV()) {
+        if (notification == null || !SdkLevel.isAtLeastV()
+                || !Flags.redactSensitiveNotificationsFromUntrustedListeners()) {
             return false;
         }
         return SENSITIVE_NOTIFICATION_CATEGORIES.contains(notification.category)
