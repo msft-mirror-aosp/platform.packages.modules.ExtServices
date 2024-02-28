@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_android_rubidium",
     default_applicable_licenses: ["packages_modules_ExtServices_license"],
 }
 
@@ -54,7 +55,7 @@ android_library {
         "modules-utils-build",
     ],
 
-    libs : [
+    libs: [
         "framework-configinfrastructure",
         "framework-connectivity",
     ],
@@ -83,7 +84,10 @@ android_app {
         "ExtServices-core",
     ],
     jarjar_rules: "jarjar-rules.txt",
-    jni_libs: ["libtextclassifier", "libextservices_jni"],
+    jni_libs: [
+        "libtextclassifier",
+        "libextservices_jni",
+    ],
     use_embedded_native_libs: true,
     apex_available: [
         "//apex_available:platform",
