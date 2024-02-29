@@ -53,6 +53,7 @@ android_library {
         "modules-utils-build",
         "androidx.appsearch_appsearch",
         "androidx.appsearch_appsearch-platform-storage",
+        "android.service.notification.flags-aconfig-export-java",
     ],
 
     libs: [
