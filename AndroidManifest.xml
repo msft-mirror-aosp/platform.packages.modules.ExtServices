@@ -18,8 +18,8 @@
     xmlns:androidprv="http://schemas.android.com/apk/prv/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="android.ext.services"
-    android:versionCode="341712000"
-    android:versionName="aml_ext_341712000"
+    android:versionCode="341713000"
+    android:versionName="aml_ext_341713000"
     coreApp="true">
 
     <uses-permission android:name="android.permission.PROVIDE_RESOLVER_RANKER_SERVICE" />
