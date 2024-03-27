@@ -17,17 +17,12 @@
 package android.ext.services.notification;
 
 import static android.content.pm.PackageManager.FEATURE_WATCH;
-import static android.view.textclassifier.TextClassifier.TYPE_FLIGHT_NUMBER;
-import static android.view.textclassifier.TextClassifier.TYPE_OTP_CODE;
-import static android.view.textclassifier.TextClassifier.TYPE_PHONE;
 
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.content.pm.PackageManager;
-import android.icu.util.ULocale;
 import android.os.Bundle;
 import android.os.UserHandle;
 import android.service.notification.Adjustment;
@@ -37,16 +32,11 @@ import android.service.notification.StatusBarNotification;
 import android.util.ArrayMap;
 import android.util.Log;
 import android.view.textclassifier.TextClassificationManager;
-import android.view.textclassifier.TextClassifier;
-import android.view.textclassifier.TextClassifier.EntityConfig;
-import android.view.textclassifier.TextLanguage;
-import android.view.textclassifier.TextLinks;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
-import com.android.modules.utils.build.SdkLevel;
 import com.android.textclassifier.notification.SmartSuggestions;
 import com.android.textclassifier.notification.SmartSuggestionsHelper;
 
@@ -112,7 +102,6 @@ public class Assistant extends NotificationAssistantService {
     @VisibleForTesting
     protected void setUseTextClassifier() {
         mUseTextClassifier = !(mAm.isLowRamDevice() || mPm.hasSystemFeature(FEATURE_WATCH));
-
     }
 
     @Override
@@ -142,16 +131,21 @@ public class Assistant extends NotificationAssistantService {
         final boolean shouldCheckForOtp =
                 NotificationOtpDetectionHelper.shouldCheckForOtp(sbn.getNotification());
         boolean foundOtpWithRegex = shouldCheckForOtp
-                && NotificationOtpDetectionHelper.matchesOtpRegex(sbn.getNotification(), true);
+                && NotificationOtpDetectionHelper
+                .containsOtp(sbn.getNotification(), true, null);
         Adjustment earlyOtpReturn = null;
         if (foundOtpWithRegex) {
             earlyOtpReturn = createNotificationAdjustment(sbn, null, null, true);
         }
 
+        // Ignoring the result of the future
         Future<?> ignored = mClassificationExecutor.submit(() -> {
             Boolean containsOtp = null;
-            if (shouldCheckForOtp) {
-                containsOtp = containsOtpWithTc(sbn);
+            if (shouldCheckForOtp && mUseTextClassifier) {
+                // If we can use the text classifier, do a second pass, using the TC to detect
+                // languages, and potentially using the TC to remove false positives
+                containsOtp = NotificationOtpDetectionHelper.containsOtp(
+                        sbn.getNotification(), true, mTcm.getTextClassifier());
             }
 
             // If we found an otp (and didn't already send an adjustment), send an adjustment early
@@ -213,72 +207,6 @@ public class Assistant extends NotificationAssistantService {
 
         return new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
                 sbn.getUser().getIdentifier());
-    }
-
-    @TargetApi(35)
-    private boolean containsOtpWithTc(StatusBarNotification sbn) {
-        String content = NotificationOtpDetectionHelper.getTextForDetection(sbn.getNotification());
-        if (!SdkLevel.isAtLeastV() || content.isEmpty()) {
-            return false;
-        }
-
-        TextClassifier tc = mTcm.getTextClassifier();
-        if (shouldUseTcForOtpDetection(content, tc)) {
-            List<String> included = new ArrayList<>(List.of(TYPE_OTP_CODE));
-            List<String> excluded = new ArrayList<>(List.of(TYPE_FLIGHT_NUMBER, TYPE_PHONE));
-            TextClassifier.EntityConfig config = new EntityConfig.Builder().setIncludedTypes(
-                            included)
-                    .setExcludedTypes(excluded).build();
-            TextLinks.Request request =
-                    new TextLinks.Request.Builder(content).setEntityConfig(config).build();
-            TextLinks links = tc.generateLinks(request);
-            for (TextLinks.TextLink link : links.getLinks()) {
-                // The current OTP model is binary, but other models may not be
-                if (link.getConfidenceScore(TYPE_OTP_CODE) > TC_THRESHOLD) {
-                    return true;
-                }
-            }
-            return false;
-        } else {
-            if (!NotificationOtpDetectionHelper.matchesOtpRegex(sbn.getNotification(), true)) {
-                return false;
-            }
-
-            if (mUseTextClassifier) {
-                // Use TC to eliminate false positives from a regex match, namely: flight codes
-                List<String> included = new ArrayList<>(List.of(TYPE_FLIGHT_NUMBER));
-                List<String> excluded = new ArrayList<>(List.of(TYPE_OTP_CODE, TYPE_PHONE));
-                TextClassifier.EntityConfig config = new EntityConfig.Builder().setIncludedTypes(
-                        included).setExcludedTypes(excluded).build();
-                TextLinks.Request request =
-                        new TextLinks.Request.Builder(content).setEntityConfig(config).build();
-                TextLinks links = tc.generateLinks(request);
-                for (TextLinks.TextLink link : links.getLinks()) {
-                    if (link.getConfidenceScore(TYPE_FLIGHT_NUMBER) > TC_THRESHOLD) {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-    }
-
-    @VisibleForTesting
-    protected boolean shouldUseTcForOtpDetection(String text, TextClassifier tc) {
-        if (!mUseTextClassifier) {
-            // low ram devices and watches should always use the regex
-            return false;
-        }
-        TextLanguage.Request langRequest = new TextLanguage.Request.Builder(text).build();
-        TextLanguage lang = tc.detectLanguage(langRequest);
-        for (int i = 0; i < lang.getLocaleHypothesisCount(); i++) {
-            ULocale locale = lang.getLocale(i);
-            if (OTP_SUPPORTED_LANGS.contains(locale.toLanguageTag())
-                    && lang.getConfidenceScore(locale) >= TC_THRESHOLD) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override
