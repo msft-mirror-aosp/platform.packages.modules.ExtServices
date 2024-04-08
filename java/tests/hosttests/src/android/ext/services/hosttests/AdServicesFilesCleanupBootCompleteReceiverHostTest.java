@@ -16,20 +16,20 @@
 
 package android.ext.services.hosttests;
 
-import static com.android.adservices.common.AndroidSdk.PRE_T;
-import static com.android.adservices.common.TestDeviceHelper.ACTION_BOOT_COMPLETED;
-import static com.android.adservices.common.TestDeviceHelper.enableComponent;
-import static com.android.adservices.common.TestDeviceHelper.isActiveReceiver;
-import static com.android.adservices.common.TestDeviceHelper.runShellCommand;
+import static com.android.adservices.shared.testing.AndroidSdk.PRE_T;
+import static com.android.adservices.shared.testing.TestDeviceHelper.ACTION_BOOT_COMPLETED;
+import static com.android.adservices.shared.testing.TestDeviceHelper.enableComponent;
+import static com.android.adservices.shared.testing.TestDeviceHelper.isActiveReceiver;
+import static com.android.adservices.shared.testing.TestDeviceHelper.runShellCommand;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.android.adservices.common.AdServicesHostSideFlagsSetterRule;
 import com.android.adservices.common.AdServicesHostSideTestCase;
-import com.android.adservices.common.BackgroundLogReceiver;
-import com.android.adservices.common.HostSideSdkLevelSupportRule;
-import com.android.adservices.common.RequiresSdkLevelAtLeastT;
-import com.android.adservices.common.RequiresSdkRange;
+import com.android.adservices.shared.testing.BackgroundLogReceiver;
+import com.android.adservices.shared.testing.HostSideSdkLevelSupportRule;
+import com.android.adservices.shared.testing.annotations.RequiresSdkLevelAtLeastT;
+import com.android.adservices.shared.testing.annotations.RequiresSdkRange;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.device.PackageInfo;
@@ -58,8 +58,11 @@ public final class AdServicesFilesCleanupBootCompleteReceiverHostTest
     private static final String RECEIVER_DISABLED_LOG_TEXT =
             "Disabled AdServices files cleanup receiver";
     private static final String RECEIVER_EXECUTED_LOG_TEXT = "AdServices files cleanup receiver";
+    private static final String FILE_WITH_ADSERVICES_AS_PREFIX = "adservices_data.txt";
+    private static final String FILE_WITH_ADSERVICES_NOT_PREFIX = "test_adservices.txt";
 
     private String mAdServicesFilePath;
+    private String mAdServicesNotPrefixFilePath;
     private String mExtServicesPackageName;
 
     @Rule
@@ -87,26 +90,20 @@ public final class AdServicesFilesCleanupBootCompleteReceiverHostTest
                         .findFirst()
                         .orElse(null);
         assertWithMessage("ExtServices package").that(extServicesPackage).isNotNull();
+
         mExtServicesPackageName = extServicesPackage.getPackageName();
+        assertWithMessage("ExtServices package name").that(mExtServicesPackageName).isNotNull();
 
         // Put some data in the ExtServices apk
-        mAdServicesFilePath =
-                String.format(
-                        "/data/user/%d/%s/adservices_data.txt",
-                        device.getCurrentUser(), extServicesPackage.getPackageName());
-        runShellCommand("echo \"Hello\" > %s", mAdServicesFilePath);
-        assertWithMessage("%s exists", mAdServicesFilePath)
-                .that(device.doesFileExist(mAdServicesFilePath))
-                .isTrue();
+        mAdServicesFilePath = createFile(FILE_WITH_ADSERVICES_AS_PREFIX);
+        mAdServicesNotPrefixFilePath = createFile(FILE_WITH_ADSERVICES_NOT_PREFIX);
     }
 
     @After
     public void tearDown() throws Exception {
         if (mDevice != null) {
-            if (mAdServicesFilePath != null && mDevice.doesFileExist(mAdServicesFilePath)) {
-                mDevice.deleteFile(mAdServicesFilePath);
-            }
-
+            cleanupFile(mAdServicesFilePath);
+            cleanupFile(mAdServicesNotPrefixFilePath);
             mDevice.disableAdbRoot();
         }
     }
@@ -147,16 +144,18 @@ public final class AdServicesFilesCleanupBootCompleteReceiverHostTest
         // Reboot, wait, and verify logs.
         verifyReceiverExecuted(device);
 
-        // Verify that all adservices files were deleted.
+        // Verify that the specific file we created with the adservices prefix was deleted.
         assertWithMessage("%s exists", mAdServicesFilePath)
                 .that(device.doesFileExist(mAdServicesFilePath))
                 .isFalse();
 
-        String lsCommand =
-                String.format(
-                        "ls /data/user/%d/%s -R", device.getCurrentUser(), mExtServicesPackageName);
-        String lsOutput = device.executeShellCommand(lsCommand).toLowerCase(Locale.ROOT);
-        assertWithMessage("Output of %s", lsCommand).that(lsOutput).doesNotContain("adservices");
+        // Verify that there are no files beginning with the "adservices" prefix.
+        assertNoFilesBeginningWithAdServices();
+
+        // Verify that the file with adservices in the name, but not at the beginning, is present
+        assertWithMessage("%s exists", mAdServicesNotPrefixFilePath)
+                .that(mDevice.doesFileExist(mAdServicesNotPrefixFilePath))
+                .isTrue();
 
         // Verify that after a reboot the receiver does not execute
         verifyReceiverDidNotExecute(device);
@@ -264,5 +263,40 @@ public final class AdServicesFilesCleanupBootCompleteReceiverHostTest
                 "ls /apex/com.android.extservices/priv-app").trim();
         CLog.d("ExtServices apex version = <%s>, apk version = <%s>, priv-app = <%s>", apexVersion,
                 apkVersion, privAppName);
+    }
+
+    private String createFile(String fileName) throws DeviceNotAvailableException {
+        String fullPath = String.format(
+                "/data/user/%d/%s/%s",
+                mDevice.getCurrentUser(),
+                mExtServicesPackageName,
+                fileName);
+
+        runShellCommand("echo \"Hello\" > %s", fullPath);
+        assertWithMessage("%s exists", fullPath)
+                .that(mDevice.doesFileExist(fullPath))
+                .isTrue();
+        return fullPath;
+    }
+
+    private void cleanupFile(String fullPath) throws DeviceNotAvailableException {
+        if (fullPath != null && mDevice.doesFileExist(fullPath)) {
+            mDevice.deleteFile(fullPath);
+        }
+    }
+
+    private void assertNoFilesBeginningWithAdServices() throws DeviceNotAvailableException {
+        String lsCommand =
+                String.format(
+                        "ls /data/user/%d/%s -R -1",
+                        mDevice.getCurrentUser(), mExtServicesPackageName);
+        String lsOutput = mDevice.executeShellCommand(lsCommand).toLowerCase(Locale.ROOT);
+        boolean noFilesBeginningWithAdServices =
+                Arrays.stream(lsOutput.split("\n")).noneMatch(s -> s.startsWith("adservices"));
+
+        assertWithMessage("No files beginning with 'adservices' in output of \"%s\": [\n%s\n]",
+                lsCommand, lsOutput)
+                .that(noFilesBeginningWithAdServices)
+                .isTrue();
     }
 }
