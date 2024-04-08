@@ -16,20 +16,20 @@
 
 package android.ext.services.hosttests;
 
-import static com.android.adservices.common.AndroidSdk.PRE_T;
-import static com.android.adservices.common.TestDeviceHelper.ACTION_BOOT_COMPLETED;
-import static com.android.adservices.common.TestDeviceHelper.enableComponent;
-import static com.android.adservices.common.TestDeviceHelper.isActiveReceiver;
-import static com.android.adservices.common.TestDeviceHelper.runShellCommand;
+import static com.android.adservices.shared.testing.AndroidSdk.PRE_T;
+import static com.android.adservices.shared.testing.TestDeviceHelper.ACTION_BOOT_COMPLETED;
+import static com.android.adservices.shared.testing.TestDeviceHelper.enableComponent;
+import static com.android.adservices.shared.testing.TestDeviceHelper.isActiveReceiver;
+import static com.android.adservices.shared.testing.TestDeviceHelper.runShellCommand;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.android.adservices.common.AdServicesHostSideFlagsSetterRule;
 import com.android.adservices.common.AdServicesHostSideTestCase;
-import com.android.adservices.common.BackgroundLogReceiver;
-import com.android.adservices.common.HostSideSdkLevelSupportRule;
-import com.android.adservices.common.RequiresSdkLevelAtLeastT;
-import com.android.adservices.common.RequiresSdkRange;
+import com.android.adservices.shared.testing.BackgroundLogReceiver;
+import com.android.adservices.shared.testing.HostSideSdkLevelSupportRule;
+import com.android.adservices.shared.testing.annotations.RequiresSdkLevelAtLeastT;
+import com.android.adservices.shared.testing.annotations.RequiresSdkRange;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.device.PackageInfo;
