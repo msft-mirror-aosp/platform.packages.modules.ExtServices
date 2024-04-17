@@ -112,9 +112,9 @@ class NotificationOtpDetectionHelperTest {
         val subtext = "subtext"
         val sensitive = NotificationOtpDetectionHelper.getTextForDetection(
             createNotification(text = text, title = title, subtext = subtext))
-        addResult(true, sensitive.contains(text),"expected sensitive text to contain $text")
-        addResult(true, sensitive.contains(title), "expected sensitive text to contain $title")
-        addResult(true, sensitive.contains(subtext), "expected sensitive text to contain $subtext")
+        addResult(expected = true, sensitive.contains(text),"expected sensitive text to contain $text")
+        addResult(expected = true, sensitive.contains(title), "expected sensitive text to contain $title")
+        addResult(expected = true, sensitive.contains(subtext), "expected sensitive text to contain $subtext")
     }
 
     @Test
@@ -124,17 +124,17 @@ class NotificationOtpDetectionHelperTest {
         val subtext = "subtext"
         var sensitive = NotificationOtpDetectionHelper.getTextForDetection(
             createNotification(text = text, title = null, subtext = null))
-        addResult(true, sensitive.contains(text), "expected sensitive text to contain $text")
-        addResult(false, sensitive.contains(title), "expected sensitive text not to contain $title")
-        addResult(false, sensitive.contains("subtext"), "expected sensitive text not to contain $subtext")
+        addResult(expected = true, sensitive.contains(text), "expected sensitive text to contain $text")
+        addResult(expected = false, sensitive.contains(title), "expected sensitive text not to contain $title")
+        addResult(expected = false, sensitive.contains("subtext"), "expected sensitive text not to contain $subtext")
         sensitive = NotificationOtpDetectionHelper.getTextForDetection(
             createNotification(text = null, title = null, subtext = null))
-        addResult(true, sensitive != null, "expected to get a nonnull string")
+        addResult(expected = true, sensitive != null, "expected to get a nonnull string")
         val nullExtras = createNotification(text = null, title = null, subtext = null).apply {
             this.extras = null
         }
-       sensitive = NotificationOtpDetectionHelper.getTextForDetection(nullExtras)
-        addResult(true, sensitive != null, "expected to get a nonnull string")
+        sensitive = NotificationOtpDetectionHelper.getTextForDetection(nullExtras)
+        addResult(expected = true, sensitive != null, "expected to get a nonnull string")
     }
 
     @Test
@@ -165,9 +165,9 @@ class NotificationOtpDetectionHelperTest {
         }
         val notif = createNotification(style = style)
         val sensitive = NotificationOtpDetectionHelper.getTextForDetection(notif)
-        addResult(true, sensitive.contains(messageText1), "expected sensitive text to contain $messageText1")
-        addResult(true, sensitive.contains(messageText2), "expected sensitive text to contain $messageText2")
-        addResult(true, sensitive.contains(messageText3), "expected sensitive text to contain $messageText3")
+        addResult(expected = true, sensitive.contains(messageText1), "expected sensitive text to contain $messageText1")
+        addResult(expected = true, sensitive.contains(messageText2), "expected sensitive text to contain $messageText2")
+        addResult(expected = true, sensitive.contains(messageText3), "expected sensitive text to contain $messageText3")
 
         // MessagingStyle notifications get their main text set automatically to their first
         // message, so we should skip to the end of that to find the message text
@@ -178,9 +178,9 @@ class NotificationOtpDetectionHelperTest {
         val text2Position = sensitiveSub.indexOf(messageText2)
         val text3Position = sensitiveSub.indexOf(messageText3)
         // The messages should be sorted by timestamp, newest first, so 2 -> 3 -> 1
-        addResult(true, text2Position < text1Position, "expected the newest message (2) to be first in \"$sensitiveSub\"")
-        addResult(true, text2Position < text3Position, "expected the newest message (2) to be first in \"$sensitiveSub\"")
-        addResult(true, text3Position < text1Position, "expected the middle message (3) to be center in \"$sensitiveSub\"")
+        addResult(expected = true, text2Position < text1Position, "expected the newest message (2) to be first in \"$sensitiveSub\"")
+        addResult(expected = true, text2Position < text3Position, "expected the newest message (2) to be first in \"$sensitiveSub\"")
+        addResult(expected = true, text3Position < text1Position, "expected the middle message (3) to be center in \"$sensitiveSub\"")
     }
 
     @Test
@@ -190,7 +190,7 @@ class NotificationOtpDetectionHelperTest {
         style.addLine(extraLine)
         val sensitive = NotificationOtpDetectionHelper
                 .getTextForDetection(createNotification(style = style))
-        addResult(true, sensitive.contains(extraLine), "expected sensitive text to contain $extraLine")
+        addResult(expected = true, sensitive.contains(extraLine), "expected sensitive text to contain $extraLine")
     }
 
     @Test
@@ -198,7 +198,7 @@ class NotificationOtpDetectionHelperTest {
         val text = "0123456789".repeat(70) // 700 chars
         val sensitive =
             NotificationOtpDetectionHelper.getTextForDetection(createNotification(text = text))
-        addResult(true, sensitive.length <= 600, "Expected to be 600 chars or fewer")
+        addResult(expected = true, sensitive.length <= 600, "Expected to be 600 chars or fewer")
     }
 
     @Test
@@ -207,7 +207,7 @@ class NotificationOtpDetectionHelperTest {
             .disableFlags(FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
         val shouldCheck = NotificationOtpDetectionHelper
             .shouldCheckForOtp(createNotification(category = CATEGORY_MESSAGE))
-        addResult(false, shouldCheck, "$CATEGORY_MESSAGE should not be checked")
+        addResult(expected = false, shouldCheck, "$CATEGORY_MESSAGE should not be checked")
     }
 
 
@@ -216,35 +216,35 @@ class NotificationOtpDetectionHelperTest {
         val style = Notification.InboxStyle()
         var shouldCheck = NotificationOtpDetectionHelper
                 .shouldCheckForOtp(createNotification(style = style))
-        addResult(true, shouldCheck, "InboxStyle should be checked")
+        addResult(expected = true, shouldCheck, "InboxStyle should be checked")
         val empty = Person.Builder().setName("test").build()
         val style2 = Notification.MessagingStyle(empty)
         val style3 = Notification.BigPictureStyle()
         shouldCheck = NotificationOtpDetectionHelper
                 .shouldCheckForOtp(createNotification(style = style2))
-        addResult(true, shouldCheck, "MessagingStyle should be checked")
+        addResult(expected = true, shouldCheck, "MessagingStyle should be checked")
         shouldCheck = NotificationOtpDetectionHelper
                 .shouldCheckForOtp(createNotification())
-        addResult(false, shouldCheck, "No style should not be checked")
+        addResult(expected = false, shouldCheck, "No style should not be checked")
         shouldCheck = NotificationOtpDetectionHelper
                 .shouldCheckForOtp(createNotification(style = style3))
-        addResult(false, shouldCheck, "Valid non-messaging non-inbox style should not be checked")
+        addResult(expected = false, shouldCheck, "Valid non-messaging non-inbox style should not be checked")
     }
 
     @Test
     fun testShouldCheckForOtp_categories() {
         var shouldCheck = NotificationOtpDetectionHelper
                 .shouldCheckForOtp(createNotification(category = CATEGORY_MESSAGE))
-        addResult(true, shouldCheck, "$CATEGORY_MESSAGE should be checked")
+        addResult(expected = true, shouldCheck, "$CATEGORY_MESSAGE should be checked")
         shouldCheck = NotificationOtpDetectionHelper
             .shouldCheckForOtp(createNotification(category = CATEGORY_SOCIAL))
-        addResult(true, shouldCheck, "$CATEGORY_SOCIAL should be checked")
+        addResult(expected = true, shouldCheck, "$CATEGORY_SOCIAL should be checked")
         shouldCheck = NotificationOtpDetectionHelper
             .shouldCheckForOtp(createNotification(category = CATEGORY_EMAIL))
-        addResult(true, shouldCheck, "$CATEGORY_EMAIL should be checked")
+        addResult(expected = true, shouldCheck, "$CATEGORY_EMAIL should be checked")
         shouldCheck = NotificationOtpDetectionHelper
             .shouldCheckForOtp(createNotification(category = ""))
-        addResult(false, shouldCheck, "Empty string category should not be checked")
+        addResult(expected = false, shouldCheck, "Empty string category should not be checked")
     }
 
     @Test
@@ -260,12 +260,12 @@ class NotificationOtpDetectionHelperTest {
         var shouldCheck = NotificationOtpDetectionHelper
                 .shouldCheckForOtp(createNotification(publicVersion = publicVersion))
 
-        addResult(true, shouldCheck, "notifications with a checked category in their public version should " +
+        addResult(expected = true, shouldCheck, "notifications with a checked category in their public version should " +
                 "be checked")
         publicVersion = createNotification(style = Notification.InboxStyle())
         shouldCheck = NotificationOtpDetectionHelper
             .shouldCheckForOtp(createNotification(publicVersion = publicVersion))
-        addResult(true, shouldCheck, "notifications with a checked style in their public version should " +
+        addResult(expected = true, shouldCheck, "notifications with a checked style in their public version should " +
                 "be checked")
     }
 
@@ -281,14 +281,14 @@ class NotificationOtpDetectionHelperTest {
         val maxLen = "123456F8"
         val tooLong = "123T56789"
 
-        addMatcherTestResult(true, minLenAlphaNum)
-        addMatcherTestResult(true, minLenNumOnly)
-        addMatcherTestResult(true, maxLen)
-        addMatcherTestResult(false, tooShortAlphaNum, customFailureMessage = "is too short")
-        addMatcherTestResult(false, tooShortNumOnly, customFailureMessage = "is too short")
-        addMatcherTestResult(false, tooLong, customFailureMessage = "is too long")
-        addMatcherTestResult(true, twoTriplets)
-        addMatcherTestResult(false, tooShortTriplets, customFailureMessage = "is too short")
+        addMatcherTestResult(expected = true, minLenAlphaNum)
+        addMatcherTestResult(expected = true, minLenNumOnly)
+        addMatcherTestResult(expected = true, maxLen)
+        addMatcherTestResult(expected = false, tooShortAlphaNum, customFailureMessage = "is too short")
+        addMatcherTestResult(expected = false, tooShortNumOnly, customFailureMessage = "is too short")
+        addMatcherTestResult(expected = false, tooLong, customFailureMessage = "is too long")
+        addMatcherTestResult(expected = true, twoTriplets)
+        addMatcherTestResult(expected = false, tooShortTriplets, customFailureMessage = "is too short")
     }
 
     @Test
@@ -296,15 +296,15 @@ class NotificationOtpDetectionHelperTest {
         val lowercase = "123ķ4"
         val uppercase = "123Ŀ4"
         val ideographicInMiddle = "123码456"
-        addMatcherTestResult(true, lowercase)
-        addMatcherTestResult(true, uppercase)
-        addMatcherTestResult(false, ideographicInMiddle)
+        addMatcherTestResult(expected = true, lowercase)
+        addMatcherTestResult(expected = true, uppercase)
+        addMatcherTestResult(expected = false, ideographicInMiddle)
     }
 
     @Test
     fun testContainsOtp_mustHaveNumber() {
         val noNums = "TEFHXES"
-        addMatcherTestResult(false, noNums)
+        addMatcherTestResult(expected = false, noNums)
     }
 
     @Test
@@ -317,23 +317,23 @@ class NotificationOtpDetectionHelperTest {
         val otpWithDashesButInvalidDate = "34-58-30"
         val otpWithDashesButInvalidYear = "12-1-3089"
 
-        addMatcherTestResult(
+        addMatcherTestResult(expected =
             true,
             date,
             checkForFalsePositives = false,
             customFailureMessage = "should match if checkForFalsePositives is false"
         )
-        addMatcherTestResult(
+        addMatcherTestResult(expected =
             false,
             date,
             customFailureMessage = "should not match if checkForFalsePositives is true"
         )
-        addMatcherTestResult(false, singleDigitDate)
-        addMatcherTestResult(false, twoDigitYear)
-        addMatcherTestResult(true, dateWithOtpAfter)
-        addMatcherTestResult(true, dateWithOtpBefore)
-        addMatcherTestResult(true, otpWithDashesButInvalidDate)
-        addMatcherTestResult(true, otpWithDashesButInvalidYear)
+        addMatcherTestResult(expected = false, singleDigitDate)
+        addMatcherTestResult(expected = false, twoDigitYear)
+        addMatcherTestResult(expected = true, dateWithOtpAfter)
+        addMatcherTestResult(expected = true, dateWithOtpBefore)
+        addMatcherTestResult(expected = true, otpWithDashesButInvalidDate)
+        addMatcherTestResult(expected = true, otpWithDashesButInvalidYear)
     }
 
     @Test
@@ -342,10 +342,10 @@ class NotificationOtpDetectionHelperTest {
         val manyDashes = "G-FD-745"
         val tooManyDashes = "6--7893"
         val oopsAllDashes = "------"
-        addMatcherTestResult(true, oneDash)
-        addMatcherTestResult(true, manyDashes)
-        addMatcherTestResult(false, tooManyDashes)
-        addMatcherTestResult(false, oopsAllDashes)
+        addMatcherTestResult(expected = true, oneDash)
+        addMatcherTestResult(expected = true, manyDashes)
+        addMatcherTestResult(expected = false, tooManyDashes)
+        addMatcherTestResult(expected = false, oopsAllDashes)
     }
 
     @Test
@@ -364,35 +364,35 @@ class NotificationOtpDetectionHelperTest {
         val parenEnd = "you code is (G-345821)"
         val quoteEnd = "you code is 'G-345821'"
         val ideographicEnd = "your code is码G-345821码"
-        addMatcherTestResult(false, noSpaceStart)
-        addMatcherTestResult(false, noSpaceEnd)
-        addMatcherTestResult(false, colonStartNumberPreceding)
-        addMatcherTestResult(true, colonStart)
-        addMatcherTestResult(true, parenStart)
-        addMatcherTestResult(true, newLineStart)
-        addMatcherTestResult(true, quoteStart)
-        addMatcherTestResult(true, doubleQuoteStart)
-        addMatcherTestResult(true, bracketStart)
-        addMatcherTestResult(true, ideographicStart)
-        addMatcherTestResult(true, periodEnd)
-        addMatcherTestResult(true, parenEnd)
-        addMatcherTestResult(true, quoteEnd)
-        addMatcherTestResult(true, ideographicEnd)
+        addMatcherTestResult(expected = false, noSpaceStart)
+        addMatcherTestResult(expected = false, noSpaceEnd)
+        addMatcherTestResult(expected = false, colonStartNumberPreceding)
+        addMatcherTestResult(expected = true, colonStart)
+        addMatcherTestResult(expected = true, parenStart)
+        addMatcherTestResult(expected = true, newLineStart)
+        addMatcherTestResult(expected = true, quoteStart)
+        addMatcherTestResult(expected = true, doubleQuoteStart)
+        addMatcherTestResult(expected = true, bracketStart)
+        addMatcherTestResult(expected = true, ideographicStart)
+        addMatcherTestResult(expected = true, periodEnd)
+        addMatcherTestResult(expected = true, parenEnd)
+        addMatcherTestResult(expected = true, quoteEnd)
+        addMatcherTestResult(expected = true, ideographicEnd)
     }
 
     @Test
     fun testContainsOtp_lookaheadMustBeOtpChar() {
         val validLookahead = "g4zy75"
         val spaceLookahead = "GVRXY 2"
-        addMatcherTestResult(true, validLookahead)
-        addMatcherTestResult(false, spaceLookahead)
+        addMatcherTestResult(expected = true, validLookahead)
+        addMatcherTestResult(expected = false, spaceLookahead)
     }
 
     @Test
     fun testContainsOtp_threeDontMatch_withoutLanguageSpecificRegex() {
         val tc = getTestTextClassifier(invalidLocale)
         val threeLowercase = "34agb"
-        addMatcherTestResult(false, threeLowercase, textClassifier = tc)
+        addMatcherTestResult(expected = false, threeLowercase, textClassifier = tc)
     }
 
     @Test
@@ -403,13 +403,13 @@ class NotificationOtpDetectionHelperTest {
         val thirtyXX = "3035"
         val nineteenXX = "1945"
         val eighteenXX = "1899"
-        addMatcherTestResult(false, twentyXX, textClassifier = tc)
+        addMatcherTestResult(expected = false, twentyXX, textClassifier = tc)
         // Behavior should be the same for an invalid language, and null TextClassifier
-        addMatcherTestResult(false, twentyXX, textClassifier = null)
-        addMatcherTestResult(true, twentyOneXX, textClassifier = tc)
-        addMatcherTestResult(true, thirtyXX, textClassifier = tc)
-        addMatcherTestResult(false, nineteenXX, textClassifier = tc)
-        addMatcherTestResult(true, eighteenXX, textClassifier = tc)
+        addMatcherTestResult(expected = false, twentyXX, textClassifier = null)
+        addMatcherTestResult(expected = true, twentyOneXX, textClassifier = tc)
+        addMatcherTestResult(expected = true, thirtyXX, textClassifier = tc)
+        addMatcherTestResult(expected = false, nineteenXX, textClassifier = tc)
+        addMatcherTestResult(expected = true, eighteenXX, textClassifier = tc)
     }
 
     @Test
@@ -423,18 +423,18 @@ class NotificationOtpDetectionHelperTest {
         // Strings with a context word somewhere in the substring
         val englishContextSubstrings = listOf("pins", "gaping", "backspin")
 
-        addMatcherTestResult(false, englishFalsePositive, textClassifier = tc)
+        addMatcherTestResult(expected = false, englishFalsePositive, textClassifier = tc)
         for (context in englishContextWords) {
             val englishTruePositive = "$englishFalsePositive $context"
-            addMatcherTestResult(true, englishTruePositive, textClassifier = tc)
+            addMatcherTestResult(expected = true, englishTruePositive, textClassifier = tc)
         }
         for (context in englishContextWordsCase) {
             val englishTruePositive = "$englishFalsePositive $context"
-            addMatcherTestResult(true, englishTruePositive, textClassifier = tc)
+            addMatcherTestResult(expected = true, englishTruePositive, textClassifier = tc)
         }
         for (falseContext in englishContextSubstrings) {
             val anotherFalsePositive = "$englishFalsePositive $falseContext"
-            addMatcherTestResult(false, anotherFalsePositive, textClassifier = tc)
+            addMatcherTestResult(expected = false, anotherFalsePositive, textClassifier = tc)
         }
     }
 
@@ -442,10 +442,10 @@ class NotificationOtpDetectionHelperTest {
     fun testContainsOtpCode_usesTcForFalsePositivesIfNoLanguageSpecificRegex() {
         var tc = getTestTextClassifier(invalidLocale, listOf(TextClassifier.TYPE_ADDRESS))
         val address = "this text doesn't actually matter, but meet me at 6353 Juan Tabo, Apt. 6"
-        addMatcherTestResult(false, address, textClassifier = tc)
+        addMatcherTestResult(expected = false, address, textClassifier = tc)
         tc = getTestTextClassifier(invalidLocale, listOf(TextClassifier.TYPE_FLIGHT_NUMBER))
         val flight = "your flight number is UA1234"
-        addMatcherTestResult(false, flight, textClassifier = tc)
+        addMatcherTestResult(expected = false, flight, textClassifier = tc)
     }
 
     @Test
@@ -454,11 +454,11 @@ class NotificationOtpDetectionHelperTest {
         val tc = getTestTextClassifier(localeWithRegex, listOf(TextClassifier.TYPE_ADDRESS))
         val date = "1-1-01"
         // Dates should still be checked
-        addMatcherTestResult(false, date, textClassifier = tc)
+        addMatcherTestResult(expected = false, date, textClassifier = tc)
         // A string with a code with three lowercase letters, and an excluded year
         val withOtherFalsePositives = "your login code is abd3 1985"
         // Other false positive regular expressions should not be checked
-        addMatcherTestResult(true, withOtherFalsePositives, textClassifier = tc)
+        addMatcherTestResult(expected = true, withOtherFalsePositives, textClassifier = tc)
     }
 
     private fun createNotification(
@@ -506,7 +506,7 @@ class NotificationOtpDetectionHelperTest {
         } else {
             "$text should not match"
         }
-        addResult(expected, NotificationOtpDetectionHelper.containsOtp(
+        addResult(expected = expected, NotificationOtpDetectionHelper.containsOtp(
             createNotification(text), checkForFalsePositives, textClassifier), failureMessage)
     }
 
