@@ -87,24 +87,29 @@ public class NotificationOtpDetectionHelper {
     private static final String END = "(?=\\W|$|\\p{IsIdeographic})";
 
     // A regex matching four digit numerical codes
-    private static final String FOUR_DIGIT = "(\\d{4})";
+    private static final String FOUR_DIGITS = "(\\d{4})";
 
-    private static final String ALPHANUM_OTP = format("(%s%s)", FIND_DIGIT, OTP_CHARS);
+    private static final String FIVE_TO_EIGHT_ALPHANUM_AT_LEAST_ONE_NUM =
+            format("(%s%s)", FIND_DIGIT, OTP_CHARS);
 
     // A regex matching two pairs of 3 digits (ex "123 456")
-    private static final String SIX_DIGIT_WITH_SPACE = "(\\d{3}\\s\\d{3})";
+    private static final String SIX_DIGITS_WITH_SPACE = "(\\d{3}\\s\\d{3})";
 
     /**
      * Combining the regular expressions above, we get an OTP regex:
-     * 1. start with START, THEN
-     * 2. lookahead to find a digit mixed in with OTP_CHARs, then find 4-8 OTP_CHARs, OR
-     * 3. find 4 digits, OR
-     * 4. find 2 sets of 3 digits, separated by a space, THEN
-     * 5. finish with END
+     * 1. search for START, THEN
+     * 2. match ONE of
+     *   a. alphanumeric sequence, at least one number, length 5-8, with optional dashes
+     *   b. 4 numbers in a row
+     *   c. pair of 3 digit codes separated by a space
+     * THEN
+     * 3. search for END Ex:
+     * "6454", " 345 678.", "[YDT-456]"
      */
     private static final String ALL_OTP =
             format("%s(%s|%s|%s)%s",
-                    START, ALPHANUM_OTP, FOUR_DIGIT, SIX_DIGIT_WITH_SPACE, END);
+                    START, FIVE_TO_EIGHT_ALPHANUM_AT_LEAST_ONE_NUM, FOUR_DIGITS,
+                    SIX_DIGITS_WITH_SPACE, END);
 
 
 
@@ -168,18 +173,19 @@ public class NotificationOtpDetectionHelper {
     /**
      * Checks if the sensitive parts of a notification might contain an OTP, based on several
      * regular expressions, and potentially using a textClassifier to eliminate false positives
+     *
      * @param notification The notification whose content should be checked
      * @param checkForFalsePositives If true, will ensure the content does not match the date regex.
-     *                               It will then try to find a language specific regex. If it is
-     *                               successful, it will use that regex to check for false
-     *                               positives. If it is not, it will use the TextClassifier
-     *                               (if provided), plus the year and three lowercase regexes to
-     *                               remove possible false positives
+     *                               If a TextClassifier is provided, it will then try to find a
+     *                               language specific regex. If it is successful, it will use that
+     *                               regex to check for false positives. If it is not, it will use
+     *                               the TextClassifier (if provided), plus the year and three
+     *                               lowercase regexes to remove possible false positives.
      * @param tc If non null, the provided TextClassifier will be used to find the language of the
      *           text, and look for a language-specific regex for it. If checkForFalsePositives is
-     *           true will also use the classifier to find flight codes and addresses
+     *           true will also use the classifier to find flight codes and addresses.
      * @return True if the regex matches and ensureNotDate is false, or the date regex failed to
-     * match, false otherwise.
+     *     match, false otherwise.
      */
     public static boolean containsOtp(Notification notification,
             boolean checkForFalsePositives, TextClassifier tc) {
@@ -284,10 +290,9 @@ public class NotificationOtpDetectionHelper {
             return "";
         }
         Bundle extras = notification.extras;
-        CharSequence title = notification.extras.getCharSequence(EXTRA_TITLE);
-        CharSequence text = notification.extras.getCharSequence(EXTRA_TEXT);
-        CharSequence subText = notification.extras.getCharSequence(EXTRA_SUB_TEXT);
-        // TODO b/317408921: Validate that the ML model still works with this
+        CharSequence title = extras.getCharSequence(EXTRA_TITLE);
+        CharSequence text = extras.getCharSequence(EXTRA_TEXT);
+        CharSequence subText = extras.getCharSequence(EXTRA_SUB_TEXT);
         StringBuilder builder = new StringBuilder()
                 .append(title != null ? title : "").append(" ")
                 .append(text != null ? text : "").append(" ")
