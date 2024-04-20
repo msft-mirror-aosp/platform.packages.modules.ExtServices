@@ -28,6 +28,7 @@ import android.icu.util.ULocale
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.modules.utils.build.SdkLevel
 import android.platform.test.flag.junit.SetFlagsRule
+import android.service.notification.Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_BIG_TEXT_STYLE
 import android.service.notification.Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS
 import android.view.textclassifier.TextClassifier
 import android.view.textclassifier.TextLanguage
@@ -70,7 +71,8 @@ class NotificationOtpDetectionHelperTest {
     fun enableFlag() {
         assumeTrue(SdkLevel.isAtLeastV())
         (setFlagsRule as SetFlagsRule).enableFlags(
-            FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
+            FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS,
+            FLAG_REDACT_SENSITIVE_NOTIFICATIONS_BIG_TEXT_STYLE)
         results.clear()
     }
 
@@ -191,6 +193,30 @@ class NotificationOtpDetectionHelperTest {
         val sensitive = NotificationOtpDetectionHelper
                 .getTextForDetection(createNotification(style = style))
         addResult(expected = true, sensitive.contains(extraLine), "expected sensitive text to contain $extraLine")
+    }
+
+    @Test
+    fun testGetTextForDetection_bigTextStyleTextsIncluded() {
+        val style = Notification.BigTextStyle()
+        val bigText = "BIG TEXT"
+        val bigTitleText = "BIG TITLE TEXT"
+        val summaryText = "summary text"
+        style.bigText(bigText)
+        style.setBigContentTitle(bigTitleText)
+        style.setSummaryText(summaryText)
+        val sensitive = NotificationOtpDetectionHelper
+            .getTextForDetection(createNotification(style = style))
+        addResult(expected = true, sensitive.contains(bigText), "expected sensitive text to contain $bigText")
+        addResult(expected =
+            true,
+            sensitive.contains(bigTitleText),
+            "expected sensitive text to contain $bigTitleText"
+        )
+        addResult(expected =
+            true,
+            sensitive.contains(summaryText),
+            "expected sensitive text to contain $summaryText"
+        )
     }
 
     @Test
