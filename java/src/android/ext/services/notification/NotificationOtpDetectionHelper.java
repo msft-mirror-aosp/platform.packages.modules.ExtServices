@@ -19,11 +19,14 @@ package android.ext.services.notification;
 import static android.app.Notification.CATEGORY_EMAIL;
 import static android.app.Notification.CATEGORY_MESSAGE;
 import static android.app.Notification.CATEGORY_SOCIAL;
+import static android.app.Notification.EXTRA_BIG_TEXT;
 import static android.app.Notification.EXTRA_MESSAGES;
 import static android.app.Notification.EXTRA_SUB_TEXT;
+import static android.app.Notification.EXTRA_SUMMARY_TEXT;
 import static android.app.Notification.EXTRA_TEXT;
 import static android.app.Notification.EXTRA_TEXT_LINES;
 import static android.app.Notification.EXTRA_TITLE;
+import static android.app.Notification.EXTRA_TITLE_BIG;
 import static android.view.textclassifier.TextClassifier.TYPE_ADDRESS;
 import static android.view.textclassifier.TextClassifier.TYPE_FLIGHT_NUMBER;
 import static android.view.textclassifier.TextClassifier.TYPE_PHONE;
@@ -297,6 +300,14 @@ public class NotificationOtpDetectionHelper {
                 .append(title != null ? title : "").append(" ")
                 .append(text != null ? text : "").append(" ")
                 .append(subText != null ? subText : "").append(" ");
+        if (Flags.redactSensitiveNotificationsBigTextStyle()) {
+            CharSequence bigText = extras.getCharSequence(EXTRA_BIG_TEXT);
+            CharSequence bigTitleText = extras.getCharSequence(EXTRA_TITLE_BIG);
+            CharSequence summaryText = extras.getCharSequence(EXTRA_SUMMARY_TEXT);
+            builder.append(bigText != null ? bigText : "").append(" ")
+                    .append(bigTitleText != null ? bigTitleText : "").append(" ")
+                    .append(summaryText != null ? summaryText : "").append(" ");
+        }
         CharSequence[] textLines = extras.getCharSequenceArray(EXTRA_TEXT_LINES);
         if (textLines != null) {
             for (CharSequence line : textLines) {
