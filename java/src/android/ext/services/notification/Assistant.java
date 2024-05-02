@@ -24,6 +24,7 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Trace;
 import android.os.UserHandle;
 import android.service.notification.Adjustment;
 import android.service.notification.NotificationAssistantService;
@@ -45,6 +46,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Notification assistant that provides guidance on notification channel blocking
@@ -52,8 +54,7 @@ import java.util.concurrent.Future;
 @SuppressLint("OverrideAbstract")
 public class Assistant extends NotificationAssistantService {
     private static final String TAG = "ExtAssistant";
-    private static final float TC_THRESHOLD = 0.6f;
-    private static final ArrayList<String> OTP_SUPPORTED_LANGS = new ArrayList<>(List.of("en"));
+    private static final int MAX_QUEUED_ML_JOBS = 20;
     private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
 
     // SBN key : entry
@@ -69,7 +70,10 @@ public class Assistant extends NotificationAssistantService {
     protected ActivityManager mAm;
 
     protected final ExecutorService mSingleThreadExecutor = Executors.newSingleThreadExecutor();
-    private final ExecutorService mClassificationExecutor = Executors.newSingleThreadExecutor();
+    // Using newFixedThreadPool because that returns a ThreadPoolExecutor, allowing us to access
+    // the queue of jobs
+    private final ThreadPoolExecutor mMachineLearningExecutor =
+            (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
     @VisibleForTesting
     protected AssistantSettings.Factory mSettingsFactory = AssistantSettings.FACTORY;
     @VisibleForTesting
@@ -138,22 +142,40 @@ public class Assistant extends NotificationAssistantService {
             earlyOtpReturn = createNotificationAdjustment(sbn, null, null, true);
         }
 
+        if (mMachineLearningExecutor.getQueue().size() >= MAX_QUEUED_ML_JOBS) {
+            return earlyOtpReturn;
+        }
+
         // Ignoring the result of the future
-        Future<?> ignored = mClassificationExecutor.submit(() -> {
+        Future<?> ignored = mMachineLearningExecutor.submit(() -> {
             Boolean containsOtp = null;
             if (shouldCheckForOtp && mUseTextClassifier) {
                 // If we can use the text classifier, do a second pass, using the TC to detect
                 // languages, and potentially using the TC to remove false positives
-                containsOtp = NotificationOtpDetectionHelper.containsOtp(
-                        sbn.getNotification(), true, mTcm.getTextClassifier());
+                Trace.beginSection(TAG + "_RegexWithTc");
+                try {
+                    containsOtp = NotificationOtpDetectionHelper.containsOtp(
+                            sbn.getNotification(), true, mTcm.getTextClassifier());
+
+                } finally {
+                    Trace.endSection();
+                }
             }
 
             // If we found an otp (and didn't already send an adjustment), send an adjustment early
             if (Boolean.TRUE.equals(containsOtp) && !foundOtpWithRegex) {
-                adjustNotificationIfNotNull(createNotificationAdjustment(sbn, null, null, true));
+                adjustNotificationIfNotNull(
+                        createNotificationAdjustment(sbn, null, null, true));
             }
 
-            SmartSuggestions suggestions = mSmartSuggestionsHelper.onNotificationEnqueued(sbn);
+            SmartSuggestions suggestions;
+            Trace.beginSection(TAG + "_SmartSuggestions");
+            try {
+                suggestions = mSmartSuggestionsHelper.onNotificationEnqueued(sbn);
+            } finally {
+                Trace.endSection();
+            }
+
             if (DEBUG) {
                 Log.d(TAG, String.format(
                         "Creating Adjustment for %s, with %d actions, and %d replies.",
