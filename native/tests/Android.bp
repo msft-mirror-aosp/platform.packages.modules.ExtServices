@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_android_rubidium",
     // See: http://go/android-license-faq
     // A large-scale-change added 'default_applicable_licenses' to import
     // all of the 'license_kinds' from "packages_modules_ExtServices_license"
@@ -24,7 +25,46 @@ package {
 // Run this test using "atest libextservices_test -- --all-abi" or it will fail to run on 64 bit
 // devices.
 cc_test {
-    name: "libextservices_test",
+    name: "libextservices_test-tplus",
+    test_suites: [
+        "general-tests",
+        "mts-extservices",
+    ],
+
+    shared_libs: [
+        "libandroid",
+        "liblog",
+    ],
+    static_libs: [
+        "libbase",
+        "libextservices",
+        "libfft2d",
+        "libgmock_main",
+        "libgmock",
+        "libgtest",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Werror",
+    ],
+
+    srcs: [
+        "*.cpp",
+    ],
+
+    data: [
+        "test_data/*.raw",
+    ],
+    compile_multilib: "prefer32",
+    min_sdk_version: "33",
+    test_config: "AndroidTest-tplus.xml",
+}
+
+// Run this test using "atest libextservices_test -- --all-abi" or it will fail to run on 64 bit
+// devices.
+cc_test {
+    name: "libextservices_test-sminus",
     test_suites: [
         "general-tests",
         "mts-extservices",
@@ -57,4 +97,5 @@ cc_test {
     ],
     compile_multilib: "prefer32",
     min_sdk_version: "30",
+    test_config: "AndroidTest-sminus.xml",
 }
