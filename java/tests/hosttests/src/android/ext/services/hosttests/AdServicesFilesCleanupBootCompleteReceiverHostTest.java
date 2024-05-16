@@ -28,6 +28,7 @@ import com.android.adservices.common.AdServicesHostSideFlagsSetterRule;
 import com.android.adservices.common.AdServicesHostSideTestCase;
 import com.android.adservices.shared.testing.BackgroundLogReceiver;
 import com.android.adservices.shared.testing.HostSideSdkLevelSupportRule;
+import com.android.adservices.shared.testing.Logger.LogLevel;
 import com.android.adservices.shared.testing.annotations.RequiresSdkLevelAtLeastT;
 import com.android.adservices.shared.testing.annotations.RequiresSdkRange;
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -72,7 +73,7 @@ public final class AdServicesFilesCleanupBootCompleteReceiverHostTest
     @Rule
     public final AdServicesHostSideFlagsSetterRule flags =
             AdServicesHostSideFlagsSetterRule.forGlobalKillSwitchDisabledTests()
-                    .setLogcatTag("extservices", "VERBOSE");
+                    .setLogcatTag("extservices", LogLevel.VERBOSE);
 
     @Before
     public void setUp() throws Exception {
@@ -223,7 +224,7 @@ public final class AdServicesFilesCleanupBootCompleteReceiverHostTest
         device.reboot();
         device.waitForDeviceAvailable();
 
-        flags.setLogcatTag("extservices", "VERBOSE");
+        flags.setLogcatTag("extservices", LogLevel.VERBOSE);
 
         // Start log collection
         BackgroundLogReceiver logcatReceiver =
