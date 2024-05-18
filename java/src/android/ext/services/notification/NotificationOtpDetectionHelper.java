@@ -64,7 +64,8 @@ public class NotificationOtpDetectionHelper {
 
     private static final float TC_THRESHOLD = 0.6f;
 
-    private static final ArrayMap<String, Matcher> EXTRA_LANG_OTP_REGEX = new ArrayMap<>();
+    private static final ArrayMap<String, ThreadLocal<Matcher>> EXTRA_LANG_OTP_REGEX =
+            new ArrayMap<>();
 
     private static final int MAX_SENSITIVE_TEXT_LEN = 600;
 
@@ -116,8 +117,8 @@ public class NotificationOtpDetectionHelper {
 
 
 
-    private static final Matcher OTP_REGEX =
-            Pattern.compile(ALL_OTP).matcher("");
+    private static final ThreadLocal<Matcher> OTP_REGEX = ThreadLocal.withInitial(() ->
+            Pattern.compile(ALL_OTP).matcher(""));
     /**
      * A Date regular expression. Looks for dates with the month, day, and year separated by dashes.
      * Handles one and two digit months and days, and four or two-digit years. It makes the
@@ -127,9 +128,9 @@ public class NotificationOtpDetectionHelper {
      * This regex is used to eliminate the most common false positive of the OTP regex, and is run
      * on all messages, even before looking at language-specific regexs.
      */
-    private static final Matcher DATE_WITH_DASHES_REGEX =
+    private static final ThreadLocal<Matcher> DATE_WITH_DASHES_REGEX = ThreadLocal.withInitial(() ->
             Pattern.compile(format("%s([0-3]?\\d-[0-3]?\\d-([12]\\d)?\\d\\d)%s", START, END))
-                    .matcher("");
+                    .matcher(""));
 
     // A regex matching the common years of 19xx and 20xx. Used for false positive reduction
     private static final String COMMON_YEARS = format("%s((19|20)\\d\\d)%s", START, END);
@@ -140,8 +141,8 @@ public class NotificationOtpDetectionHelper {
 
     // A combination of common false positives. Run in cases where we don't have a language specific
     // regular expression.
-    private static final Matcher FALSE_POSITIVE_REGEX =
-            Pattern.compile(format("%s|%s", COMMON_YEARS, THREE_LOWERCASE)).matcher("");
+    private static final ThreadLocal<Matcher> FALSE_POSITIVE_REGEX = ThreadLocal.withInitial(() ->
+            Pattern.compile(format("%s|%s", COMMON_YEARS, THREE_LOWERCASE)).matcher(""));
 
     /**
      * A list of regular expressions representing words found in an OTP context (non case sensitive)
@@ -169,8 +170,8 @@ public class NotificationOtpDetectionHelper {
     }
 
     static {
-        EXTRA_LANG_OTP_REGEX.put(ULocale.ENGLISH.toLanguageTag(),
-                createDictionaryRegex(ENGLISH_CONTEXT_WORDS));
+        EXTRA_LANG_OTP_REGEX.put(ULocale.ENGLISH.toLanguageTag(), ThreadLocal.withInitial(() ->
+                createDictionaryRegex(ENGLISH_CONTEXT_WORDS)));
     }
 
     /**
@@ -197,13 +198,14 @@ public class NotificationOtpDetectionHelper {
         }
 
         String sensitiveText = getTextForDetection(notification);
-        OTP_REGEX.reset(sensitiveText);
-        boolean otpMatch = OTP_REGEX.find();
+        Matcher otpMatcher = OTP_REGEX.get();
+        otpMatcher.reset(sensitiveText);
+        boolean otpMatch = otpMatcher.find();
         if (!checkForFalsePositives || !otpMatch) {
             return otpMatch;
         }
 
-        if (allOtpMatchesAreFalsePositives(sensitiveText, DATE_WITH_DASHES_REGEX)) {
+        if (allOtpMatchesAreFalsePositives(sensitiveText, DATE_WITH_DASHES_REGEX.get())) {
             return false;
         }
 
@@ -220,7 +222,7 @@ public class NotificationOtpDetectionHelper {
             }
         }
 
-        return !allOtpMatchesAreFalsePositives(sensitiveText, FALSE_POSITIVE_REGEX);
+        return !allOtpMatchesAreFalsePositives(sensitiveText, FALSE_POSITIVE_REGEX.get());
     }
 
     /**
@@ -236,9 +238,10 @@ public class NotificationOtpDetectionHelper {
         if (!falsePositiveRegex.find()) {
             return false;
         }
-        OTP_REGEX.reset(text);
-        while (OTP_REGEX.find()) {
-            falsePositiveRegex.reset(OTP_REGEX.group());
+        Matcher otpMatcher = OTP_REGEX.get();
+        otpMatcher.reset(text);
+        while (otpMatcher.find()) {
+            falsePositiveRegex.reset(otpMatcher.group());
             if (!falsePositiveRegex.find()) {
                 // A possible otp was not matched by the false positive regex
                 return false;
@@ -255,7 +258,7 @@ public class NotificationOtpDetectionHelper {
             ULocale locale = lang.getLocale(i);
             if (lang.getConfidenceScore(locale) >= TC_THRESHOLD
                     && EXTRA_LANG_OTP_REGEX.containsKey(locale.toLanguageTag())) {
-                return EXTRA_LANG_OTP_REGEX.get(locale.toLanguageTag());
+                return EXTRA_LANG_OTP_REGEX.get(locale.toLanguageTag()).get();
             }
         }
         return null;
