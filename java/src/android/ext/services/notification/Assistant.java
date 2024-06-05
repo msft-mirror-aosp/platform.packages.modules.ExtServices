@@ -16,14 +16,15 @@
 
 package android.ext.services.notification;
 
-import static android.app.NotificationManager.IMPORTANCE_LOW;
-import static android.service.notification.Adjustment.KEY_IMPORTANCE;
+import static android.content.pm.PackageManager.FEATURE_WATCH;
 
 import android.annotation.SuppressLint;
+import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Trace;
 import android.os.UserHandle;
 import android.service.notification.Adjustment;
 import android.service.notification.NotificationAssistantService;
@@ -31,6 +32,7 @@ import android.service.notification.NotificationStats;
 import android.service.notification.StatusBarNotification;
 import android.util.ArrayMap;
 import android.util.Log;
+import android.view.textclassifier.TextClassificationManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -43,6 +45,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Notification assistant that provides guidance on notification channel blocking
@@ -50,20 +54,36 @@ import java.util.concurrent.Executors;
 @SuppressLint("OverrideAbstract")
 public class Assistant extends NotificationAssistantService {
     private static final String TAG = "ExtAssistant";
+    private static final int MAX_QUEUED_ML_JOBS = 20;
     private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
 
     // SBN key : entry
     protected ArrayMap<String, NotificationEntry> mLiveNotifications = new ArrayMap<>();
 
-    private PackageManager mPackageManager;
+    @VisibleForTesting
+    protected boolean mUseTextClassifier = true;
 
-    private final ExecutorService mSingleThreadExecutor = Executors.newSingleThreadExecutor();
+    @VisibleForTesting
+    protected PackageManager mPm;
+
+    @VisibleForTesting
+    protected ActivityManager mAm;
+
+    protected final ExecutorService mSingleThreadExecutor = Executors.newSingleThreadExecutor();
+    // Using newFixedThreadPool because that returns a ThreadPoolExecutor, allowing us to access
+    // the queue of jobs
+    private final ThreadPoolExecutor mMachineLearningExecutor =
+            (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
     @VisibleForTesting
     protected AssistantSettings.Factory mSettingsFactory = AssistantSettings.FACTORY;
     @VisibleForTesting
     protected AssistantSettings mSettings;
     private SmsHelper mSmsHelper;
-    private SmartSuggestionsHelper mSmartSuggestionsHelper;
+    @VisibleForTesting
+    protected SmartSuggestionsHelper mSmartSuggestionsHelper;
+
+    @VisibleForTesting
+    protected TextClassificationManager mTcm;
 
     public Assistant() {
     }
@@ -73,11 +93,19 @@ public class Assistant extends NotificationAssistantService {
         super.onCreate();
         // Contexts are correctly hooked up by the creation step, which is required for the observer
         // to be hooked up/initialized.
-        mPackageManager = getPackageManager();
+        mPm = getPackageManager();
+        mAm = getSystemService(ActivityManager.class);
+        mTcm = getSystemService(TextClassificationManager.class);
         mSettings = mSettingsFactory.createAndRegister();
         mSmartSuggestionsHelper = new SmartSuggestionsHelper(this, mSettings);
         mSmsHelper = new SmsHelper(this);
         mSmsHelper.initialize();
+        setUseTextClassifier();
+    }
+
+    @VisibleForTesting
+    protected void setUseTextClassifier() {
+        mUseTextClassifier = !(mAm.isLowRamDevice() || mPm.hasSystemFeature(FEATURE_WATCH));
     }
 
     @Override
@@ -91,22 +119,63 @@ public class Assistant extends NotificationAssistantService {
     }
 
     @Override
-    public Adjustment onNotificationEnqueued(StatusBarNotification sbn) {
+    public Adjustment onNotificationEnqueued(@NonNull StatusBarNotification sbn) {
         // we use the version with channel, so this is never called.
         return null;
     }
 
     @Override
-    public Adjustment onNotificationEnqueued(StatusBarNotification sbn,
-            NotificationChannel channel) {
+    public Adjustment onNotificationEnqueued(@NonNull StatusBarNotification sbn,
+            @NonNull NotificationChannel channel) {
         if (DEBUG) Log.i(TAG, "ENQUEUED " + sbn.getKey() + " on " + channel.getId());
         if (!isForCurrentUser(sbn)) {
             return null;
         }
-        mSingleThreadExecutor.submit(() -> {
-            NotificationEntry entry =
-                    new NotificationEntry(this, mPackageManager, sbn, channel, mSmsHelper);
-            SmartSuggestions suggestions = mSmartSuggestionsHelper.onNotificationEnqueued(sbn);
+
+        final boolean shouldCheckForOtp =
+                NotificationOtpDetectionHelper.shouldCheckForOtp(sbn.getNotification());
+        boolean foundOtpWithRegex = shouldCheckForOtp
+                && NotificationOtpDetectionHelper
+                .containsOtp(sbn.getNotification(), true, null);
+        Adjustment earlyOtpReturn = null;
+        if (foundOtpWithRegex) {
+            earlyOtpReturn = createNotificationAdjustment(sbn, null, null, true);
+        }
+
+        if (mMachineLearningExecutor.getQueue().size() >= MAX_QUEUED_ML_JOBS) {
+            return earlyOtpReturn;
+        }
+
+        // Ignoring the result of the future
+        Future<?> ignored = mMachineLearningExecutor.submit(() -> {
+            Boolean containsOtp = null;
+            if (shouldCheckForOtp && mUseTextClassifier) {
+                // If we can use the text classifier, do a second pass, using the TC to detect
+                // languages, and potentially using the TC to remove false positives
+                Trace.beginSection(TAG + "_RegexWithTc");
+                try {
+                    containsOtp = NotificationOtpDetectionHelper.containsOtp(
+                            sbn.getNotification(), true, mTcm.getTextClassifier());
+
+                } finally {
+                    Trace.endSection();
+                }
+            }
+
+            // If we found an otp (and didn't already send an adjustment), send an adjustment early
+            if (Boolean.TRUE.equals(containsOtp) && !foundOtpWithRegex) {
+                adjustNotificationIfNotNull(
+                        createNotificationAdjustment(sbn, null, null, true));
+            }
+
+            SmartSuggestions suggestions;
+            Trace.beginSection(TAG + "_SmartSuggestions");
+            try {
+                suggestions = mSmartSuggestionsHelper.onNotificationEnqueued(sbn);
+            } finally {
+                Trace.endSection();
+            }
+
             if (DEBUG) {
                 Log.d(TAG, String.format(
                         "Creating Adjustment for %s, with %d actions, and %d replies.",
@@ -114,37 +183,52 @@ public class Assistant extends NotificationAssistantService {
                         suggestions.getActions().size(),
                         suggestions.getReplies().size()));
             }
-            Adjustment adjustment = createEnqueuedNotificationAdjustment(
-                    entry,
-                    new ArrayList<Notification.Action>(suggestions.getActions()),
-                    new ArrayList<>(suggestions.getReplies()));
-            adjustNotification(adjustment);
+
+            adjustNotificationIfNotNull(createNotificationAdjustment(
+                    sbn,
+                    new ArrayList<>(suggestions.getActions()),
+                    new ArrayList<>(suggestions.getReplies()),
+                    containsOtp));
         });
-        return null;
+
+        return earlyOtpReturn;
+    }
+
+    // Due to Mockito setup, some methods marked @NonNull can sometimes be called with a
+    // null parameter. This method accounts for that.
+    private void adjustNotificationIfNotNull(@Nullable Adjustment adjustment) {
+        if (adjustment != null) {
+            adjustNotification(adjustment);
+        }
     }
 
     /** A convenience helper for creating an adjustment for an SBN. */
     @VisibleForTesting
-    @Nullable
-    Adjustment createEnqueuedNotificationAdjustment(
-            @NonNull NotificationEntry entry,
-            @NonNull ArrayList<Notification.Action> smartActions,
-            @NonNull ArrayList<CharSequence> smartReplies) {
+    protected Adjustment createNotificationAdjustment(
+            StatusBarNotification sbn,
+            ArrayList<Notification.Action> smartActions,
+            ArrayList<CharSequence> smartReplies,
+            Boolean hasSensitiveContent) {
+        if (sbn == null) {
+            // Only happens during mocking tests, when setting up `verify` calls
+            return null;
+        }
+
         Bundle signals = new Bundle();
 
-        if (!smartActions.isEmpty()) {
+        if (smartActions != null && !smartActions.isEmpty()) {
             signals.putParcelableArrayList(Adjustment.KEY_CONTEXTUAL_ACTIONS, smartActions);
         }
-        if (!smartReplies.isEmpty()) {
+        if (smartReplies != null && !smartReplies.isEmpty()) {
             signals.putCharSequenceArrayList(Adjustment.KEY_TEXT_REPLIES, smartReplies);
         }
 
-        return new Adjustment(
-                entry.getSbn().getPackageName(),
-                entry.getSbn().getKey(),
-                signals,
-                "",
-                entry.getSbn().getUserId());
+        if (hasSensitiveContent != null) {
+            signals.putBoolean(Adjustment.KEY_SENSITIVE_CONTENT, hasSensitiveContent);
+        }
+
+        return new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
+                sbn.getUser().getIdentifier());
     }
 
     @Override
@@ -155,9 +239,9 @@ public class Assistant extends NotificationAssistantService {
                 return;
             }
             Ranking ranking = new Ranking();
-            rankingMap.getRanking(sbn.getKey(), ranking);
-            if (ranking != null && ranking.getChannel() != null) {
-                NotificationEntry entry = new NotificationEntry(this, mPackageManager,
+            boolean found = rankingMap.getRanking(sbn.getKey(), ranking);
+            if (found && ranking.getChannel() != null) {
+                NotificationEntry entry = new NotificationEntry(this, mPm,
                         sbn, ranking.getChannel(), mSmsHelper);
                 mLiveNotifications.put(sbn.getKey(), entry);
             }
@@ -182,12 +266,12 @@ public class Assistant extends NotificationAssistantService {
     }
 
     @Override
-    public void onNotificationSnoozedUntilContext(StatusBarNotification sbn,
-            String snoozeCriterionId) {
+    public void onNotificationSnoozedUntilContext(@NonNull StatusBarNotification sbn,
+            @NonNull String snoozeCriterionId) {
     }
 
     @Override
-    public void onNotificationsSeen(List<String> keys) {
+    public void onNotificationsSeen(@NonNull List<String> keys) {
     }
 
     @Override
@@ -210,7 +294,8 @@ public class Assistant extends NotificationAssistantService {
     @Override
     public void onNotificationDirectReplied(@NonNull String key) {
         if (DEBUG) Log.i(TAG, "onNotificationDirectReplied " + key);
-        mSingleThreadExecutor.submit(() -> mSmartSuggestionsHelper.onNotificationDirectReplied(key));
+        mSingleThreadExecutor.submit(
+                () -> mSmartSuggestionsHelper.onNotificationDirectReplied(key));
     }
 
     @Override

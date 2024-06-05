@@ -1,4 +1,5 @@
 package {
+    default_team: "trendy_team_android_rubidium",
     // See: http://go/android-license-faq
     // A large-scale-change added 'default_applicable_licenses' to import
     // all of the 'license_kinds' from "packages_modules_ExtServices_license"
@@ -10,8 +11,11 @@ package {
 android_test {
     name: "ExtServicesUnitTests-tplus",
 
-    // Include all test java files.
-    srcs: ["src/**/*.java"],
+    // Include all test java and kotlinfiles.
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
 
     libs: [
         "android.test.runner",
@@ -24,7 +28,7 @@ android_test {
         "compatibility-device-util-axt",
         "mockito-target-extended-minus-junit4",
         "androidx.test.espresso.core",
-        "truth-prebuilt",
+        "truth",
         "testables",
         "testng",
     ],
@@ -62,7 +66,7 @@ android_test {
         "compatibility-device-util-axt",
         "mockito-target-extended-minus-junit4",
         "androidx.test.espresso.core",
-        "truth-prebuilt",
+        "truth",
         "testables",
         "testng",
     ],

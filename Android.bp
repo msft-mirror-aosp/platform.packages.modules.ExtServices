@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_android_rubidium",
     default_applicable_licenses: ["packages_modules_ExtServices_license"],
 }
 
@@ -52,16 +53,22 @@ android_library {
         "modules-utils-build",
         "androidx.appsearch_appsearch",
         "androidx.appsearch_appsearch-platform-storage",
+        "android.service.notification.flags-aconfig-export-java",
     ],
 
-    libs : [
+    libs: [
         "framework-configinfrastructure",
         "framework-connectivity",
     ],
 
     lint: {
         strict_updatability_linting: true,
+        error_checks: ["Recycle"],
     },
+    apex_available: [
+        "//apex_available:platform",
+        "com.android.extservices",
+    ],
 }
 
 android_app {
@@ -81,7 +88,10 @@ android_app {
         "ExtServices-core",
     ],
     jarjar_rules: "jarjar-rules.txt",
-    jni_libs: ["libtextclassifier", "libextservices_jni", "libhpke_jni"],
+    jni_libs: [
+        "libtextclassifier",
+        "libextservices_jni",
+    ],
     use_embedded_native_libs: true,
     apex_available: [
         "//apex_available:platform",
@@ -108,7 +118,11 @@ android_app {
         "AdServices-core",
     ],
     jarjar_rules: "jarjar-rules.txt",
-    jni_libs: ["libtextclassifier", "libextservices_jni", "libhpke_jni"],
+    jni_libs: [
+        "libtextclassifier",
+        "libextservices_jni",
+        "libhpke_jni",
+    ],
     libs: ["android.ext.adservices"],
     optional_uses_libs: ["android.ext.adservices"],
     use_embedded_native_libs: true,
