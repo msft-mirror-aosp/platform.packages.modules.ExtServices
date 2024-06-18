@@ -16,6 +16,10 @@
 
 package android.ext.services.hosttests;
 
+import static com.android.adservices.common.AndroidSdk.PRE_T;
+import static com.android.adservices.common.TestDeviceHelper.ACTION_BOOT_COMPLETED;
+import static com.android.adservices.common.TestDeviceHelper.enableComponent;
+import static com.android.adservices.common.TestDeviceHelper.isActiveReceiver;
 import static com.android.adservices.common.TestDeviceHelper.runShellCommand;
 
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -25,8 +29,7 @@ import com.android.adservices.common.AdServicesHostSideTestCase;
 import com.android.adservices.common.BackgroundLogReceiver;
 import com.android.adservices.common.HostSideSdkLevelSupportRule;
 import com.android.adservices.common.RequiresSdkLevelAtLeastT;
-import com.android.adservices.common.RequiresSdkLevelLessThanT;
-import com.android.adservices.common.TestDeviceHelper;
+import com.android.adservices.common.RequiresSdkRange;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.device.PackageInfo;
@@ -46,7 +49,8 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
-public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServicesHostSideTestCase {
+public final class AdServicesFilesCleanupBootCompleteReceiverHostTest
+        extends AdServicesHostSideTestCase {
     private static final String EXTSERVICES_PACKAGE_SUFFIX = "android.ext.services";
     private static final String CLEANUP_RECEIVER_CLASS_NAME =
             "android.ext.services.common.AdServicesFilesCleanupBootCompleteReceiver";
@@ -108,7 +112,7 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServic
     }
 
     @Test
-    @RequiresSdkLevelLessThanT(reason = "Testing functionality that only runs on S-")
+    @RequiresSdkRange(atMost = PRE_T, reason = "Testing functionality that only runs on S-")
     public void testReceiver_doesNotExecuteOnSMinus() throws Exception {
         ITestDevice device = getDevice();
 
@@ -133,7 +137,7 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServic
         ITestDevice device = getDevice();
 
         // Re-enable the cleanup receiver in case it's been disabled due to a prior run
-        enableReceiver();
+        enableReceiver(device);
 
         // Enable the flag that the receiver checks. By default, the flag is enabled in the binary,
         // so it's enough to just delete the flag override, if any.
@@ -164,7 +168,7 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServic
         ITestDevice device = getDevice();
 
         // Re-enable the cleanup receiver in case it's been disabled due to a prior run
-        enableReceiver();
+        enableReceiver(device);
 
         // Disable the flag that the receiver checks
         device.executeShellCommand(
@@ -189,8 +193,13 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServic
         BackgroundLogReceiver logcatReceiver =
                 rebootDeviceAndCollectLogs(device, RECEIVER_DISABLED_LOG_TEXT);
         Pattern errorPattern = Pattern.compile(makePattern(RECEIVER_DISABLED_LOG_TEXT));
-        assertWithMessage("Presence of log indicating receiver disabled itself")
-                .that(logcatReceiver.patternMatches(errorPattern))
+
+        // Verify the receiver is no longer enabled
+        assertWithMessage("Proof that receiver disabled itself")
+                .that(logcatReceiver.patternMatches(errorPattern)
+                        || !isActiveReceiver(
+                        ACTION_BOOT_COMPLETED, mExtServicesPackageName,
+                        CLEANUP_RECEIVER_CLASS_NAME))
                 .isTrue();
     }
 
@@ -238,16 +247,20 @@ public class AdServicesFilesCleanupBootCompleteReceiverHostTest extends AdServic
         return ".*" + text + ".*";
     }
 
-    private void enableReceiver() {
-        TestDeviceHelper.enableComponent(mExtServicesPackageName, CLEANUP_RECEIVER_CLASS_NAME);
+    private void enableReceiver(ITestDevice device) throws DeviceNotAvailableException {
+        String status = enableComponent(mExtServicesPackageName, CLEANUP_RECEIVER_CLASS_NAME,
+                device.getCurrentUser());
+        assertWithMessage("Receiver was successfully enabled")
+                .that(status)
+                .contains("new state: enabled");
     }
 
     private void logDeviceMetadata() {
-        String apexVersion = TestDeviceHelper.runShellCommand(
+        String apexVersion = runShellCommand(
                 "pm list packages --apex-only --show-versioncode extservices").trim();
-        String apkVersion = TestDeviceHelper.runShellCommand(
+        String apkVersion = runShellCommand(
                 "pm list packages --show-versioncode ext.services").trim();
-        String privAppName = TestDeviceHelper.runShellCommand(
+        String privAppName = runShellCommand(
                 "ls /apex/com.android.extservices/priv-app").trim();
         CLog.d("ExtServices apex version = <%s>, apk version = <%s>, priv-app = <%s>", apexVersion,
                 apkVersion, privAppName);
