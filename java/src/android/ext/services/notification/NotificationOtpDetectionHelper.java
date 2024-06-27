@@ -78,27 +78,32 @@ public class NotificationOtpDetectionHelper {
 
 
     /**
-     * One single OTP char. A number or alphabetical char (that isn't also ideographic), followed by
-     * an optional dash
+     * One single OTP char. A number or alphabetical char (that isn't also ideographic)
      */
-    private static final String OTP_CHAR = "([0-9\\p{IsAlphabetic}&&[^\\p{IsIdeographic}]]-?)";
+    private static final String OTP_CHAR = "([0-9\\p{IsAlphabetic}&&[^\\p{IsIdeographic}]])";
+
+    /**
+     * One OTP char, followed by an optional dash
+     */
+    private static final String OTP_CHAR_WITH_DASH = format("(%s-?)", OTP_CHAR);
 
     /**
      * Performs a lookahead to find a digit after 0 to 7 OTP_CHARs. This ensures that our potential
      * OTP code contains at least one number
      */
-    private static final String FIND_DIGIT = format("(?=%s{0,7}\\d)", OTP_CHAR);
+    private static final String FIND_DIGIT = format("(?=%s{0,7}\\d)", OTP_CHAR_WITH_DASH);
 
     /**
-     * Matches between 5 and 8 OTP_CHARs. Here, we are assuming an OTP code is 5-8 characters long
+     * Matches between 5 and 8 otp chars, with dashes in between. Here, we are assuming an OTP code
+     * is 5-8 characters long. The last char must not be followed by a dash
      */
-    private static final String OTP_CHARS = format("(%s{5,8})", OTP_CHAR);
+    private static final String OTP_CHARS = format("(%s{4,7}%s)", OTP_CHAR_WITH_DASH, OTP_CHAR);
 
     /**
-     * A regex matching a line end, non-word char (except dash or underscore), or ideographic char.
-     * It will not consume the end char
+     * A regex matching a line end, non-alphanumeric char (except dash or underscore), or an
+     * ideographic char. It will not consume the end char
      */
-    private static final String END = "(?=\\W|$|\\p{IsIdeographic})";
+    private static final String END = "(?=[^-_\\w]|$|\\p{IsIdeographic})";
 
     /**
      * A regex matching four digit numerical codes
