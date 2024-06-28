@@ -69,34 +69,53 @@ public class NotificationOtpDetectionHelper {
 
     private static final int MAX_SENSITIVE_TEXT_LEN = 600;
 
-    // A regex matching a line start, space, open paren, arrow, colon (not proceeded by a digit),
-    // open square bracket, equals sign, double or single quote, or ideographic char. It will
-    // not consume the start char (meaning START won't be included in the matched string)
+    /**
+     * A regex matching a line start, space, open paren, arrow, colon (not proceeded by a digit),
+     * open square bracket, equals sign, double or single quote, or ideographic char. It will
+     * not consume the start char (meaning START won't be included in the matched string)
+     */
     private static final String START = "(^|(?<=[>\\s(\"'=\\[\\p{IsIdeographic}]|[^0-9]:))";
 
 
-    // One single OTP char. A number or alphabetical char (that isn't also ideographic), followed by
-    // an optional dash
-    private static final String OTP_CHAR = "([0-9\\p{IsAlphabetic}&&[^\\p{IsIdeographic}]]-?)";
+    /**
+     * One single OTP char. A number or alphabetical char (that isn't also ideographic)
+     */
+    private static final String OTP_CHAR = "([0-9\\p{IsAlphabetic}&&[^\\p{IsIdeographic}]])";
 
-    // Performs a lookahead to find a digit after 0 to 7 OTP_CHARs. This ensures that our potential
-    // OTP code contains at least one number
-    private static final String FIND_DIGIT = format("(?=%s{0,7}\\d)", OTP_CHAR);
+    /**
+     * One OTP char, followed by an optional dash
+     */
+    private static final String OTP_CHAR_WITH_DASH = format("(%s-?)", OTP_CHAR);
 
-    // Matches between 5 and 8 OTP_CHARs. Here, we are assuming an OTP code is 5-8 characters long
-    private static final String OTP_CHARS = format("(%s{5,8})", OTP_CHAR);
+    /**
+     * Performs a lookahead to find a digit after 0 to 7 OTP_CHARs. This ensures that our potential
+     * OTP code contains at least one number
+     */
+    private static final String FIND_DIGIT = format("(?=%s{0,7}\\d)", OTP_CHAR_WITH_DASH);
 
-    // A regex matching a line end, non-word char (except dash or underscore), or ideographic char.
-    // It will not consume the end char
-    private static final String END = "(?=\\W|$|\\p{IsIdeographic})";
+    /**
+     * Matches between 5 and 8 otp chars, with dashes in between. Here, we are assuming an OTP code
+     * is 5-8 characters long. The last char must not be followed by a dash
+     */
+    private static final String OTP_CHARS = format("(%s{4,7}%s)", OTP_CHAR_WITH_DASH, OTP_CHAR);
 
-    // A regex matching four digit numerical codes
+    /**
+     * A regex matching a line end, non-alphanumeric char (except dash or underscore), or an
+     * ideographic char. It will not consume the end char
+     */
+    private static final String END = "(?=[^-_\\w]|$|\\p{IsIdeographic})";
+
+    /**
+     * A regex matching four digit numerical codes
+     */
     private static final String FOUR_DIGITS = "(\\d{4})";
 
     private static final String FIVE_TO_EIGHT_ALPHANUM_AT_LEAST_ONE_NUM =
             format("(%s%s)", FIND_DIGIT, OTP_CHARS);
 
-    // A regex matching two pairs of 3 digits (ex "123 456")
+    /**
+     * A regex matching two pairs of 3 digits (ex "123 456")
+     */
     private static final String SIX_DIGITS_WITH_SPACE = "(\\d{3}\\s\\d{3})";
 
     /**
@@ -125,24 +144,47 @@ public class NotificationOtpDetectionHelper {
      * following assumptions:
      * Dates and months will never be higher than 39
      * If a four digit year is used, the leading digit will be 1 or 2
-     * This regex is used to eliminate the most common false positive of the OTP regex, and is run
-     * on all messages, even before looking at language-specific regexs.
      */
-    private static final ThreadLocal<Matcher> DATE_WITH_DASHES_REGEX = ThreadLocal.withInitial(() ->
-            Pattern.compile(format("%s([0-3]?\\d-[0-3]?\\d-([12]\\d)?\\d\\d)%s", START, END))
+    private static final String DATE_WITH_DASHES = "([0-3]?\\d-[0-3]?\\d-([12]\\d)?\\d\\d)";
+
+    /**
+     * matches a ten digit phone number, when the area code is separated by a space or dash.
+     * Supports optional parentheses around the area code, and an optional dash or space in between
+     * the rest of the numbers.
+     * This format registers as an otp match due to the space between the area code and the rest,
+     * but shouldn't.
+     */
+    private static final String PHONE_WITH_SPACE = "(\\(?\\d{3}\\)?(-|\\s)?\\d{3}(-|\\s)?\\d{4})";
+
+    /**
+     * A combination of common false positives. These matches are expected to be longer than (or
+     * equal in length to) otp matches, and are always run, even if we have a language specific
+     * regex
+     */
+    private static final ThreadLocal<Matcher> FALSE_POSITIVE_LONGER_REGEX =
+            ThreadLocal.withInitial(() -> Pattern.compile(
+                    format("%s(%s|%s)%s", START, DATE_WITH_DASHES, PHONE_WITH_SPACE, END))
                     .matcher(""));
 
-    // A regex matching the common years of 19xx and 20xx. Used for false positive reduction
-    private static final String COMMON_YEARS = format("%s((19|20)\\d\\d)%s", START, END);
+    /**
+     * A regex matching the common years of 19xx and 20xx. Used for false positive reduction
+     */
+    private static final String COMMON_YEARS = "((19|20)\\d\\d)";
 
-    // A regex matching three lower case letters. Used for false positive reduction, as no known
-    // OTPs have 3 lowercase letters in sequence.
+    /**
+     * A regex matching three lower case letters. Used for false positive reduction, as no known
+     *  OTPs have 3 lowercase letters in sequence.
+     */
     private static final String THREE_LOWERCASE = "(\\p{Ll}{3})";
 
-    // A combination of common false positives. Run in cases where we don't have a language specific
-    // regular expression.
-    private static final ThreadLocal<Matcher> FALSE_POSITIVE_REGEX = ThreadLocal.withInitial(() ->
-            Pattern.compile(format("%s|%s", COMMON_YEARS, THREE_LOWERCASE)).matcher(""));
+    /**
+     * A combination of common false positives. Run in cases where we don't have a language specific
+     * regular expression. These matches are expect to be shorter than (or equal in length to) otp
+     * matches
+     */
+    private static final ThreadLocal<Matcher> FALSE_POSITIVE_SHORTER_REGEX =
+            ThreadLocal.withInitial(() -> Pattern.compile(
+                    format("%s|%s", COMMON_YEARS, THREE_LOWERCASE)).matcher(""));
 
     /**
      * A list of regular expressions representing words found in an OTP context (non case sensitive)
@@ -151,7 +193,7 @@ public class NotificationOtpDetectionHelper {
     private static final String[] ENGLISH_CONTEXT_WORDS = new String[] {
             "pin", "pass[-\\s]?(code|word)", "TAN", "otp", "2fa", "(two|2)[-\\s]?factor",
             "log[-\\s]?in", "auth(enticat(e|ion))?", "code", "secret", "verif(y|ication)",
-            "confirm(ation)?"
+            "confirm(ation)?", "one(\\s|-)?time"
     };
 
     /**
@@ -205,7 +247,8 @@ public class NotificationOtpDetectionHelper {
             return otpMatch;
         }
 
-        if (allOtpMatchesAreFalsePositives(sensitiveText, DATE_WITH_DASHES_REGEX.get())) {
+        if (allOtpMatchesAreFalsePositives(
+                sensitiveText, FALSE_POSITIVE_LONGER_REGEX.get(), true)) {
             return false;
         }
 
@@ -222,33 +265,60 @@ public class NotificationOtpDetectionHelper {
             }
         }
 
-        return !allOtpMatchesAreFalsePositives(sensitiveText, FALSE_POSITIVE_REGEX.get());
+        return !allOtpMatchesAreFalsePositives(sensitiveText, FALSE_POSITIVE_SHORTER_REGEX.get(),
+                false);
     }
 
     /**
      * Checks that a given text has at least one match for one regex, that doesn't match another
      * @param text The full text to check
      * @param falsePositiveRegex A regex that should not match the OTP regex (for at least one match
-     *                           found by the OTP regex
-     * @return true, if all matches found by OTP_REGEX are also found by "shouldNotMatch"
+     *                           found by the OTP regex). The false positive regex matches may be
+     *                           longer or shorter than the OTP matches.
+     * @param fpMatchesAreLongerThanOtp Whether the false positives are longer than the otp matches.
+     *                                  If true, this method will search the whole text for false
+     *                                  positives, and verify at least one OTP match is not
+     *                                  contained by any of the false positives. If false, then this
+     *                                  method will search individual OTP matches for false
+     *                                  positives, and will verify at least one OTP match doesn't
+     *                                  contain a false positive.
+     * @return true, if all matches found by OTP_REGEX are contained in, or themselves contain a
+     *         match to falsePositiveRegex, or there are no OTP matches, false otherwise.
      */
-    private static boolean allOtpMatchesAreFalsePositives(String text,
-            Matcher falsePositiveRegex) {
-        falsePositiveRegex = falsePositiveRegex.reset(text);
-        if (!falsePositiveRegex.find()) {
-            return false;
+    private static boolean allOtpMatchesAreFalsePositives(String text, Matcher falsePositiveRegex,
+            boolean fpMatchesAreLongerThanOtp) {
+        List<String> falsePositives = new ArrayList<>();
+        if (fpMatchesAreLongerThanOtp) {
+            // if the false positives are longer than the otp, search for them in the whole text
+            falsePositives = getAllMatches(text, falsePositiveRegex);
         }
-        Matcher otpMatcher = OTP_REGEX.get();
-        otpMatcher.reset(text);
-        while (otpMatcher.find()) {
-            falsePositiveRegex.reset(otpMatcher.group());
-            if (!falsePositiveRegex.find()) {
-                // A possible otp was not matched by the false positive regex
+        List<String> otpMatches = getAllMatches(text, OTP_REGEX.get());
+        for (String otpMatch: otpMatches) {
+            boolean otpMatchContainsNoFp = true, noFpContainsOtpMatch = true;
+            if (!fpMatchesAreLongerThanOtp) {
+                // if the false positives are shorter than the otp, search for them in the otp match
+                falsePositives = getAllMatches(otpMatch, falsePositiveRegex);
+            }
+            for (String falsePositive : falsePositives) {
+                otpMatchContainsNoFp = fpMatchesAreLongerThanOtp
+                        || (otpMatchContainsNoFp && !otpMatch.contains(falsePositive));
+                noFpContainsOtpMatch = !fpMatchesAreLongerThanOtp
+                        || (noFpContainsOtpMatch && !falsePositive.contains(otpMatch));
+            }
+            if (otpMatchContainsNoFp && noFpContainsOtpMatch) {
                 return false;
             }
         }
-        // All otp matches were matched by the false positive regex
         return true;
+    }
+
+    private static List<String> getAllMatches(String text, Matcher regex) {
+        ArrayList<String> matches = new ArrayList<>();
+        regex.reset(text);
+        while (regex.find()) {
+            matches.add(regex.group());
+        }
+        return matches;
     }
 
     private static Matcher getLanguageSpecificRegex(String text, TextClassifier tc) {

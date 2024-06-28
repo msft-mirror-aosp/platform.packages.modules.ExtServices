@@ -343,14 +343,14 @@ class NotificationOtpDetectionHelperTest {
         val otpWithDashesButInvalidDate = "34-58-30"
         val otpWithDashesButInvalidYear = "12-1-3089"
 
-        addMatcherTestResult(expected =
-            true,
+        addMatcherTestResult(
+            expected = true,
             date,
             checkForFalsePositives = false,
             customFailureMessage = "should match if checkForFalsePositives is false"
         )
-        addMatcherTestResult(expected =
-            false,
+        addMatcherTestResult(
+            expected = false,
             date,
             customFailureMessage = "should not match if checkForFalsePositives is true"
         )
@@ -360,6 +360,26 @@ class NotificationOtpDetectionHelperTest {
         addMatcherTestResult(expected = true, dateWithOtpBefore)
         addMatcherTestResult(expected = true, otpWithDashesButInvalidDate)
         addMatcherTestResult(expected = true, otpWithDashesButInvalidYear)
+    }
+
+    @Test
+    fun testContainsOtp_phoneExclusion() {
+        val parens = "(888) 8888888"
+        val allSpaces = "888 888 8888"
+        val withDash = "(888) 888-8888"
+        val allDashes = "888-888-8888"
+        val allDashesWithParen = "(888)-888-8888"
+        addMatcherTestResult(
+            expected = true,
+            parens,
+            checkForFalsePositives = false,
+            customFailureMessage = "should match if checkForFalsePositives is false"
+        )
+        addMatcherTestResult(expected = false, parens)
+        addMatcherTestResult(expected = false, allSpaces)
+        addMatcherTestResult(expected = false, withDash)
+        addMatcherTestResult(expected = false, allDashes)
+        addMatcherTestResult(expected = false, allDashesWithParen)
     }
 
     @Test
@@ -389,10 +409,14 @@ class NotificationOtpDetectionHelperTest {
         val periodEnd = "you code is G-345821."
         val parenEnd = "you code is (G-345821)"
         val quoteEnd = "you code is 'G-345821'"
+        val dashEnd = "you code is 'G-345821-'"
+        val underscoreEnd = "you code is 'G-345821_'"
         val ideographicEnd = "your code is码G-345821码"
         addMatcherTestResult(expected = false, noSpaceStart)
         addMatcherTestResult(expected = false, noSpaceEnd)
         addMatcherTestResult(expected = false, colonStartNumberPreceding)
+        addMatcherTestResult(expected = false, dashEnd)
+        addMatcherTestResult(expected = false, underscoreEnd)
         addMatcherTestResult(expected = true, colonStart)
         addMatcherTestResult(expected = true, parenStart)
         addMatcherTestResult(expected = true, newLineStart)
@@ -444,7 +468,7 @@ class NotificationOtpDetectionHelperTest {
         val englishFalsePositive = "This is a false positive 4543"
         val englishContextWords = listOf("login", "log in", "2fa", "authenticate", "auth",
             "authentication", "tan", "password", "passcode", "two factor", "two-factor", "2factor",
-            "2 factor", "pin")
+            "2 factor", "pin", "one time")
         val englishContextWordsCase = listOf("LOGIN", "logIn", "LoGiN")
         // Strings with a context word somewhere in the substring
         val englishContextSubstrings = listOf("pins", "gaping", "backspin")
@@ -462,6 +486,29 @@ class NotificationOtpDetectionHelperTest {
             val anotherFalsePositive = "$englishFalsePositive $falseContext"
             addMatcherTestResult(expected = false, anotherFalsePositive, textClassifier = tc)
         }
+    }
+
+    @Test
+    fun testContainsOtp_multipleFalsePositives() {
+        val otp = "1543"
+        val longFp = "888-777-6666"
+        val shortFp = "34ess"
+        val multipleLongFp = "$longFp something something $longFp"
+        val multipleLongFpWithOtpBefore = "$otp $multipleLongFp"
+        val multipleLongFpWithOtpAfter = "$multipleLongFp $otp"
+        val multipleLongFpWithOtpBetween = "$longFp $otp $longFp"
+        val multipleShortFp = "$shortFp something something $shortFp"
+        val multipleShortFpWithOtpBefore = "$otp $multipleShortFp"
+        val multipleShortFpWithOtpAfter = "$otp $multipleShortFp"
+        val multipleShortFpWithOtpBetween = "$shortFp $otp $shortFp"
+        addMatcherTestResult(expected = false, multipleLongFp)
+        addMatcherTestResult(expected = false, multipleShortFp)
+        addMatcherTestResult(expected = true, multipleLongFpWithOtpBefore)
+        addMatcherTestResult(expected = true, multipleLongFpWithOtpAfter)
+        addMatcherTestResult(expected = true, multipleLongFpWithOtpBetween)
+        addMatcherTestResult(expected = true, multipleShortFpWithOtpBefore)
+        addMatcherTestResult(expected = true, multipleShortFpWithOtpAfter)
+        addMatcherTestResult(expected = true, multipleShortFpWithOtpBetween)
     }
 
     @Test
