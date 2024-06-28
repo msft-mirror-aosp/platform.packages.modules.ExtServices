@@ -409,10 +409,14 @@ class NotificationOtpDetectionHelperTest {
         val periodEnd = "you code is G-345821."
         val parenEnd = "you code is (G-345821)"
         val quoteEnd = "you code is 'G-345821'"
+        val dashEnd = "you code is 'G-345821-'"
+        val underscoreEnd = "you code is 'G-345821_'"
         val ideographicEnd = "your code is码G-345821码"
         addMatcherTestResult(expected = false, noSpaceStart)
         addMatcherTestResult(expected = false, noSpaceEnd)
         addMatcherTestResult(expected = false, colonStartNumberPreceding)
+        addMatcherTestResult(expected = false, dashEnd)
+        addMatcherTestResult(expected = false, underscoreEnd)
         addMatcherTestResult(expected = true, colonStart)
         addMatcherTestResult(expected = true, parenStart)
         addMatcherTestResult(expected = true, newLineStart)

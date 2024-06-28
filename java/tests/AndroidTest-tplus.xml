@@ -35,4 +35,8 @@
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
         <option name="mainline-module-package-name" value="com.google.android.extservices" />
     </object>
+
+    <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
+        <option name="set-global-setting" key="verifier_verify_adb_installs" value="0" />
+    </target_preparer>
 </configuration>
