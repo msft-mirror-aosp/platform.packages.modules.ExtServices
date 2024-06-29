@@ -391,7 +391,7 @@ public class NotificationOtpDetectionHelper {
                 extras.getParcelableArray(EXTRA_MESSAGES, Parcelable.class));
         // Sort the newest messages (largest timestamp) first
         messages.sort((MessagingStyle.Message lhs, MessagingStyle.Message rhs) ->
-                Math.toIntExact(rhs.getTimestamp() - lhs.getTimestamp()));
+                Long.compare(rhs.getTimestamp(), lhs.getTimestamp()));
         for (MessagingStyle.Message message : messages) {
             builder.append(message.getText()).append(" ");
         }
