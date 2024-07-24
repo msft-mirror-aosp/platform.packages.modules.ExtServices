@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2016 The Android Open Source Project
+<!-- Copyright (C) 2023 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -15,5 +15,9 @@
 -->
 
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <bool name="enableBootCompletedReceiver">false</bool>
+    <!-- By default, we do not want the cleanup receiver to run. This needs to only run on Android
+    T+ because it's meant to clean up AdServices files in the ExtServices apk data directory after
+    OTA from S and lower. Running this receiver on lower Android versions will delete files that
+    should not be deleted-->
+    <bool name="enableAdServicesDataCleanupReceiver">false</bool>
 </resources>

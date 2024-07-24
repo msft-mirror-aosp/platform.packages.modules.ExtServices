@@ -16,10 +16,18 @@
 package {
     default_team: "trendy_team_android_rubidium",
     default_applicable_licenses: ["Android-Apache-2.0"],
-    default_visibility: ["//packages/modules/ExtServices:__subpackages__"],
+    default_visibility: [
+        "//packages/modules/AdServices:__subpackages__",
+        "//packages/modules/ExtServices:__subpackages__",
+    ],
 }
 
 filegroup {
-    name: "privapp_allowlist_android.ext.services.xml",
-    srcs: ["android.ext.services.xml"],
+    name: "privapp_allowlist_android.ext_tplus.services.xml",
+    srcs: ["android.ext_tplus.services.xml"],
+}
+
+filegroup {
+    name: "privapp_allowlist_android.ext_sminus.services.xml",
+    srcs: ["android.ext_sminus.services.xml"],
 }

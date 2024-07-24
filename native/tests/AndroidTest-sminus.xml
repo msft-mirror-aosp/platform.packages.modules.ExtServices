@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright 2020 The Android Open Source Project
+  ~ Copyright 2023 The Android Open Source Project
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -14,10 +14,10 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<configuration description="Config for libextservices_test">
+<configuration description="Config for libextservices_test-sminus">
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
         <option name="cleanup" value="true" />
-        <option name="push" value="libextservices_test->/data/local/tmp/libextservices_test" />
+        <option name="push" value="libextservices_test-sminus->/data/local/tmp/libextservices_test-sminus" />
         <option name="push" value="test_data->/data/local/tmp/test_data" />
     </target_preparer>
 
@@ -27,8 +27,15 @@
 
     <test class="com.android.tradefed.testtype.GTest" >
         <option name="native-test-device-path" value="/data/local/tmp" />
-        <option name="module-name" value="libextservices_test" />
+        <option name="module-name" value="libextservices_test-sminus" />
+        <option name="force-no-test-error" value="false" />
     </test>
+
+    <!-- Prevent test from running on Android T+ -->
+    <object type="module_controller"
+            class="com.android.tradefed.testtype.suite.module.MaxSdkModuleController">
+        <option name="max-sdk-level" value="32"/>
+    </object>
 
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
         <option name="mainline-module-package-name" value="com.google.android.extservices" />

@@ -22,10 +22,62 @@ package {
     default_applicable_licenses: ["packages_modules_ExtServices_license"],
 }
 
+filegroup {
+    name: "libextservices_test_default_map",
+    srcs: ["libextservices_test_default.map"],
+}
+
+cc_defaults {
+    name: "libextservices_test_default",
+    stl: "libc++_static",
+    version_script: ":libextservices_test_default_map",
+}
+
 // Run this test using "atest libextservices_test -- --all-abi" or it will fail to run on 64 bit
 // devices.
 cc_test {
-    name: "libextservices_test",
+    name: "libextservices_test-tplus",
+    defaults: ["libextservices_test_default"],
+    test_suites: [
+        "general-tests",
+        "mts-extservices",
+    ],
+
+    shared_libs: [
+        "libandroid",
+        "liblog",
+    ],
+    static_libs: [
+        "libbase",
+        "libextservices",
+        "libfft2d",
+        "libgmock_main",
+        "libgmock",
+        "libgtest",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Werror",
+    ],
+
+    srcs: [
+        "*.cpp",
+    ],
+
+    data: [
+        "test_data/*.raw",
+    ],
+    compile_multilib: "prefer32",
+    min_sdk_version: "33",
+    test_config: "AndroidTest-tplus.xml",
+}
+
+// Run this test using "atest libextservices_test -- --all-abi" or it will fail to run on 64 bit
+// devices.
+cc_test {
+    name: "libextservices_test-sminus",
+    defaults: ["libextservices_test_default"],
     test_suites: [
         "general-tests",
         "mts-extservices",
@@ -58,4 +110,5 @@ cc_test {
     ],
     compile_multilib: "prefer32",
     min_sdk_version: "30",
+    test_config: "AndroidTest-sminus.xml",
 }
