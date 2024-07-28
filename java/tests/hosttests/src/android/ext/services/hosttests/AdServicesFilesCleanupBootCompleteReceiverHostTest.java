@@ -36,7 +36,6 @@ import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.device.PackageInfo;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
-import com.android.tradefed.util.RunUtil;
 
 import org.junit.After;
 import org.junit.Assume;
@@ -274,10 +273,7 @@ public final class AdServicesFilesCleanupBootCompleteReceiverHostTest
                 mExtServicesPackageName,
                 fileName);
 
-        runShellCommand("echo \"Hello\" > %s", fullPath);
-
-        // Wait a little to ensure that the file gets created before checking if it exists
-        RunUtil.getDefault().sleep(1000);
+        runShellCommand("touch %s", fullPath);
 
         assertWithMessage("%s exists", fullPath)
                 .that(mDevice.doesFileExist(fullPath))
