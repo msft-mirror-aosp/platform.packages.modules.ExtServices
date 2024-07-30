@@ -28,6 +28,7 @@
     <test class="com.android.tradefed.testtype.GTest" >
         <option name="native-test-device-path" value="/data/local/tmp" />
         <option name="module-name" value="libextservices_test-sminus" />
+        <option name="force-no-test-error" value="false" />
     </test>
 
     <!-- Prevent test from running on Android T+ -->
