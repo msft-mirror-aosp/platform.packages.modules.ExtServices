@@ -62,6 +62,19 @@ public class NotificationOtpDetectionHelper {
     private static final List<String> SENSITIVE_NOTIFICATION_CATEGORIES = new ArrayList<>(
             List.of(CATEGORY_MESSAGE, CATEGORY_EMAIL, CATEGORY_SOCIAL));
 
+    private static final List<Class<? extends Notification.Style>> SENSITIVE_STYLES =
+            new ArrayList<>(List.of(Notification.MessagingStyle.class,
+                    Notification.InboxStyle.class, Notification.BigTextStyle.class));
+
+    private static final List<Class<? extends Notification.Style>> EXCLUDED_STYLES =
+            new ArrayList<>(List.of(Notification.MediaStyle.class,
+                    Notification.BigPictureStyle.class));
+    static {
+        if (SdkLevel.isAtLeastS()) {
+            EXCLUDED_STYLES.add(Notification.CallStyle.class);
+        }
+    }
+
     private static final float TC_THRESHOLD = 0.6f;
 
     private static final ArrayMap<String, ThreadLocal<Matcher>> EXTRA_LANG_OTP_REGEX =
@@ -70,11 +83,13 @@ public class NotificationOtpDetectionHelper {
     private static final int MAX_SENSITIVE_TEXT_LEN = 600;
 
     /**
-     * A regex matching a line start, space, open paren, arrow, colon (not proceeded by a digit),
-     * open square bracket, equals sign, double or single quote, or ideographic char. It will
-     * not consume the start char (meaning START won't be included in the matched string)
+     * A regex matching a line start, open paren, arrow, colon (not proceeded by a digit),
+     * open square bracket, equals sign, double or single quote, ideographic char, or a space that
+     * is not preceded by a number. It will not consume the start char (meaning START won't be
+     * included in the matched string)
      */
-    private static final String START = "(^|(?<=[>\\s(\"'=\\[\\p{IsIdeographic}]|[^0-9]:))";
+    private static final String START =
+            "(^|(?<=((^|[^0-9])\\s)|[>(\"'=\\[\\p{IsIdeographic}]|[^0-9]:))";
 
 
     /**
@@ -100,10 +115,11 @@ public class NotificationOtpDetectionHelper {
     private static final String OTP_CHARS = format("(%s{4,7}%s)", OTP_CHAR_WITH_DASH, OTP_CHAR);
 
     /**
-     * A regex matching a line end, non-alphanumeric char (except dash or underscore), or an
-     * ideographic char. It will not consume the end char
+     * A regex matching a line end, a space that is not followed by a number, an ideographic char,
+     * or a period, close paren, single or double quote, exclamation point, question mark, or comma.
+     * It will not consume the end char
      */
-    private static final String END = "(?=[^-_\\w]|$|\\p{IsIdeographic})";
+    private static final String END = "(?=\\s[^0-9]|$|\\p{IsIdeographic}|[.?!,)'\"])";
 
     /**
      * A regex matching four digit numerical codes
@@ -169,7 +185,7 @@ public class NotificationOtpDetectionHelper {
     /**
      * A regex matching the common years of 19xx and 20xx. Used for false positive reduction
      */
-    private static final String COMMON_YEARS = "((19|20)\\d\\d)";
+    private static final String COMMON_YEARS = format("%s((19|20)\\d\\d)%s", START, END);
 
     /**
      * A regex matching three lower case letters. Used for false positive reduction, as no known
@@ -193,7 +209,7 @@ public class NotificationOtpDetectionHelper {
     private static final String[] ENGLISH_CONTEXT_WORDS = new String[] {
             "pin", "pass[-\\s]?(code|word)", "TAN", "otp", "2fa", "(two|2)[-\\s]?factor",
             "log[-\\s]?in", "auth(enticat(e|ion))?", "code", "secret", "verif(y|ication)",
-            "confirm(ation)?", "one(\\s|-)?time"
+            "confirm(ation)?", "one(\\s|-)?time", "access", "validat(e|ion)"
     };
 
     /**
@@ -407,12 +423,12 @@ public class NotificationOtpDetectionHelper {
      */
     public static boolean shouldCheckForOtp(Notification notification) {
         if (notification == null || !SdkLevel.isAtLeastV()
-                || !Flags.redactSensitiveNotificationsFromUntrustedListeners()) {
+                || !Flags.redactSensitiveNotificationsFromUntrustedListeners()
+                || EXCLUDED_STYLES.stream().anyMatch(s -> isStyle(notification, s))) {
             return false;
         }
         return SENSITIVE_NOTIFICATION_CATEGORIES.contains(notification.category)
-                || isStyle(notification, Notification.MessagingStyle.class)
-                || isStyle(notification, Notification.InboxStyle.class)
+                || SENSITIVE_STYLES.stream().anyMatch(s -> isStyle(notification, s))
                 || containsOtp(notification, false, null)
                 || shouldCheckForOtp(notification.publicVersion);
     }
