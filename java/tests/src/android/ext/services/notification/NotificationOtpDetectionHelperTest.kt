@@ -246,6 +246,7 @@ class NotificationOtpDetectionHelperTest {
         val empty = Person.Builder().setName("test").build()
         val style2 = Notification.MessagingStyle(empty)
         val style3 = Notification.BigPictureStyle()
+        val rejectedStyle = Notification.MediaStyle()
         shouldCheck = NotificationOtpDetectionHelper
                 .shouldCheckForOtp(createNotification(style = style2))
         addResult(expected = true, shouldCheck, "MessagingStyle should be checked")
@@ -255,6 +256,10 @@ class NotificationOtpDetectionHelperTest {
         shouldCheck = NotificationOtpDetectionHelper
                 .shouldCheckForOtp(createNotification(style = style3))
         addResult(expected = false, shouldCheck, "Valid non-messaging non-inbox style should not be checked")
+        shouldCheck = NotificationOtpDetectionHelper
+            .shouldCheckForOtp(createNotification(text = "your one time code is 4343434",
+                style = rejectedStyle))
+        addResult(expected = false, shouldCheck, "MediaStyle should always be rejected")
     }
 
     @Test
@@ -398,6 +403,8 @@ class NotificationOtpDetectionHelperTest {
     fun testContainsOtp_startAndEnd() {
         val noSpaceStart = "your code isG-345821"
         val noSpaceEnd = "your code is G-345821for real"
+        val numberSpaceStart = "your code is 4 G-345821"
+        val numberSpaceEnd = "your code is G-345821 3"
         val colonStart = "your code is:G-345821"
         val parenStart = "your code is (G-345821"
         val newLineStart = "your code is \nG-345821"
@@ -410,13 +417,17 @@ class NotificationOtpDetectionHelperTest {
         val parenEnd = "you code is (G-345821)"
         val quoteEnd = "you code is 'G-345821'"
         val dashEnd = "you code is 'G-345821-'"
+        val randomSymbolEnd = "your code is G-345821$"
         val underscoreEnd = "you code is 'G-345821_'"
         val ideographicEnd = "your code is码G-345821码"
         addMatcherTestResult(expected = false, noSpaceStart)
         addMatcherTestResult(expected = false, noSpaceEnd)
+        addMatcherTestResult(expected = false, numberSpaceStart)
+        addMatcherTestResult(expected = false, numberSpaceEnd)
         addMatcherTestResult(expected = false, colonStartNumberPreceding)
         addMatcherTestResult(expected = false, dashEnd)
         addMatcherTestResult(expected = false, underscoreEnd)
+        addMatcherTestResult(expected = false, randomSymbolEnd)
         addMatcherTestResult(expected = true, colonStart)
         addMatcherTestResult(expected = true, parenStart)
         addMatcherTestResult(expected = true, newLineStart)
@@ -453,6 +464,7 @@ class NotificationOtpDetectionHelperTest {
         val thirtyXX = "3035"
         val nineteenXX = "1945"
         val eighteenXX = "1899"
+        val yearSubstring = "20051"
         addMatcherTestResult(expected = false, twentyXX, textClassifier = tc)
         // Behavior should be the same for an invalid language, and null TextClassifier
         addMatcherTestResult(expected = false, twentyXX, textClassifier = null)
@@ -460,6 +472,8 @@ class NotificationOtpDetectionHelperTest {
         addMatcherTestResult(expected = true, thirtyXX, textClassifier = tc)
         addMatcherTestResult(expected = false, nineteenXX, textClassifier = tc)
         addMatcherTestResult(expected = true, eighteenXX, textClassifier = tc)
+        // A substring of a year should not trigger a false positive
+        addMatcherTestResult(expected = true, yearSubstring, textClassifier = tc)
     }
 
     @Test
@@ -475,22 +489,22 @@ class NotificationOtpDetectionHelperTest {
 
         addMatcherTestResult(expected = false, englishFalsePositive, textClassifier = tc)
         for (context in englishContextWords) {
-            val englishTruePositive = "$englishFalsePositive $context"
+            val englishTruePositive = "$context $englishFalsePositive"
             addMatcherTestResult(expected = true, englishTruePositive, textClassifier = tc)
         }
         for (context in englishContextWordsCase) {
-            val englishTruePositive = "$englishFalsePositive $context"
+            val englishTruePositive = "$context $englishFalsePositive"
             addMatcherTestResult(expected = true, englishTruePositive, textClassifier = tc)
         }
         for (falseContext in englishContextSubstrings) {
-            val anotherFalsePositive = "$englishFalsePositive $falseContext"
+            val anotherFalsePositive = "$falseContext $englishFalsePositive"
             addMatcherTestResult(expected = false, anotherFalsePositive, textClassifier = tc)
         }
     }
 
     @Test
     fun testContainsOtp_multipleFalsePositives() {
-        val otp = "1543"
+        val otp = "code 1543 code"
         val longFp = "888-777-6666"
         val shortFp = "34ess"
         val multipleLongFp = "$longFp something something $longFp"
@@ -529,7 +543,7 @@ class NotificationOtpDetectionHelperTest {
         // Dates should still be checked
         addMatcherTestResult(expected = false, date, textClassifier = tc)
         // A string with a code with three lowercase letters, and an excluded year
-        val withOtherFalsePositives = "your login code is abd3 1985"
+        val withOtherFalsePositives = "your login code is abd4f 1985"
         // Other false positive regular expressions should not be checked
         addMatcherTestResult(expected = true, withOtherFalsePositives, textClassifier = tc)
     }
