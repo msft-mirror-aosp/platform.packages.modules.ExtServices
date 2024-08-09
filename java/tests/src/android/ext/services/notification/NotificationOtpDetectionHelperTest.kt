@@ -406,16 +406,15 @@ class NotificationOtpDetectionHelperTest {
         val numberSpaceStart = "your code is 4 G-345821"
         val numberSpaceEnd = "your code is G-345821 3"
         val colonStart = "your code is:G-345821"
-        val parenStart = "your code is (G-345821"
         val newLineStart = "your code is \nG-345821"
-        val quoteStart = "your code is 'G-345821"
-        val doubleQuoteStart = "your code is \"G-345821"
+        val quote = "your code is 'G-345821'"
+        val doubleQuote = "your code is \"G-345821\""
         val bracketStart = "your code is [G-345821"
         val ideographicStart = "your code is码G-345821"
         val colonStartNumberPreceding = "your code is4:G-345821"
         val periodEnd = "you code is G-345821."
-        val parenEnd = "you code is (G-345821)"
-        val quoteEnd = "you code is 'G-345821'"
+        val parens = "you code is (G-345821)"
+        val squareBrkt = "you code is [G-345821]"
         val dashEnd = "you code is 'G-345821-'"
         val randomSymbolEnd = "your code is G-345821$"
         val underscoreEnd = "you code is 'G-345821_'"
@@ -429,15 +428,14 @@ class NotificationOtpDetectionHelperTest {
         addMatcherTestResult(expected = false, underscoreEnd)
         addMatcherTestResult(expected = false, randomSymbolEnd)
         addMatcherTestResult(expected = true, colonStart)
-        addMatcherTestResult(expected = true, parenStart)
         addMatcherTestResult(expected = true, newLineStart)
-        addMatcherTestResult(expected = true, quoteStart)
-        addMatcherTestResult(expected = true, doubleQuoteStart)
+        addMatcherTestResult(expected = true, quote)
+        addMatcherTestResult(expected = true, doubleQuote)
         addMatcherTestResult(expected = true, bracketStart)
         addMatcherTestResult(expected = true, ideographicStart)
         addMatcherTestResult(expected = true, periodEnd)
-        addMatcherTestResult(expected = true, parenEnd)
-        addMatcherTestResult(expected = true, quoteEnd)
+        addMatcherTestResult(expected = true, parens)
+        addMatcherTestResult(expected = true, squareBrkt)
         addMatcherTestResult(expected = true, ideographicEnd)
     }
 
