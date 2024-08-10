@@ -116,10 +116,10 @@ public class NotificationOtpDetectionHelper {
 
     /**
      * A regex matching a line end, a space that is not followed by a number, an ideographic char,
-     * or a period, close paren, single or double quote, exclamation point, question mark, or comma.
-     * It will not consume the end char
+     * or a period, close paren, close square bracket, single or double quote, exclamation point,
+     * question mark, or comma. It will not consume the end char
      */
-    private static final String END = "(?=\\s[^0-9]|$|\\p{IsIdeographic}|[.?!,)'\"])";
+    private static final String END = "(?=\\s[^0-9]|$|\\p{IsIdeographic}|[.?!,)'\\]\"])";
 
     /**
      * A regex matching four digit numerical codes
