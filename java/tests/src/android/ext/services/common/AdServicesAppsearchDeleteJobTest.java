@@ -60,8 +60,6 @@ import org.mockito.MockitoSession;
 import org.mockito.Spy;
 import org.mockito.quality.Strictness;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -134,15 +132,20 @@ public final class AdServicesAppsearchDeleteJobTest {
     @Test
     public void deleteAppsearchDb_onMigrationfailure_shouldBeFalse()
             throws Exception {
-        SetSchemaResponse mockResponse = Mockito.mock(SetSchemaResponse.class);
         SetSchemaResponse.MigrationFailure failure =
                 new SetSchemaResponse.MigrationFailure(
                         /* namespace= */ TEST,
                         /* id= */ TEST,
                         /* schemaType= */ TEST,
                         /* appSearchResult= */ AppSearchResult.newFailedResult(1, TEST));
-        when(mockResponse.getMigrationFailures()).thenReturn(List.of(failure));
-        doReturn(mockResponse).when(mAdServicesAppsearchDeleteJob).getDeleteSchemaResponse(
+        SetSchemaResponse setSchemaResponse =
+                new SetSchemaResponse.Builder()
+                        .addDeletedType("delete1")
+                        .addIncompatibleType("incompatible1")
+                        .addMigratedType("migrated1")
+                        .addMigrationFailure(failure)
+                        .build();
+        doReturn(setSchemaResponse).when(mAdServicesAppsearchDeleteJob).getDeleteSchemaResponse(
                 any(), any(), any());
         assertWithMessage("deleteAppsearchDb result should be false")
                 .that(mAdServicesAppsearchDeleteJob.deleteAppsearchDb(mContext, mExecutor, TEST))
@@ -162,9 +165,10 @@ public final class AdServicesAppsearchDeleteJobTest {
     @Test
     public void deleteAppsearchDb_onSuccess_shouldBeTrue()
             throws Exception {
-        SetSchemaResponse mockResponse = Mockito.mock(SetSchemaResponse.class);
-        when(mockResponse.getMigrationFailures()).thenReturn(new ArrayList<>());
-        doReturn(mockResponse).when(mAdServicesAppsearchDeleteJob).getDeleteSchemaResponse(
+        SetSchemaResponse setSchemaResponse =
+                new SetSchemaResponse.Builder()
+                        .build();
+        doReturn(setSchemaResponse).when(mAdServicesAppsearchDeleteJob).getDeleteSchemaResponse(
                 any(), any(), any());
         assertWithMessage("deleteAppsearchDb result should be true")
                 .that(mAdServicesAppsearchDeleteJob.deleteAppsearchDb(mContext, mExecutor, TEST))
