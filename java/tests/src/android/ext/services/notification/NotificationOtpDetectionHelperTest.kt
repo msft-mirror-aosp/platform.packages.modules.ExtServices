@@ -23,41 +23,30 @@ import android.app.Notification.CATEGORY_SOCIAL
 import android.app.Notification.EXTRA_TEXT
 import android.app.PendingIntent
 import android.app.Person
+import android.content.Context
 import android.content.Intent
 import android.icu.util.ULocale
-import androidx.test.platform.app.InstrumentationRegistry
-import com.android.modules.utils.build.SdkLevel
-import android.platform.test.flag.junit.SetFlagsRule
-import android.service.notification.Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_BIG_TEXT_STYLE
-import android.service.notification.Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS
+import android.os.Build
+import android.os.Build.VERSION.SDK_INT
 import android.view.textclassifier.TextClassifier
 import android.view.textclassifier.TextLanguage
 import android.view.textclassifier.TextLinks
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertWithMessage
 import org.junit.After
 import org.junit.Assume.assumeTrue
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TestRule
 import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 
-@RunWith(JUnit4::class)
+@RunWith(AndroidJUnit4::class)
 class NotificationOtpDetectionHelperTest {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext!!
-    val localeWithRegex = ULocale.ENGLISH
-    val invalidLocale = ULocale.ROOT
-
-    @get:Rule
-    val setFlagsRule = if (SdkLevel.isAtLeastV()) {
-        SetFlagsRule()
-    } else {
-        // On < V, have a test rule that does nothing
-        TestRule { statement, _ -> statement}
-    }
+    private val context = ApplicationProvider.getApplicationContext<Context>()
+    private val localeWithRegex = ULocale.ENGLISH
+    private val invalidLocale = ULocale.ROOT
 
     private data class TestResult(
         val expected: Boolean,
@@ -69,10 +58,7 @@ class NotificationOtpDetectionHelperTest {
 
     @Before
     fun enableFlag() {
-        assumeTrue(SdkLevel.isAtLeastV())
-        (setFlagsRule as SetFlagsRule).enableFlags(
-            FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS,
-            FLAG_REDACT_SENSITIVE_NOTIFICATIONS_BIG_TEXT_STYLE)
+        assumeTrue(SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM)
         results.clear()
     }
 
@@ -93,19 +79,6 @@ class NotificationOtpDetectionHelperTest {
     private fun addResult(expected: Boolean, actual: Boolean, failureMessage: String) {
         results.add(TestResult(expected, actual, failureMessage))
     }
-
-    @Test
-    fun testGetTextForDetection_emptyIfFlagDisabled() {
-        (setFlagsRule as SetFlagsRule)
-            .disableFlags(FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
-        val text = "text"
-        val title = "title"
-        val subtext = "subtext"
-        val sensitive = NotificationOtpDetectionHelper.getTextForDetection(
-            createNotification(text = text, title = title, subtext = subtext))
-        assertWithMessage("expected sensitive text to be empty").that(sensitive).isEmpty()
-    }
-
 
     @Test
     fun testGetTextForDetection_textFieldsIncluded() {
@@ -226,16 +199,6 @@ class NotificationOtpDetectionHelperTest {
             NotificationOtpDetectionHelper.getTextForDetection(createNotification(text = text))
         addResult(expected = true, sensitive.length <= 600, "Expected to be 600 chars or fewer")
     }
-
-    @Test
-    fun testShouldCheckForOtp_falseIfFlagDisabled() {
-        (setFlagsRule as SetFlagsRule)
-            .disableFlags(FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
-        val shouldCheck = NotificationOtpDetectionHelper
-            .shouldCheckForOtp(createNotification(category = CATEGORY_MESSAGE))
-        addResult(expected = false, shouldCheck, "$CATEGORY_MESSAGE should not be checked")
-    }
-
 
     @Test
     fun testShouldCheckForOtp_styles() {
@@ -475,7 +438,7 @@ class NotificationOtpDetectionHelperTest {
     }
 
     @Test
-    fun testContainsOtp_engishSpecificRegex() {
+    fun testContainsOtp_englishSpecificRegex() {
         val tc = getTestTextClassifier(ULocale.ENGLISH)
         val englishFalsePositive = "This is a false positive 4543"
         val englishContextWords = listOf("login", "log in", "2fa", "authenticate", "auth",

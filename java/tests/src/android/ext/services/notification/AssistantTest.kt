@@ -107,6 +107,17 @@ class AssistantTest {
     }
 
     @Test
+    fun onNotificationEnqueued_doesntCheckForOtpIfFlagDisabled() {
+        (setFlagsRule as SetFlagsRule)
+            .disableFlags(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
+        val sbn = createSbn(TEXT_WITH_OTP)
+        val directReturn =
+            assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
+        // Expect no adjustment returned, despite the regex
+        assertThat(directReturn).isNull()
+    }
+
+    @Test
     fun onNotificationEnqueued_callsTextClassifierForOtpAndSuggestions() {
         val sbn = createSbn(TEXT_WITH_OTP)
         doReturn(TextLanguage.Builder().putLocale(ULocale.ROOT, 0.9f).build())
