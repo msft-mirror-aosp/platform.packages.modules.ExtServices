@@ -17,4 +17,29 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="notification_assistant" msgid="9160940242838910547">"Android 自動調整通知"</string>
+    <!-- no translation found for english_otp_context_words:0 (7615778208475066419) -->
+    <!-- no translation found for english_otp_context_words:1 (7174505163902448507) -->
+    <!-- no translation found for english_otp_context_words:2 (3917837442156595568) -->
+    <!-- no translation found for english_otp_context_words:3 (6971032950332150936) -->
+    <!-- no translation found for english_otp_context_words:4 (826248726164877615) -->
+    <!-- no translation found for english_otp_context_words:5 (2156400793251117724) -->
+    <!-- no translation found for english_otp_context_words:6 (3621495493711216796) -->
+    <!-- no translation found for english_otp_context_words:7 (4652629344958695406) -->
+    <!-- no translation found for english_otp_context_words:8 (6021138326345874403) -->
+    <!-- no translation found for english_otp_context_words:9 (301989899519648952) -->
+    <!-- no translation found for english_otp_context_words:10 (2409846400635400651) -->
+    <!-- no translation found for english_otp_context_words:11 (3362500960690003002) -->
+    <!-- no translation found for english_otp_context_words:12 (1542192064842556988) -->
+    <!-- no translation found for english_otp_context_words:13 (2052362882225775298) -->
+    <!-- no translation found for english_otp_context_words:14 (4759495520595696444) -->
+    <!-- no translation found for english_otp_context_words:15 (4360404417991731370) -->
+    <!-- no translation found for english_otp_context_words:16 (5135302120938115660) -->
+    <!-- no translation found for english_otp_context_words:17 (405482768547359066) -->
+    <!-- no translation found for english_otp_context_words:18 (7962233525908588330) -->
+    <!-- no translation found for english_otp_context_words:19 (9095545913763732113) -->
+    <!-- no translation found for english_otp_context_words:20 (2601700967903477651) -->
+    <!-- no translation found for english_otp_context_words:21 (1775341814323929840) -->
+    <!-- no translation found for english_otp_context_words:22 (4159587727958533896) -->
+    <!-- no translation found for english_otp_context_words:23 (7199374258785307822) -->
+    <!-- no translation found for english_otp_context_words:24 (3860872742161492043) -->
 </resources>
