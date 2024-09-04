@@ -1,4 +1,4 @@
 include platform/frameworks/base:/core/java/android/service/notification/OWNERS
 
 # Owner of the OTP detection project
-per-file NotificationOtpDetectionHelper.java = ntmyren@google.com
+per-file NotificationOtpDetectionHelperTest.kt = ntmyren@google.com
