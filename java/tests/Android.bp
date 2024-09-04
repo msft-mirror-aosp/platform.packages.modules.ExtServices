@@ -18,8 +18,8 @@ android_test {
     ],
 
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
 
     static_libs: [
@@ -56,8 +56,8 @@ android_test {
     srcs: ["src/**/*.java"],
 
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
 
     static_libs: [
