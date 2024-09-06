@@ -17,4 +17,31 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="notification_assistant" msgid="9160940242838910547">"Android അഡാപ്റ്റീവ് അറിയിപ്പുകൾ"</string>
+  <string-array name="english_otp_context_words">
+    <item msgid="7615778208475066419">"പിൻ"</item>
+    <item msgid="7174505163902448507">"പാസ്‌വേഡ്"</item>
+    <item msgid="3917837442156595568">"പാസ്‌കോഡ്"</item>
+    <item msgid="6971032950332150936">"ടൂ ഫാക്ടർ"</item>
+    <item msgid="826248726164877615">"ടൂ ഫാക്ടർ"</item>
+    <item msgid="2156400793251117724">"ലോഗിൻ ചെയ്യുക"</item>
+    <item msgid="3621495493711216796">"ലോഗിൻ ചെയ്യുക"</item>
+    <item msgid="4652629344958695406">"ലോഗിൻ ചെയ്യുക"</item>
+    <item msgid="6021138326345874403">"പരിശോധിച്ചുറപ്പിക്കുക"</item>
+    <item msgid="301989899519648952">"പരിശോധിച്ചുറപ്പിക്കൽ"</item>
+    <item msgid="2409846400635400651">"കോഡ്"</item>
+    <item msgid="3362500960690003002">"രഹസ്യം"</item>
+    <item msgid="1542192064842556988">"പരിശോധിച്ചുറപ്പിക്കുക"</item>
+    <item msgid="2052362882225775298">"പരിശോധിച്ചുറപ്പിക്കൽ"</item>
+    <item msgid="4759495520595696444">"സ്ഥിരീകരിക്കുക"</item>
+    <item msgid="4360404417991731370">"സ്ഥിരീകരണം"</item>
+    <item msgid="5135302120938115660">"ഒറ്റത്തവണ"</item>
+    <item msgid="405482768547359066">"ആക്‌സസ്"</item>
+    <item msgid="7962233525908588330">"സാധൂകരിക്കൽ"</item>
+    <item msgid="9095545913763732113">"സാധൂകരിക്കുക"</item>
+    <item msgid="2601700967903477651">"ഒറ്റത്തവണ ഉപയോഗം"</item>
+    <item msgid="1775341814323929840">"അംഗീകാരം നൽകുക"</item>
+    <item msgid="4159587727958533896">"അംഗീകരിക്കൽ"</item>
+    <item msgid="7199374258785307822">"പേഴ്‌സണൽ ഐഡന്റിഫിക്കേഷൻ നമ്പർ"</item>
+    <item msgid="3860872742161492043">"പിൻ"</item>
+  </string-array>
 </resources>
