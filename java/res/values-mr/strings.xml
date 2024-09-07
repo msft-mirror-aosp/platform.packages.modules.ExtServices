@@ -17,31 +17,29 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="notification_assistant" msgid="9160940242838910547">"Android अ‍ॅडॅप्टिव्ह सूचना"</string>
-  <string-array name="english_otp_context_words">
-    <item msgid="7615778208475066419">"पिन"</item>
-    <item msgid="7174505163902448507">"पासवर्ड"</item>
-    <item msgid="3917837442156595568">"पासकोड"</item>
-    <item msgid="6971032950332150936">"२ टप्पी"</item>
-    <item msgid="826248726164877615">"२ टप्पी"</item>
-    <item msgid="2156400793251117724">"लॉग इन"</item>
-    <item msgid="3621495493711216796">"लॉग इन करा"</item>
-    <item msgid="4652629344958695406">"लॉग इन करा"</item>
-    <item msgid="6021138326345874403">"ऑथेंटिकेट करा"</item>
-    <item msgid="301989899519648952">"ऑथेंटिकेशन"</item>
-    <item msgid="2409846400635400651">"कोड"</item>
-    <item msgid="3362500960690003002">"गुप्त"</item>
-    <item msgid="1542192064842556988">"पडताळणी करा"</item>
-    <item msgid="2052362882225775298">"पडताळणी"</item>
-    <item msgid="4759495520595696444">"कन्फर्म करा"</item>
-    <item msgid="4360404417991731370">"कन्फर्मेशन"</item>
-    <item msgid="5135302120938115660">"एक वेळ"</item>
-    <item msgid="405482768547359066">"अ‍ॅक्सेस करा"</item>
-    <item msgid="7962233525908588330">"व्हॅलिडेशन"</item>
-    <item msgid="9095545913763732113">"पडताळणी करा"</item>
-    <item msgid="2601700967903477651">"एकच वेळ वापरले"</item>
-    <item msgid="1775341814323929840">"ऑथोराइझ करा"</item>
-    <item msgid="4159587727958533896">"ऑथोरायझेशन"</item>
-    <item msgid="7199374258785307822">"वैयक्तिक ओळख क्रमांक"</item>
-    <item msgid="3860872742161492043">"पिन"</item>
-  </string-array>
+    <!-- no translation found for english_otp_context_words:0 (7615778208475066419) -->
+    <!-- no translation found for english_otp_context_words:1 (7174505163902448507) -->
+    <!-- no translation found for english_otp_context_words:2 (3917837442156595568) -->
+    <!-- no translation found for english_otp_context_words:3 (6971032950332150936) -->
+    <!-- no translation found for english_otp_context_words:4 (826248726164877615) -->
+    <!-- no translation found for english_otp_context_words:5 (2156400793251117724) -->
+    <!-- no translation found for english_otp_context_words:6 (3621495493711216796) -->
+    <!-- no translation found for english_otp_context_words:7 (4652629344958695406) -->
+    <!-- no translation found for english_otp_context_words:8 (6021138326345874403) -->
+    <!-- no translation found for english_otp_context_words:9 (301989899519648952) -->
+    <!-- no translation found for english_otp_context_words:10 (2409846400635400651) -->
+    <!-- no translation found for english_otp_context_words:11 (3362500960690003002) -->
+    <!-- no translation found for english_otp_context_words:12 (1542192064842556988) -->
+    <!-- no translation found for english_otp_context_words:13 (2052362882225775298) -->
+    <!-- no translation found for english_otp_context_words:14 (4759495520595696444) -->
+    <!-- no translation found for english_otp_context_words:15 (4360404417991731370) -->
+    <!-- no translation found for english_otp_context_words:16 (5135302120938115660) -->
+    <!-- no translation found for english_otp_context_words:17 (405482768547359066) -->
+    <!-- no translation found for english_otp_context_words:18 (7962233525908588330) -->
+    <!-- no translation found for english_otp_context_words:19 (9095545913763732113) -->
+    <!-- no translation found for english_otp_context_words:20 (2601700967903477651) -->
+    <!-- no translation found for english_otp_context_words:21 (1775341814323929840) -->
+    <!-- no translation found for english_otp_context_words:22 (4159587727958533896) -->
+    <!-- no translation found for english_otp_context_words:23 (7199374258785307822) -->
+    <!-- no translation found for english_otp_context_words:24 (3860872742161492043) -->
 </resources>
