@@ -17,4 +17,31 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="notification_assistant" msgid="9160940242838910547">"ការជូនដំណឹង​ដែលមានភាពបត់បែន Android"</string>
+  <string-array name="english_otp_context_words">
+    <item msgid="7615778208475066419">"កូដ pin"</item>
+    <item msgid="7174505163902448507">"ពាក្យសម្ងាត់"</item>
+    <item msgid="3917837442156595568">"លេខ​កូដ​សម្ងាត់"</item>
+    <item msgid="6971032950332150936">"ពីរកត្តា"</item>
+    <item msgid="826248726164877615">"ពីរកត្តា"</item>
+    <item msgid="2156400793251117724">"ការចូលគណនី"</item>
+    <item msgid="3621495493711216796">"ចូលគណនី"</item>
+    <item msgid="4652629344958695406">"ចូលគណនី"</item>
+    <item msgid="6021138326345874403">"ផ្ទៀងផ្ទាត់"</item>
+    <item msgid="301989899519648952">"ការផ្ទៀងផ្ទាត់"</item>
+    <item msgid="2409846400635400651">"កូដ"</item>
+    <item msgid="3362500960690003002">"សម្ងាត់"</item>
+    <item msgid="1542192064842556988">"ផ្ទៀងផ្ទាត់"</item>
+    <item msgid="2052362882225775298">"ការផ្ទៀងផ្ទាត់"</item>
+    <item msgid="4759495520595696444">"បញ្ជាក់"</item>
+    <item msgid="4360404417991731370">"ការបញ្ជាក់"</item>
+    <item msgid="5135302120938115660">"ម្តង"</item>
+    <item msgid="405482768547359066">"ការចូលប្រើ"</item>
+    <item msgid="7962233525908588330">"ការបញ្ជាក់ភាពត្រឹមត្រូវ"</item>
+    <item msgid="9095545913763732113">"បញ្ជាក់​ភាពត្រឹមត្រូវ"</item>
+    <item msgid="2601700967903477651">"ការប្រើប្រាស់តែមួយ"</item>
+    <item msgid="1775341814323929840">"អនុញ្ញាត"</item>
+    <item msgid="4159587727958533896">"ការ​អនុញ្ញាត"</item>
+    <item msgid="7199374258785307822">"លេខសម្គាល់​អត្តសញ្ញាណ​បុគ្គល"</item>
+    <item msgid="3860872742161492043">"កូដ PIN"</item>
+  </string-array>
 </resources>

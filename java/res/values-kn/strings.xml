@@ -17,4 +17,31 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="notification_assistant" msgid="9160940242838910547">"Android ಅಡಾಪ್ಟಿವ್ ಅಧಿಸೂಚನೆಗಳು"</string>
+  <string-array name="english_otp_context_words">
+    <item msgid="7615778208475066419">"ಪಿನ್"</item>
+    <item msgid="7174505163902448507">"ಪಾಸ್‌ವರ್ಡ್"</item>
+    <item msgid="3917837442156595568">"ಪಾಸ್‌ಕೋಡ್"</item>
+    <item msgid="6971032950332150936">"ಎರಡು ಅಂಶಗಳ"</item>
+    <item msgid="826248726164877615">"ಎರಡು-ಅಂಶಗಳ"</item>
+    <item msgid="2156400793251117724">"ಲಾಗಿನ್"</item>
+    <item msgid="3621495493711216796">"ಲಾಗ್‌ ಇನ್‌"</item>
+    <item msgid="4652629344958695406">"ಲಾಗ್‌ ಇನ್‌"</item>
+    <item msgid="6021138326345874403">"ದೃಢೀಕರಿಸಿ"</item>
+    <item msgid="301989899519648952">"ದೃಢೀಕರಣ"</item>
+    <item msgid="2409846400635400651">"ಕೋಡ್"</item>
+    <item msgid="3362500960690003002">"ರಹಸ್ಯ"</item>
+    <item msgid="1542192064842556988">"ಪರಿಶೀಲಿಸಿ"</item>
+    <item msgid="2052362882225775298">"ಪರಿಶೀಲನೆ"</item>
+    <item msgid="4759495520595696444">"ದೃಢೀಕರಿಸಿ"</item>
+    <item msgid="4360404417991731370">"ದೃಢೀಕರಣ"</item>
+    <item msgid="5135302120938115660">"ಒಂದು ಬಾರಿ"</item>
+    <item msgid="405482768547359066">"ಆ್ಯಕ್ಸೆಸ್"</item>
+    <item msgid="7962233525908588330">"ಮೌಲ್ಯೀಕರಣ"</item>
+    <item msgid="9095545913763732113">"ಮೌಲ್ಯೀಕರಿಸಿ"</item>
+    <item msgid="2601700967903477651">"ಏಕ-ಬಳಕೆ"</item>
+    <item msgid="1775341814323929840">"ದೃಢೀಕರಿಸಿ"</item>
+    <item msgid="4159587727958533896">"ದೃಢೀಕರಣ"</item>
+    <item msgid="7199374258785307822">"ವೈಯಕ್ತಿಕ ಗುರುತಿನ ಸಂಖ್ಯೆ"</item>
+    <item msgid="3860872742161492043">"ಪಿನ್"</item>
+  </string-array>
 </resources>

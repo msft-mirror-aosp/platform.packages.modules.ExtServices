@@ -17,4 +17,31 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="notification_assistant" msgid="9160940242838910547">"Android အလိုက်သင့် အကြောင်းကြားချက်များ"</string>
+  <string-array name="english_otp_context_words">
+    <item msgid="7615778208475066419">"ပင်နံပါတ်"</item>
+    <item msgid="7174505163902448507">"စကားဝှက်"</item>
+    <item msgid="3917837442156595568">"လျှို့ဝှက်ကုဒ်"</item>
+    <item msgid="6971032950332150936">"နှစ်ဆင့်"</item>
+    <item msgid="826248726164877615">"နှစ်ဆင့်"</item>
+    <item msgid="2156400793251117724">"အကောင့်ဝင်ရန်"</item>
+    <item msgid="3621495493711216796">"အကောင့်ဝင်ရန်"</item>
+    <item msgid="4652629344958695406">"အကောင့်ဝင်ရန်"</item>
+    <item msgid="6021138326345874403">"အထောက်အထားစိစစ်ရန်"</item>
+    <item msgid="301989899519648952">"အထောက်အထားစိစစ်ခြင်း"</item>
+    <item msgid="2409846400635400651">"ကုဒ်"</item>
+    <item msgid="3362500960690003002">"လျှို့ဝှက်"</item>
+    <item msgid="1542192064842556988">"အတည်ပြုရန်"</item>
+    <item msgid="2052362882225775298">"အတည်ပြုခြင်း"</item>
+    <item msgid="4759495520595696444">"အတည်ပြုရန်"</item>
+    <item msgid="4360404417991731370">"အတည်ပြုခြင်း"</item>
+    <item msgid="5135302120938115660">"တစ်ကြိမ်"</item>
+    <item msgid="405482768547359066">"သုံးခွင့်"</item>
+    <item msgid="7962233525908588330">"အတည်ပြုခြင်း"</item>
+    <item msgid="9095545913763732113">"အတည်ပြုရန်"</item>
+    <item msgid="2601700967903477651">"တစ်ကြိမ်သုံး"</item>
+    <item msgid="1775341814323929840">"ခွင့်ပြုရန်"</item>
+    <item msgid="4159587727958533896">"ခွင့်ပြုခြင်း"</item>
+    <item msgid="7199374258785307822">"ကိုယ်ပိုင် သက်သေခံနံပါတ်"</item>
+    <item msgid="3860872742161492043">"ပင်နံပါတ်"</item>
+  </string-array>
 </resources>
