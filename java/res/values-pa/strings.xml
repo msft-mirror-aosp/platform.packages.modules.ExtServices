@@ -17,4 +17,31 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="notification_assistant" msgid="9160940242838910547">"Android ਅਡੈਪਟਿਵ ਸੂਚਨਾਵਾਂ"</string>
+  <string-array name="english_otp_context_words">
+    <item msgid="7615778208475066419">"ਪਿੰਨ"</item>
+    <item msgid="7174505163902448507">"ਪਾਸਵਰਡ"</item>
+    <item msgid="3917837442156595568">"ਪਾਸਕੋਡ"</item>
+    <item msgid="6971032950332150936">"ਦੋ ਪੜਾਵੀ"</item>
+    <item msgid="826248726164877615">"ਦੋ-ਪੜਾਵੀ"</item>
+    <item msgid="2156400793251117724">"ਲੌਗ-ਇਨ"</item>
+    <item msgid="3621495493711216796">"ਲੌਗ-ਇਨ ਕਰੋ"</item>
+    <item msgid="4652629344958695406">"ਲੌਗ-ਇਨ ਕਰੋ"</item>
+    <item msgid="6021138326345874403">"ਪ੍ਰਮਾਣਿਤ ਕਰੋ"</item>
+    <item msgid="301989899519648952">"ਪ੍ਰਮਾਣੀਕਰਨ"</item>
+    <item msgid="2409846400635400651">"ਕੋਡ"</item>
+    <item msgid="3362500960690003002">"ਗੁਪਤ"</item>
+    <item msgid="1542192064842556988">"ਪੁਸ਼ਟੀ ਕਰੋ"</item>
+    <item msgid="2052362882225775298">"ਪੁਸ਼ਟੀਕਰਨ"</item>
+    <item msgid="4759495520595696444">"ਤਸਦੀਕ ਕਰੋ"</item>
+    <item msgid="4360404417991731370">"ਤਸਦੀਕ"</item>
+    <item msgid="5135302120938115660">"ਇੱਕ ਵਾਰ"</item>
+    <item msgid="405482768547359066">"ਪਹੁੰਚ"</item>
+    <item msgid="7962233525908588330">"ਪ੍ਰਮਾਣਿਕਤਾ"</item>
+    <item msgid="9095545913763732113">"ਪ੍ਰਮਾਣਿਤ ਕਰੋ"</item>
+    <item msgid="2601700967903477651">"ਸਿਰਫ਼ ਇੱਕ ਵਾਰ ਵਰਤਿਆ ਜਾ ਸਕਣ ਵਾਲਾ"</item>
+    <item msgid="1775341814323929840">"ਅਧਿਕਾਰਿਤ ਕਰੋ"</item>
+    <item msgid="4159587727958533896">"ਇਖਤਿਆਰੀਕਰਨ"</item>
+    <item msgid="7199374258785307822">"ਨਿੱਜੀ ਪਛਾਣ ਨੰਬਰ"</item>
+    <item msgid="3860872742161492043">"ਪਿੰਨ"</item>
+  </string-array>
 </resources>

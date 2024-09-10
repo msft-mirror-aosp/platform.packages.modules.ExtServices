@@ -273,7 +273,8 @@ public final class AdServicesFilesCleanupBootCompleteReceiverHostTest
                 mExtServicesPackageName,
                 fileName);
 
-        runShellCommand("echo \"Hello\" > %s", fullPath);
+        runShellCommand("touch %s", fullPath);
+
         assertWithMessage("%s exists", fullPath)
                 .that(mDevice.doesFileExist(fullPath))
                 .isTrue();
