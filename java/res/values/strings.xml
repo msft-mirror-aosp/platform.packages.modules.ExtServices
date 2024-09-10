@@ -25,4 +25,35 @@
         <item>EXACT_MATCH</item>
         <item>CREDIT_CARD</item>
     </string-array>
+
+    <!-- [CHAR LIMIT=none] An array of words and short phrases that might be used in a message
+    containing a one time password (also known as a single use pin, one time code,
+    or transaction authorization number) -->
+    <string-array name="english_otp_context_words">
+        <item>pin</item>
+        <item>password</item>
+        <item>passcode</item>
+        <item>two factor</item>
+        <item>two-factor</item>
+        <item>login</item>
+        <item>log-in</item>
+        <item>log in</item>
+        <item>authenticate</item>
+        <item>authentication</item>
+        <item>code</item>
+        <item>secret</item>
+        <item>verify</item>
+        <item>verification</item>
+        <item>confirm</item>
+        <item>confirmation</item>
+        <item>one time</item>
+        <item>access</item>
+        <item>validation</item>
+        <item>validate</item>
+        <item>single use</item>
+        <item>authorize</item>
+        <item>authorization</item>
+        <item>personal identification number</item>
+        <item>PIN</item>
+    </string-array>
 </resources>
