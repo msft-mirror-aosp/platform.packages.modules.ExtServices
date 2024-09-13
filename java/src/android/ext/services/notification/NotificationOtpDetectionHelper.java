@@ -27,6 +27,7 @@ import static android.app.Notification.EXTRA_TEXT;
 import static android.app.Notification.EXTRA_TEXT_LINES;
 import static android.app.Notification.EXTRA_TITLE;
 import static android.app.Notification.EXTRA_TITLE_BIG;
+import static android.os.Build.VERSION.SDK_INT;
 import static android.view.textclassifier.TextClassifier.TYPE_ADDRESS;
 import static android.view.textclassifier.TextClassifier.TYPE_FLIGHT_NUMBER;
 import static android.view.textclassifier.TextClassifier.TYPE_PHONE;
@@ -37,30 +38,45 @@ import android.app.Notification;
 import android.app.Notification.MessagingStyle;
 import android.app.Notification.MessagingStyle.Message;
 import android.icu.util.ULocale;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
-import android.service.notification.Flags;
 import android.util.ArrayMap;
 import android.view.textclassifier.TextClassifier;
 import android.view.textclassifier.TextLanguage;
 import android.view.textclassifier.TextLinks;
 
-import com.android.modules.utils.build.SdkLevel;
+import androidx.annotation.VisibleForTesting;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Class with helper methods related to detecting OTP codes in notifications
+ * Class with helper methods related to detecting OTP codes in notifications.
+ * This file needs to only use public android API methods, see b/361149088
  */
 public class NotificationOtpDetectionHelper {
 
     // Use an ArrayList because a List.of list will throw NPE when calling "contains(null)"
     private static final List<String> SENSITIVE_NOTIFICATION_CATEGORIES = new ArrayList<>(
-            List.of(CATEGORY_MESSAGE, CATEGORY_EMAIL, CATEGORY_SOCIAL));
+            Arrays.asList(CATEGORY_MESSAGE, CATEGORY_EMAIL, CATEGORY_SOCIAL));
+
+    private static final List<Class<? extends Notification.Style>> SENSITIVE_STYLES =
+            new ArrayList<>(Arrays.asList(Notification.MessagingStyle.class,
+                    Notification.InboxStyle.class, Notification.BigTextStyle.class));
+
+    private static final List<Class<? extends Notification.Style>> EXCLUDED_STYLES =
+            new ArrayList<>(Arrays.asList(Notification.MediaStyle.class,
+                    Notification.BigPictureStyle.class));
+    static {
+        if (SDK_INT >= Build.VERSION_CODES.S) {
+            EXCLUDED_STYLES.add(Notification.CallStyle.class);
+        }
+    }
 
     private static final float TC_THRESHOLD = 0.6f;
 
@@ -70,11 +86,13 @@ public class NotificationOtpDetectionHelper {
     private static final int MAX_SENSITIVE_TEXT_LEN = 600;
 
     /**
-     * A regex matching a line start, space, open paren, arrow, colon (not proceeded by a digit),
-     * open square bracket, equals sign, double or single quote, or ideographic char. It will
-     * not consume the start char (meaning START won't be included in the matched string)
+     * A regex matching a line start, open paren, arrow, colon (not proceeded by a digit),
+     * open square bracket, equals sign, double or single quote, ideographic char, or a space that
+     * is not preceded by a number. It will not consume the start char (meaning START won't be
+     * included in the matched string)
      */
-    private static final String START = "(^|(?<=[>\\s(\"'=\\[\\p{IsIdeographic}]|[^0-9]:))";
+    private static final String START =
+            "(^|(?<=((^|[^0-9])\\s)|[>(\"'=\\[\\p{IsIdeographic}]|[^0-9]:))";
 
 
     /**
@@ -100,10 +118,11 @@ public class NotificationOtpDetectionHelper {
     private static final String OTP_CHARS = format("(%s{4,7}%s)", OTP_CHAR_WITH_DASH, OTP_CHAR);
 
     /**
-     * A regex matching a line end, non-alphanumeric char (except dash or underscore), or an
-     * ideographic char. It will not consume the end char
+     * A regex matching a line end, a space that is not followed by a number, an ideographic char,
+     * or a period, close paren, close square bracket, single or double quote, exclamation point,
+     * question mark, or comma. It will not consume the end char
      */
-    private static final String END = "(?=[^-_\\w]|$|\\p{IsIdeographic})";
+    private static final String END = "(?=\\s[^0-9]|$|\\p{IsIdeographic}|[.?!,)'\\]\"])";
 
     /**
      * A regex matching four digit numerical codes
@@ -169,7 +188,7 @@ public class NotificationOtpDetectionHelper {
     /**
      * A regex matching the common years of 19xx and 20xx. Used for false positive reduction
      */
-    private static final String COMMON_YEARS = "((19|20)\\d\\d)";
+    private static final String COMMON_YEARS = format("%s((19|20)\\d\\d)%s", START, END);
 
     /**
      * A regex matching three lower case letters. Used for false positive reduction, as no known
@@ -193,7 +212,7 @@ public class NotificationOtpDetectionHelper {
     private static final String[] ENGLISH_CONTEXT_WORDS = new String[] {
             "pin", "pass[-\\s]?(code|word)", "TAN", "otp", "2fa", "(two|2)[-\\s]?factor",
             "log[-\\s]?in", "auth(enticat(e|ion))?", "code", "secret", "verif(y|ication)",
-            "confirm(ation)?", "one(\\s|-)?time"
+            "confirm(ation)?", "one(\\s|-)?time", "access", "validat(e|ion)"
     };
 
     /**
@@ -216,6 +235,10 @@ public class NotificationOtpDetectionHelper {
                 createDictionaryRegex(ENGLISH_CONTEXT_WORDS)));
     }
 
+    private static boolean isAtLeastV() {
+        return SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
+    }
+
     /**
      * Checks if the sensitive parts of a notification might contain an OTP, based on several
      * regular expressions, and potentially using a textClassifier to eliminate false positives
@@ -235,7 +258,7 @@ public class NotificationOtpDetectionHelper {
      */
     public static boolean containsOtp(Notification notification,
             boolean checkForFalsePositives, TextClassifier tc) {
-        if (notification == null || !SdkLevel.isAtLeastV()) {
+        if (notification == null || !isAtLeastV()) {
             return false;
         }
 
@@ -337,8 +360,8 @@ public class NotificationOtpDetectionHelper {
     private static boolean hasFalsePositivesTcCheck(String text, TextClassifier tc) {
         // Use TC to eliminate false positives from a regex match, namely: flight codes, and
         // addresses
-        List<String> included = new ArrayList<>(List.of(TYPE_FLIGHT_NUMBER, TYPE_ADDRESS));
-        List<String> excluded = new ArrayList<>(List.of(TYPE_PHONE));
+        List<String> included = new ArrayList<>(Arrays.asList(TYPE_FLIGHT_NUMBER, TYPE_ADDRESS));
+        List<String> excluded = new ArrayList<>(Arrays.asList(TYPE_PHONE));
         TextClassifier.EntityConfig config =
                 new TextClassifier.EntityConfig.Builder().setIncludedTypes(
                         included).setExcludedTypes(excluded).build();
@@ -360,9 +383,9 @@ public class NotificationOtpDetectionHelper {
      * @param notification The notification whose content should be filtered
      * @return The extracted text fields
      */
-    public static String getTextForDetection(Notification notification) {
-        if (notification.extras == null || !SdkLevel.isAtLeastV()
-                || !Flags.redactSensitiveNotificationsFromUntrustedListeners()) {
+    @VisibleForTesting
+    protected static String getTextForDetection(Notification notification) {
+        if (notification.extras == null || !isAtLeastV()) {
             return "";
         }
         Bundle extras = notification.extras;
@@ -373,14 +396,12 @@ public class NotificationOtpDetectionHelper {
                 .append(title != null ? title : "").append(" ")
                 .append(text != null ? text : "").append(" ")
                 .append(subText != null ? subText : "").append(" ");
-        if (Flags.redactSensitiveNotificationsBigTextStyle()) {
-            CharSequence bigText = extras.getCharSequence(EXTRA_BIG_TEXT);
-            CharSequence bigTitleText = extras.getCharSequence(EXTRA_TITLE_BIG);
-            CharSequence summaryText = extras.getCharSequence(EXTRA_SUMMARY_TEXT);
-            builder.append(bigText != null ? bigText : "").append(" ")
-                    .append(bigTitleText != null ? bigTitleText : "").append(" ")
-                    .append(summaryText != null ? summaryText : "").append(" ");
-        }
+        CharSequence bigText = extras.getCharSequence(EXTRA_BIG_TEXT);
+        CharSequence bigTitleText = extras.getCharSequence(EXTRA_TITLE_BIG);
+        CharSequence summaryText = extras.getCharSequence(EXTRA_SUMMARY_TEXT);
+        builder.append(bigText != null ? bigText : "").append(" ")
+                .append(bigTitleText != null ? bigTitleText : "").append(" ")
+                .append(summaryText != null ? summaryText : "").append(" ");
         CharSequence[] textLines = extras.getCharSequenceArray(EXTRA_TEXT_LINES);
         if (textLines != null) {
             for (CharSequence line : textLines) {
@@ -406,13 +427,12 @@ public class NotificationOtpDetectionHelper {
      * @return true, if further checks for OTP codes should be performed, false otherwise
      */
     public static boolean shouldCheckForOtp(Notification notification) {
-        if (notification == null || !SdkLevel.isAtLeastV()
-                || !Flags.redactSensitiveNotificationsFromUntrustedListeners()) {
+        if (notification == null || !isAtLeastV()
+                || EXCLUDED_STYLES.stream().anyMatch(s -> isStyle(notification, s))) {
             return false;
         }
         return SENSITIVE_NOTIFICATION_CATEGORIES.contains(notification.category)
-                || isStyle(notification, Notification.MessagingStyle.class)
-                || isStyle(notification, Notification.InboxStyle.class)
+                || SENSITIVE_STYLES.stream().anyMatch(s -> isStyle(notification, s))
                 || containsOtp(notification, false, null)
                 || shouldCheckForOtp(notification.publicVersion);
     }

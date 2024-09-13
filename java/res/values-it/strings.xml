@@ -17,4 +17,31 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="notification_assistant" msgid="9160940242838910547">"Notifiche adattive Android"</string>
+  <string-array name="english_otp_context_words">
+    <item msgid="7615778208475066419">"pin"</item>
+    <item msgid="7174505163902448507">"password"</item>
+    <item msgid="3917837442156595568">"passcode"</item>
+    <item msgid="6971032950332150936">"a due fattori"</item>
+    <item msgid="826248726164877615">"due fattori"</item>
+    <item msgid="2156400793251117724">"accedere"</item>
+    <item msgid="3621495493711216796">"accesso"</item>
+    <item msgid="4652629344958695406">"fare il login"</item>
+    <item msgid="6021138326345874403">"effettuare l\'autenticazione"</item>
+    <item msgid="301989899519648952">"autenticazione"</item>
+    <item msgid="2409846400635400651">"codice"</item>
+    <item msgid="3362500960690003002">"secret"</item>
+    <item msgid="1542192064842556988">"verificare"</item>
+    <item msgid="2052362882225775298">"verifica"</item>
+    <item msgid="4759495520595696444">"confermare"</item>
+    <item msgid="4360404417991731370">"conferma"</item>
+    <item msgid="5135302120938115660">"una volta"</item>
+    <item msgid="405482768547359066">"accesso"</item>
+    <item msgid="7962233525908588330">"convalida"</item>
+    <item msgid="9095545913763732113">"convalidare"</item>
+    <item msgid="2601700967903477651">"monouso"</item>
+    <item msgid="1775341814323929840">"autorizzare"</item>
+    <item msgid="4159587727958533896">"autorizzazione"</item>
+    <item msgid="7199374258785307822">"numero di identificazione personale"</item>
+    <item msgid="3860872742161492043">"PIN"</item>
+  </string-array>
 </resources>
