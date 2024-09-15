@@ -1,4 +1,26 @@
 {
+  "extservices-mainline-presubmit": [
+    {
+      "name": "ExtServicesUnitTests-sminus"
+    },
+    {
+      "name": "libextservices_test-sminus"
+    },
+    {
+      "name": "CtsExtServicesHostTests-sminus"
+    }
+  ],
+  "extservices-tplus-mainline-presubmit": [
+    {
+      "name": "ExtServicesUnitTests-tplus"
+    },
+    {
+      "name": "libextservices_test-tplus"
+    },
+    {
+      "name": "CtsExtServicesHostTests-tplus"
+    }
+  ],
   "presubmit": [
     {
       "name": "ExtServicesUnitTests-tplus"
