@@ -464,6 +464,17 @@ class NotificationOtpDetectionHelperTest {
     }
 
     @Test
+    fun testContainsOtp_notificationFieldsCheckedIndividually() {
+        val tc = getTestTextClassifier(ULocale.ENGLISH)
+        // Together, the title and text will match the language-specific regex and the main regex,
+        // but apart, neither are enough
+        val notification = createNotification(text = "code", title = "434343")
+        addMatcherTestResult(expected = true, "code 434343")
+        addResult(expected = false, NotificationOtpDetectionHelper.containsOtp(notification, true,
+            tc), "Expected text of 'code' and title of '434343' not to match")
+    }
+
+    @Test
     fun testContainsOtp_multipleFalsePositives() {
         val otp = "code 1543 code"
         val longFp = "888-777-6666"
