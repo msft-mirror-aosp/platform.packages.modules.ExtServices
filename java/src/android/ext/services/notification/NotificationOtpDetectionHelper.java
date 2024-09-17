@@ -212,22 +212,48 @@ public class NotificationOtpDetectionHelper {
     private static final String[] ENGLISH_CONTEXT_WORDS = new String[] {
             "pin", "pass[-\\s]?(code|word)", "TAN", "otp", "2fa", "(two|2)[-\\s]?factor",
             "log[-\\s]?in", "auth(enticat(e|ion))?", "code", "secret", "verif(y|ication)",
-            "confirm(ation)?", "one(\\s|-)?time", "access", "validat(e|ion)"
+            "one(\\s|-)?time", "access", "validat(e|ion)"
     };
 
     /**
      * Creates a regular expression to match any of a series of individual words, case insensitive.
+     * It also verifies the position of the word, relative to the OTP match
      */
     private static Matcher createDictionaryRegex(String[] words) {
-        StringBuilder regex = new StringBuilder("(?i)\\b(");
+        StringBuilder regex = new StringBuilder("(?i)(");
         for (int i = 0; i < words.length; i++) {
-            regex.append(words[i]);
+            regex.append(findContextWordWithCode(words[i]));
             if (i != words.length - 1) {
                 regex.append("|");
             }
         }
-        regex.append(")\\b");
+        regex.append(")");
         return Pattern.compile(regex.toString()).matcher("");
+    }
+
+    /**
+     * Creates a regular expression that will find a context word, if that word occurs in the
+     * sentence preceding an OTP, or in the same sentence as an OTP (before or after). In both
+     * cases, the context word must occur within 50 characters of the suspected OTP
+     * @param contextWord The context word we expect to find around the OTP match
+     * @return A string representing a regular expression that will determine if we found a context
+     * word occurring before an otp match, or after it, but in the same sentence.
+     */
+    private static String findContextWordWithCode(String contextWord) {
+        String boundedContext = "\\b" + contextWord + "\\b";
+        // Asserts that we find the OTP code within 50 characters after the context word, with at
+        // most one sentence punctuation between the OTP code and the context word (i.e. they are
+        // in the same sentence, or the context word is in the previous sentence)
+        String contextWordBeforeOtpInSameOrPreviousSentence =
+                String.format("(%s(?=.{1,50}%s)[^.?!]*[.?!]?[^.?!]*%s)",
+                        boundedContext, ALL_OTP, ALL_OTP);
+        // Asserts that we find the context word within 50 characters after the OTP code, with no
+        // sentence punctuation between the OTP code and the context word (i.e. they are in the same
+        // sentence)
+        String contextWordAfterOtpSameSentence =
+                String.format("(%s)[^.!?]{1,50}%s", ALL_OTP, boundedContext);
+        return String.format("(%s|%s)", contextWordBeforeOtpInSameOrPreviousSentence,
+                contextWordAfterOtpSameSentence);
     }
 
     static {
