@@ -78,6 +78,13 @@ public class NotificationOtpDetectionHelper {
         }
     }
 
+    private static final int PATTERN_FLAGS =
+            Pattern.DOTALL | Pattern.CASE_INSENSITIVE | Pattern.MULTILINE;
+
+    private static ThreadLocal<Matcher> compileToRegex(String pattern) {
+        return ThreadLocal.withInitial(() -> Pattern.compile(pattern, PATTERN_FLAGS).matcher(""));
+    }
+
     private static final float TC_THRESHOLD = 0.6f;
 
     private static final ArrayMap<String, ThreadLocal<Matcher>> EXTRA_LANG_OTP_REGEX =
@@ -155,8 +162,7 @@ public class NotificationOtpDetectionHelper {
 
 
 
-    private static final ThreadLocal<Matcher> OTP_REGEX = ThreadLocal.withInitial(() ->
-            Pattern.compile(ALL_OTP).matcher(""));
+    private static final ThreadLocal<Matcher> OTP_REGEX = compileToRegex(ALL_OTP);
     /**
      * A Date regular expression. Looks for dates with the month, day, and year separated by dashes.
      * Handles one and two digit months and days, and four or two-digit years. It makes the
@@ -181,9 +187,7 @@ public class NotificationOtpDetectionHelper {
      * regex
      */
     private static final ThreadLocal<Matcher> FALSE_POSITIVE_LONGER_REGEX =
-            ThreadLocal.withInitial(() -> Pattern.compile(
-                    format("%s(%s|%s)%s", START, DATE_WITH_DASHES, PHONE_WITH_SPACE, END))
-                    .matcher(""));
+            compileToRegex(format("%s(%s|%s)%s", START, DATE_WITH_DASHES, PHONE_WITH_SPACE, END));
 
     /**
      * A regex matching the common years of 19xx and 20xx. Used for false positive reduction
@@ -202,8 +206,7 @@ public class NotificationOtpDetectionHelper {
      * matches
      */
     private static final ThreadLocal<Matcher> FALSE_POSITIVE_SHORTER_REGEX =
-            ThreadLocal.withInitial(() -> Pattern.compile(
-                    format("%s|%s", COMMON_YEARS, THREE_LOWERCASE)).matcher(""));
+                    compileToRegex(format("%s|%s", COMMON_YEARS, THREE_LOWERCASE));
 
     /**
      * A list of regular expressions representing words found in an OTP context (non case sensitive)
@@ -219,8 +222,8 @@ public class NotificationOtpDetectionHelper {
      * Creates a regular expression to match any of a series of individual words, case insensitive.
      * It also verifies the position of the word, relative to the OTP match
      */
-    private static Matcher createDictionaryRegex(String[] words) {
-        StringBuilder regex = new StringBuilder("(?i)(");
+    private static ThreadLocal<Matcher> createDictionaryRegex(String[] words) {
+        StringBuilder regex = new StringBuilder("(");
         for (int i = 0; i < words.length; i++) {
             regex.append(findContextWordWithCode(words[i]));
             if (i != words.length - 1) {
@@ -228,7 +231,7 @@ public class NotificationOtpDetectionHelper {
             }
         }
         regex.append(")");
-        return Pattern.compile(regex.toString()).matcher("");
+        return compileToRegex(regex.toString());
     }
 
     /**
@@ -257,8 +260,8 @@ public class NotificationOtpDetectionHelper {
     }
 
     static {
-        EXTRA_LANG_OTP_REGEX.put(ULocale.ENGLISH.toLanguageTag(), ThreadLocal.withInitial(() ->
-                createDictionaryRegex(ENGLISH_CONTEXT_WORDS)));
+        EXTRA_LANG_OTP_REGEX.put(ULocale.ENGLISH.toLanguageTag(),
+                createDictionaryRegex(ENGLISH_CONTEXT_WORDS));
     }
 
     private static boolean isPreV() {
