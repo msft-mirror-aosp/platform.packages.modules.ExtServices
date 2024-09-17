@@ -453,6 +453,7 @@ class NotificationOtpDetectionHelperTest {
             "context word: code. ${"f".repeat(60)} This sentence has the actual value of 434343"
         val codeTwoSentencesAfterContext = "context word: code. One sentence. actual value 34343"
         val codeInSentenceBeforeContext = "34343 is a number. This number is a code"
+        val codeInSentenceAfterNewline = "your code is \n 34343"
         val codeTooFarBeforeContext = "34343 ${"f".repeat(60)} code"
 
         addMatcherTestResult(expected = false, englishFalsePositive, textClassifier = tc)
