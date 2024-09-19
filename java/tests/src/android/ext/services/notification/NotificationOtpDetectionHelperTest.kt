@@ -244,7 +244,7 @@ class NotificationOtpDetectionHelperTest {
 
     @Test
     fun testShouldCheckForOtp_regex() {
-        var shouldCheck = NotificationOtpDetectionHelper
+        val shouldCheck = NotificationOtpDetectionHelper
                 .shouldCheckForOtp(createNotification(text = "45454", category = ""))
         assertWithMessage("Regex matches should be checked").that(shouldCheck).isTrue()
     }
