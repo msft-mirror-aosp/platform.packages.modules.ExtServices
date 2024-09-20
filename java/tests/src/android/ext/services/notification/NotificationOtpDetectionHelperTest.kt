@@ -67,7 +67,7 @@ class NotificationOtpDetectionHelperTest {
     fun verifyResults() {
         val allFailuresMessage = StringBuilder("")
         var numFailures = 0;
-        results.forEach { (expected, actual, failureMessage) ->
+        for ((expected, actual, failureMessage) in results) {
             if (expected != actual) {
                 numFailures += 1
                 allFailuresMessage.append("$failureMessage\n")
@@ -470,6 +470,7 @@ class NotificationOtpDetectionHelperTest {
             addMatcherTestResult(expected = false, anotherFalsePositive, textClassifier = tc)
         }
         addMatcherTestResult(expected = true, codeInNextSentence, textClassifier = tc)
+        addMatcherTestResult(expected = true, codeInSentenceAfterNewline, textClassifier = tc)
         addMatcherTestResult(expected = false, codeTwoSentencesAfterContext, textClassifier = tc)
         addMatcherTestResult(expected = false, codeInSentenceBeforeContext, textClassifier = tc)
         addMatcherTestResult(expected = false, codeInNextSentenceTooFar, textClassifier = tc)
