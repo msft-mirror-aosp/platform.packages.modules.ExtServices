@@ -34,6 +34,7 @@ import static android.view.textclassifier.TextClassifier.TYPE_PHONE;
 
 import static java.lang.String.format;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.Notification.MessagingStyle;
 import android.app.Notification.MessagingStyle.Message;
@@ -46,6 +47,7 @@ import android.view.textclassifier.TextClassifier;
 import android.view.textclassifier.TextLanguage;
 import android.view.textclassifier.TextLinks;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
 import java.util.ArrayList;
@@ -59,6 +61,7 @@ import java.util.regex.Pattern;
  * Class with helper methods related to detecting OTP codes in notifications.
  * This file needs to only use public android API methods, see b/361149088
  */
+@SuppressLint("ObsoleteSdkInt")
 public class NotificationOtpDetectionHelper {
 
     // Use an ArrayList because a List.of list will throw NPE when calling "contains(null)"
@@ -286,7 +289,7 @@ public class NotificationOtpDetectionHelper {
      * @return True if we believe an OTP is in the message, false otherwise.
      */
     public static boolean containsOtp(Notification notification,
-            boolean checkForFalsePositives, TextClassifier tc) {
+            boolean checkForFalsePositives, @Nullable TextClassifier tc) {
         if (notification == null || notification.extras == null || isPreV()) {
             return false;
         }
@@ -324,7 +327,8 @@ public class NotificationOtpDetectionHelper {
      * @return True if we believe an OTP is in the message, false otherwise.
      */
     public static boolean containsOtp(String sensitiveText,
-            boolean checkForFalsePositives, TextClassifier tc, ULocale language) {
+            boolean checkForFalsePositives, @Nullable TextClassifier tc,
+            @Nullable ULocale language) {
         if (sensitiveText == null || isPreV()) {
             return false;
         }
@@ -387,7 +391,8 @@ public class NotificationOtpDetectionHelper {
         }
         List<String> otpMatches = getAllMatches(text, OTP_REGEX.get());
         for (String otpMatch: otpMatches) {
-            boolean otpMatchContainsNoFp = true, noFpContainsOtpMatch = true;
+            boolean otpMatchContainsNoFp = true;
+            boolean noFpContainsOtpMatch = true;
             if (!fpMatchesAreLongerThanOtp) {
                 // if the false positives are shorter than the otp, search for them in the otp match
                 falsePositives = getAllMatches(otpMatch, falsePositiveRegex);
@@ -417,7 +422,9 @@ public class NotificationOtpDetectionHelper {
     // Tries to determine the language of the given text. Will return the language with the highest
     // confidence score that meets the minimum threshold, and has a language-specific regex, null
     // otherwise
-    private static ULocale getLanguageWithRegex(String text, TextClassifier tc) {
+    @Nullable
+    private static ULocale getLanguageWithRegex(String text,
+            @Nullable TextClassifier tc) {
         if (tc == null) {
             return null;
         }
@@ -438,7 +445,7 @@ public class NotificationOtpDetectionHelper {
         return highestConfidenceLocale;
     }
 
-    private static boolean hasFalsePositivesTcCheck(String text, TextClassifier tc) {
+    private static boolean hasFalsePositivesTcCheck(String text, @Nullable TextClassifier tc) {
         if (tc == null) {
             return false;
         }
@@ -482,7 +489,7 @@ public class NotificationOtpDetectionHelper {
 
     protected static List<CharSequence> getNotificationTextFields(Notification notification) {
         if (notification == null || notification.extras == null || isPreV()) {
-            return List.of();
+            return new ArrayList<>();
         }
         ArrayList<CharSequence> fields = new ArrayList<>();
         Bundle extras = notification.extras;
