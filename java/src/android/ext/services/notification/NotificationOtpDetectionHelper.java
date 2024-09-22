@@ -34,6 +34,7 @@ import static android.view.textclassifier.TextClassifier.TYPE_PHONE;
 
 import static java.lang.String.format;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.Notification.MessagingStyle;
 import android.app.Notification.MessagingStyle.Message;
@@ -46,6 +47,7 @@ import android.view.textclassifier.TextClassifier;
 import android.view.textclassifier.TextLanguage;
 import android.view.textclassifier.TextLinks;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
 import java.util.ArrayList;
@@ -59,6 +61,7 @@ import java.util.regex.Pattern;
  * Class with helper methods related to detecting OTP codes in notifications.
  * This file needs to only use public android API methods, see b/361149088
  */
+@SuppressLint("ObsoleteSdkInt")
 public class NotificationOtpDetectionHelper {
 
     // Use an ArrayList because a List.of list will throw NPE when calling "contains(null)"
@@ -76,6 +79,13 @@ public class NotificationOtpDetectionHelper {
         if (SDK_INT >= Build.VERSION_CODES.S) {
             EXCLUDED_STYLES.add(Notification.CallStyle.class);
         }
+    }
+
+    private static final int PATTERN_FLAGS =
+            Pattern.DOTALL | Pattern.CASE_INSENSITIVE | Pattern.MULTILINE;
+
+    private static ThreadLocal<Matcher> compileToRegex(String pattern) {
+        return ThreadLocal.withInitial(() -> Pattern.compile(pattern, PATTERN_FLAGS).matcher(""));
     }
 
     private static final float TC_THRESHOLD = 0.6f;
@@ -155,8 +165,7 @@ public class NotificationOtpDetectionHelper {
 
 
 
-    private static final ThreadLocal<Matcher> OTP_REGEX = ThreadLocal.withInitial(() ->
-            Pattern.compile(ALL_OTP).matcher(""));
+    private static final ThreadLocal<Matcher> OTP_REGEX = compileToRegex(ALL_OTP);
     /**
      * A Date regular expression. Looks for dates with the month, day, and year separated by dashes.
      * Handles one and two digit months and days, and four or two-digit years. It makes the
@@ -181,9 +190,7 @@ public class NotificationOtpDetectionHelper {
      * regex
      */
     private static final ThreadLocal<Matcher> FALSE_POSITIVE_LONGER_REGEX =
-            ThreadLocal.withInitial(() -> Pattern.compile(
-                    format("%s(%s|%s)%s", START, DATE_WITH_DASHES, PHONE_WITH_SPACE, END))
-                    .matcher(""));
+            compileToRegex(format("%s(%s|%s)%s", START, DATE_WITH_DASHES, PHONE_WITH_SPACE, END));
 
     /**
      * A regex matching the common years of 19xx and 20xx. Used for false positive reduction
@@ -202,8 +209,7 @@ public class NotificationOtpDetectionHelper {
      * matches
      */
     private static final ThreadLocal<Matcher> FALSE_POSITIVE_SHORTER_REGEX =
-            ThreadLocal.withInitial(() -> Pattern.compile(
-                    format("%s|%s", COMMON_YEARS, THREE_LOWERCASE)).matcher(""));
+                    compileToRegex(format("%s|%s", COMMON_YEARS, THREE_LOWERCASE));
 
     /**
      * A list of regular expressions representing words found in an OTP context (non case sensitive)
@@ -212,36 +218,63 @@ public class NotificationOtpDetectionHelper {
     private static final String[] ENGLISH_CONTEXT_WORDS = new String[] {
             "pin", "pass[-\\s]?(code|word)", "TAN", "otp", "2fa", "(two|2)[-\\s]?factor",
             "log[-\\s]?in", "auth(enticat(e|ion))?", "code", "secret", "verif(y|ication)",
-            "confirm(ation)?", "one(\\s|-)?time", "access", "validat(e|ion)"
+            "one(\\s|-)?time", "access", "validat(e|ion)"
     };
 
     /**
      * Creates a regular expression to match any of a series of individual words, case insensitive.
+     * It also verifies the position of the word, relative to the OTP match
      */
-    private static Matcher createDictionaryRegex(String[] words) {
-        StringBuilder regex = new StringBuilder("(?i)\\b(");
+    private static ThreadLocal<Matcher> createDictionaryRegex(String[] words) {
+        StringBuilder regex = new StringBuilder("(");
         for (int i = 0; i < words.length; i++) {
-            regex.append(words[i]);
+            regex.append(findContextWordWithCode(words[i]));
             if (i != words.length - 1) {
                 regex.append("|");
             }
         }
-        regex.append(")\\b");
-        return Pattern.compile(regex.toString()).matcher("");
-    }
-
-    static {
-        EXTRA_LANG_OTP_REGEX.put(ULocale.ENGLISH.toLanguageTag(), ThreadLocal.withInitial(() ->
-                createDictionaryRegex(ENGLISH_CONTEXT_WORDS)));
-    }
-
-    private static boolean isAtLeastV() {
-        return SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
+        regex.append(")");
+        return compileToRegex(regex.toString());
     }
 
     /**
-     * Checks if the sensitive parts of a notification might contain an OTP, based on several
-     * regular expressions, and potentially using a textClassifier to eliminate false positives
+     * Creates a regular expression that will find a context word, if that word occurs in the
+     * sentence preceding an OTP, or in the same sentence as an OTP (before or after). In both
+     * cases, the context word must occur within 50 characters of the suspected OTP
+     * @param contextWord The context word we expect to find around the OTP match
+     * @return A string representing a regular expression that will determine if we found a context
+     * word occurring before an otp match, or after it, but in the same sentence.
+     */
+    private static String findContextWordWithCode(String contextWord) {
+        String boundedContext = "\\b" + contextWord + "\\b";
+        // Asserts that we find the OTP code within 50 characters after the context word, with at
+        // most one sentence punctuation between the OTP code and the context word (i.e. they are
+        // in the same sentence, or the context word is in the previous sentence)
+        String contextWordBeforeOtpInSameOrPreviousSentence =
+                String.format("(%s(?=.{1,50}%s)[^.?!]*[.?!]?[^.?!]*%s)",
+                        boundedContext, ALL_OTP, ALL_OTP);
+        // Asserts that we find the context word within 50 characters after the OTP code, with no
+        // sentence punctuation between the OTP code and the context word (i.e. they are in the same
+        // sentence)
+        String contextWordAfterOtpSameSentence =
+                String.format("(%s)[^.!?]{1,50}%s", ALL_OTP, boundedContext);
+        return String.format("(%s|%s)", contextWordBeforeOtpInSameOrPreviousSentence,
+                contextWordAfterOtpSameSentence);
+    }
+
+    static {
+        EXTRA_LANG_OTP_REGEX.put(ULocale.ENGLISH.toLanguageTag(),
+                createDictionaryRegex(ENGLISH_CONTEXT_WORDS));
+    }
+
+    private static boolean isPreV() {
+        return SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM;
+    }
+
+    /**
+     * Checks if any text fields in a notification might contain an OTP, based on several
+     * regular expressions, and potentially using a textClassifier to eliminate false positives.
+     * Each text field will be examined individually.
      *
      * @param notification The notification whose content should be checked
      * @param checkForFalsePositives If true, will ensure the content does not match the date regex.
@@ -253,16 +286,53 @@ public class NotificationOtpDetectionHelper {
      * @param tc If non null, the provided TextClassifier will be used to find the language of the
      *           text, and look for a language-specific regex for it. If checkForFalsePositives is
      *           true will also use the classifier to find flight codes and addresses.
-     * @return True if the regex matches and ensureNotDate is false, or the date regex failed to
-     *     match, false otherwise.
+     * @return True if we believe an OTP is in the message, false otherwise.
      */
     public static boolean containsOtp(Notification notification,
-            boolean checkForFalsePositives, TextClassifier tc) {
-        if (notification == null || !isAtLeastV()) {
+            boolean checkForFalsePositives, @Nullable TextClassifier tc) {
+        if (notification == null || notification.extras == null || isPreV()) {
             return false;
         }
 
-        String sensitiveText = getTextForDetection(notification);
+        // Get the language of the text once
+        ULocale textLocale = getLanguageWithRegex(getTextForDetection(notification), tc);
+        // Get all the individual fields
+        List<CharSequence> fields = getNotificationTextFields(notification);
+        for (CharSequence field : fields) {
+            if (field != null
+                    && containsOtp(field.toString(), checkForFalsePositives, tc, textLocale)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks if a string of text might contain an OTP, based on several
+     * regular expressions, and potentially using a textClassifier to eliminate false positives
+     *
+     * @param sensitiveText The text whose content should be checked
+     * @param checkForFalsePositives If true, will ensure the content does not match the date regex.
+     *                               If a TextClassifier is provided, it will then try to find a
+     *                               language specific regex. If it is successful, it will use that
+     *                               regex to check for false positives. If it is not, it will use
+     *                               the TextClassifier (if provided), plus the year and three
+     *                               lowercase regexes to remove possible false positives.
+     * @param tc If non null, the provided TextClassifier will be used to find the language of the
+     *           text, and look for a language-specific regex for it. If checkForFalsePositives is
+     *           true will also use the classifier to find flight codes and addresses.
+     * @param language If non null, then the TextClassifier (if provided), will not perform language
+     *                 id, and the system will assume the text is in the specified language
+     * @return True if we believe an OTP is in the message, false otherwise.
+     */
+    public static boolean containsOtp(String sensitiveText,
+            boolean checkForFalsePositives, @Nullable TextClassifier tc,
+            @Nullable ULocale language) {
+        if (sensitiveText == null || isPreV()) {
+            return false;
+        }
+
         Matcher otpMatcher = OTP_REGEX.get();
         otpMatcher.reset(sensitiveText);
         boolean otpMatch = otpMatcher.find();
@@ -275,8 +345,12 @@ public class NotificationOtpDetectionHelper {
             return false;
         }
 
-        if (tc != null) {
-            Matcher languageSpecificMatcher = getLanguageSpecificRegex(sensitiveText, tc);
+        if (tc != null || language != null) {
+            if (language == null) {
+                language = getLanguageWithRegex(sensitiveText, tc);
+            }
+            Matcher languageSpecificMatcher = language != null
+                    ? EXTRA_LANG_OTP_REGEX.get(language.toLanguageTag()).get() : null;
             if (languageSpecificMatcher != null) {
                 languageSpecificMatcher.reset(sensitiveText);
                 // Only use the language-specific regex for false positives
@@ -317,7 +391,8 @@ public class NotificationOtpDetectionHelper {
         }
         List<String> otpMatches = getAllMatches(text, OTP_REGEX.get());
         for (String otpMatch: otpMatches) {
-            boolean otpMatchContainsNoFp = true, noFpContainsOtpMatch = true;
+            boolean otpMatchContainsNoFp = true;
+            boolean noFpContainsOtpMatch = true;
             if (!fpMatchesAreLongerThanOtp) {
                 // if the false positives are shorter than the otp, search for them in the otp match
                 falsePositives = getAllMatches(otpMatch, falsePositiveRegex);
@@ -344,20 +419,36 @@ public class NotificationOtpDetectionHelper {
         return matches;
     }
 
-    private static Matcher getLanguageSpecificRegex(String text, TextClassifier tc) {
+    // Tries to determine the language of the given text. Will return the language with the highest
+    // confidence score that meets the minimum threshold, and has a language-specific regex, null
+    // otherwise
+    @Nullable
+    private static ULocale getLanguageWithRegex(String text,
+            @Nullable TextClassifier tc) {
+        if (tc == null) {
+            return null;
+        }
+
+        float highestConfidence = 0;
+        ULocale highestConfidenceLocale = null;
         TextLanguage.Request langRequest = new TextLanguage.Request.Builder(text).build();
         TextLanguage lang = tc.detectLanguage(langRequest);
         for (int i = 0; i < lang.getLocaleHypothesisCount(); i++) {
             ULocale locale = lang.getLocale(i);
-            if (lang.getConfidenceScore(locale) >= TC_THRESHOLD
+            float confidence = lang.getConfidenceScore(locale);
+            if (confidence >= TC_THRESHOLD && confidence >= highestConfidence
                     && EXTRA_LANG_OTP_REGEX.containsKey(locale.toLanguageTag())) {
-                return EXTRA_LANG_OTP_REGEX.get(locale.toLanguageTag()).get();
+                highestConfidence = confidence;
+                highestConfidenceLocale = locale;
             }
         }
-        return null;
+        return highestConfidenceLocale;
     }
 
-    private static boolean hasFalsePositivesTcCheck(String text, TextClassifier tc) {
+    private static boolean hasFalsePositivesTcCheck(String text, @Nullable TextClassifier tc) {
+        if (tc == null) {
+            return false;
+        }
         // Use TC to eliminate false positives from a regex match, namely: flight codes, and
         // addresses
         List<String> included = new ArrayList<>(Arrays.asList(TYPE_FLIGHT_NUMBER, TYPE_ADDRESS));
@@ -385,28 +476,32 @@ public class NotificationOtpDetectionHelper {
      */
     @VisibleForTesting
     protected static String getTextForDetection(Notification notification) {
-        if (notification.extras == null || !isAtLeastV()) {
+        if (notification == null || notification.extras == null || isPreV()) {
             return "";
         }
+        StringBuilder builder = new StringBuilder();
+        for (CharSequence line : getNotificationTextFields(notification)) {
+            builder.append(line != null ? line : "").append(" ");
+        }
+        return builder.length() <= MAX_SENSITIVE_TEXT_LEN ? builder.toString()
+                : builder.substring(0, MAX_SENSITIVE_TEXT_LEN);
+    }
+
+    protected static List<CharSequence> getNotificationTextFields(Notification notification) {
+        if (notification == null || notification.extras == null || isPreV()) {
+            return new ArrayList<>();
+        }
+        ArrayList<CharSequence> fields = new ArrayList<>();
         Bundle extras = notification.extras;
-        CharSequence title = extras.getCharSequence(EXTRA_TITLE);
-        CharSequence text = extras.getCharSequence(EXTRA_TEXT);
-        CharSequence subText = extras.getCharSequence(EXTRA_SUB_TEXT);
-        StringBuilder builder = new StringBuilder()
-                .append(title != null ? title : "").append(" ")
-                .append(text != null ? text : "").append(" ")
-                .append(subText != null ? subText : "").append(" ");
-        CharSequence bigText = extras.getCharSequence(EXTRA_BIG_TEXT);
-        CharSequence bigTitleText = extras.getCharSequence(EXTRA_TITLE_BIG);
-        CharSequence summaryText = extras.getCharSequence(EXTRA_SUMMARY_TEXT);
-        builder.append(bigText != null ? bigText : "").append(" ")
-                .append(bigTitleText != null ? bigTitleText : "").append(" ")
-                .append(summaryText != null ? summaryText : "").append(" ");
+        fields.add(extras.getCharSequence(EXTRA_TITLE));
+        fields.add(extras.getCharSequence(EXTRA_TEXT));
+        fields.add(extras.getCharSequence(EXTRA_SUB_TEXT));
+        fields.add(extras.getCharSequence(EXTRA_BIG_TEXT));
+        fields.add(extras.getCharSequence(EXTRA_TITLE_BIG));
+        fields.add(extras.getCharSequence(EXTRA_SUMMARY_TEXT));
         CharSequence[] textLines = extras.getCharSequenceArray(EXTRA_TEXT_LINES);
         if (textLines != null) {
-            for (CharSequence line : textLines) {
-                builder.append(line).append(" ");
-            }
+            fields.addAll(Arrays.asList(textLines));
         }
         List<Message> messages = Message.getMessagesFromBundleArray(
                 extras.getParcelableArray(EXTRA_MESSAGES, Parcelable.class));
@@ -414,10 +509,9 @@ public class NotificationOtpDetectionHelper {
         messages.sort((MessagingStyle.Message lhs, MessagingStyle.Message rhs) ->
                 Long.compare(rhs.getTimestamp(), lhs.getTimestamp()));
         for (MessagingStyle.Message message : messages) {
-            builder.append(message.getText()).append(" ");
+            fields.add(message.getText());
         }
-        return builder.length() <= MAX_SENSITIVE_TEXT_LEN ? builder.toString()
-                : builder.substring(0, MAX_SENSITIVE_TEXT_LEN);
+        return fields;
     }
 
     /**
@@ -427,7 +521,7 @@ public class NotificationOtpDetectionHelper {
      * @return true, if further checks for OTP codes should be performed, false otherwise
      */
     public static boolean shouldCheckForOtp(Notification notification) {
-        if (notification == null || !isAtLeastV()
+        if (notification == null || isPreV()
                 || EXCLUDED_STYLES.stream().anyMatch(s -> isStyle(notification, s))) {
             return false;
         }
