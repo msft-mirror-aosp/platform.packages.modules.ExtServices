@@ -28,6 +28,7 @@ import android.content.Intent
 import android.icu.util.ULocale
 import android.os.Build
 import android.os.Build.VERSION.SDK_INT
+import android.view.textclassifier.TextClassificationManager
 import android.view.textclassifier.TextClassifier
 import android.view.textclassifier.TextLanguage
 import android.view.textclassifier.TextLinks
@@ -66,7 +67,7 @@ class NotificationOtpDetectionHelperTest {
     fun verifyResults() {
         val allFailuresMessage = StringBuilder("")
         var numFailures = 0;
-        results.forEach { (expected, actual, failureMessage) ->
+        for ((expected, actual, failureMessage) in results) {
             if (expected != actual) {
                 numFailures += 1
                 allFailuresMessage.append("$failureMessage\n")
@@ -243,7 +244,7 @@ class NotificationOtpDetectionHelperTest {
 
     @Test
     fun testShouldCheckForOtp_regex() {
-        var shouldCheck = NotificationOtpDetectionHelper
+        val shouldCheck = NotificationOtpDetectionHelper
                 .shouldCheckForOtp(createNotification(text = "45454", category = ""))
         assertWithMessage("Regex matches should be checked").that(shouldCheck).isTrue()
     }
@@ -447,6 +448,13 @@ class NotificationOtpDetectionHelperTest {
         val englishContextWordsCase = listOf("LOGIN", "logIn", "LoGiN")
         // Strings with a context word somewhere in the substring
         val englishContextSubstrings = listOf("pins", "gaping", "backspin")
+        val codeInNextSentence = "context word: code. This sentence has the actual value of 434343"
+        val codeInNextSentenceTooFar =
+            "context word: code. ${"f".repeat(60)} This sentence has the actual value of 434343"
+        val codeTwoSentencesAfterContext = "context word: code. One sentence. actual value 34343"
+        val codeInSentenceBeforeContext = "34343 is a number. This number is a code"
+        val codeInSentenceAfterNewline = "your code is \n 34343"
+        val codeTooFarBeforeContext = "34343 ${"f".repeat(60)} code"
 
         addMatcherTestResult(expected = false, englishFalsePositive, textClassifier = tc)
         for (context in englishContextWords) {
@@ -461,6 +469,23 @@ class NotificationOtpDetectionHelperTest {
             val anotherFalsePositive = "$falseContext $englishFalsePositive"
             addMatcherTestResult(expected = false, anotherFalsePositive, textClassifier = tc)
         }
+        addMatcherTestResult(expected = true, codeInNextSentence, textClassifier = tc)
+        addMatcherTestResult(expected = true, codeInSentenceAfterNewline, textClassifier = tc)
+        addMatcherTestResult(expected = false, codeTwoSentencesAfterContext, textClassifier = tc)
+        addMatcherTestResult(expected = false, codeInSentenceBeforeContext, textClassifier = tc)
+        addMatcherTestResult(expected = false, codeInNextSentenceTooFar, textClassifier = tc)
+        addMatcherTestResult(expected = false, codeTooFarBeforeContext, textClassifier = tc)
+    }
+
+    @Test
+    fun testContainsOtp_notificationFieldsCheckedIndividually() {
+        val tc = getTestTextClassifier(ULocale.ENGLISH)
+        // Together, the title and text will match the language-specific regex and the main regex,
+        // but apart, neither are enough
+        val notification = createNotification(text = "code", title = "434343")
+        addMatcherTestResult(expected = true, "code 434343")
+        addResult(expected = false, NotificationOtpDetectionHelper.containsOtp(notification, true,
+            tc), "Expected text of 'code' and title of '434343' not to match")
     }
 
     @Test
