@@ -16,7 +16,7 @@
 
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="notification_assistant" msgid="9160940242838910547">"Notificações adaptáveis do Android"</string>
+    <string name="notification_assistant" msgid="9160940242838910547">"Notificações adaptativas do Android"</string>
   <string-array name="english_otp_context_words">
     <item msgid="7615778208475066419">"pin"</item>
     <item msgid="7174505163902448507">"senha"</item>
