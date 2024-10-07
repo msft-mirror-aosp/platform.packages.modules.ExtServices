@@ -27,6 +27,7 @@ import android.os.Bundle;
 import android.os.Trace;
 import android.os.UserHandle;
 import android.service.notification.Adjustment;
+import android.service.notification.Flags;
 import android.service.notification.NotificationAssistantService;
 import android.service.notification.NotificationStats;
 import android.service.notification.StatusBarNotification;
@@ -38,6 +39,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
+import com.android.modules.utils.build.SdkLevel;
 import com.android.textclassifier.notification.SmartSuggestions;
 import com.android.textclassifier.notification.SmartSuggestionsHelper;
 
@@ -132,8 +134,9 @@ public class Assistant extends NotificationAssistantService {
             return null;
         }
 
-        final boolean shouldCheckForOtp =
-                NotificationOtpDetectionHelper.shouldCheckForOtp(sbn.getNotification());
+        final boolean shouldCheckForOtp = SdkLevel.isAtLeastV()
+                && Flags.redactSensitiveNotificationsFromUntrustedListeners()
+                && NotificationOtpDetectionHelper.shouldCheckForOtp(sbn.getNotification());
         boolean foundOtpWithRegex = shouldCheckForOtp
                 && NotificationOtpDetectionHelper
                 .containsOtp(sbn.getNotification(), true, null);

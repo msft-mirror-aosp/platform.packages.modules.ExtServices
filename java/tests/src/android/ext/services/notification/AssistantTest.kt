@@ -53,6 +53,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.eq
 import org.mockito.ArgumentMatchers.isNull
 import org.mockito.Mockito.atLeast
+import org.mockito.Mockito.atLeastOnce
 import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
@@ -107,13 +108,24 @@ class AssistantTest {
     }
 
     @Test
+    fun onNotificationEnqueued_doesntCheckForOtpIfFlagDisabled() {
+        (setFlagsRule as SetFlagsRule)
+            .disableFlags(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
+        val sbn = createSbn(TEXT_WITH_OTP)
+        val directReturn =
+            assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
+        // Expect no adjustment returned, despite the regex
+        assertThat(directReturn).isNull()
+    }
+
+    @Test
     fun onNotificationEnqueued_callsTextClassifierForOtpAndSuggestions() {
         val sbn = createSbn(TEXT_WITH_OTP)
         doReturn(TextLanguage.Builder().putLocale(ULocale.ROOT, 0.9f).build())
             .whenKt(mockTc).detectLanguage(any())
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
-        verify(mockTc).detectLanguage(any())
+        verify(mockTc, atLeastOnce()).detectLanguage(any())
         verify(assistant.mSmartSuggestionsHelper, times(1)).onNotificationEnqueued(eq(sbn))
         // A false result shouldn't result in an adjustment call for the otp
         verify(assistant).createNotificationAdjustment(any(), isNull(), isNull(), eq(true))
@@ -135,7 +147,7 @@ class AssistantTest {
         assertThat(directReturn.signals.getCharSequenceArrayList(KEY_TEXT_REPLIES)).isNull()
         Thread.sleep(EXECUTOR_AWAIT_TIME)
         // Expect a call to the TC, and a call to adjust the notification
-        verify(mockTc).detectLanguage(any())
+        verify(mockTc, atLeastOnce()).detectLanguage(any())
         verify(assistant).createNotificationAdjustment(any(), isNull(), isNull(), eq(true))
         // Expect adjustment for the suggestions and OTP together, with a true value
         verify(assistant).createNotificationAdjustment(any(),
@@ -189,7 +201,9 @@ class AssistantTest {
         var sensitiveString: String? = null
         doAnswer { invocation: InvocationOnMock ->
             val request = invocation.getArgument<TextLanguage.Request>(0)
-            sensitiveString = request.text.toString()
+            if (sensitiveString == null) {
+                sensitiveString = request.text.toString()
+            }
             return@doAnswer TextLanguage.Builder().putLocale(ULocale.ROOT, 0.9f).build()
 
         }.whenKt(mockTc).detectLanguage(any())
@@ -214,7 +228,7 @@ class AssistantTest {
             style = Notification.InboxStyle())
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
-        verify(mockTc).detectLanguage(any())
+        verify(mockTc, atLeastOnce()).detectLanguage(any())
     }
 
     @Test
