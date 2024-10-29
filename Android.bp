@@ -57,6 +57,7 @@ android_library {
     ],
 
     libs: [
+        "framework-platformcrashrecovery.stubs.module_lib",
         "framework-configinfrastructure.stubs.module_lib",
         "framework-connectivity.stubs.module_lib",
     ],
