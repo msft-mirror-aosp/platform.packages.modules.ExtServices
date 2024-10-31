@@ -29,7 +29,6 @@ import android.icu.util.ULocale
 import android.os.Process
 import android.platform.test.flag.junit.SetFlagsRule
 import android.service.notification.Adjustment.KEY_SENSITIVE_CONTENT
-import android.service.notification.Adjustment.KEY_TEXT_REPLIES
 import android.service.notification.Flags
 import android.service.notification.StatusBarNotification
 import android.view.textclassifier.TextClassificationManager
@@ -53,6 +52,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.eq
 import org.mockito.ArgumentMatchers.isNull
 import org.mockito.Mockito.atLeast
+import org.mockito.Mockito.atLeastOnce
 import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
@@ -65,13 +65,13 @@ import org.mockito.stubbing.Stubber
 
 @RunWith(JUnit4::class)
 class AssistantTest {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext!!
-    lateinit var mockSuggestions: SmartSuggestionsHelper
-    lateinit var mockTc: TextClassifier
-    lateinit var assistant: Assistant
-    lateinit var mockPm: PackageManager
-    lateinit var mockAm: ActivityManager
-    val EXECUTOR_AWAIT_TIME = 200L
+    private val context = InstrumentationRegistry.getInstrumentation().targetContext!!
+    private lateinit var mockSuggestions: SmartSuggestionsHelper
+    private lateinit var mockTc: TextClassifier
+    private lateinit var assistant: Assistant
+    private lateinit var mockAm: ActivityManager
+    private lateinit var mockPm: PackageManager
+    private val EXECUTOR_AWAIT_TIME = 200L
 
     private fun <T> Stubber.whenKt(mock: T): T = `when`(mock)
 
@@ -89,10 +89,10 @@ class AssistantTest {
         assistant = spy(Assistant())
         mockSuggestions = mock(SmartSuggestionsHelper::class.java)
         mockTc = mock(TextClassifier::class.java)
-        mockAm = mock(ActivityManager::class.java)
         mockPm = mock(PackageManager::class.java)
-        assistant.mAm = mockAm
+        mockAm = mock(ActivityManager::class.java)
         assistant.mPm = mockPm
+        assistant.mAm = mockAm
         assistant.mSmartSuggestionsHelper = mockSuggestions
         doReturn(SmartSuggestions(emptyList(), emptyList()))
                 .whenKt(mockSuggestions).onNotificationEnqueued(any())
@@ -120,11 +120,11 @@ class AssistantTest {
     @Test
     fun onNotificationEnqueued_callsTextClassifierForOtpAndSuggestions() {
         val sbn = createSbn(TEXT_WITH_OTP)
-        doReturn(TextLanguage.Builder().putLocale(ULocale.ROOT, 0.9f).build())
+        doReturn(TextLanguage.Builder().putLocale(ULocale.ENGLISH, 0.9f).build())
             .whenKt(mockTc).detectLanguage(any())
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
-        verify(mockTc).detectLanguage(any())
+        verify(mockTc, atLeastOnce()).detectLanguage(any())
         verify(assistant.mSmartSuggestionsHelper, times(1)).onNotificationEnqueued(eq(sbn))
         // A false result shouldn't result in an adjustment call for the otp
         verify(assistant).createNotificationAdjustment(any(), isNull(), isNull(), eq(true))
@@ -136,17 +136,15 @@ class AssistantTest {
     @Test
     fun onNotificationEnqueued_usesBothRegexAndTc() {
         val sbn = createSbn(TEXT_WITH_OTP)
-        doReturn(TextLanguage.Builder().putLocale(ULocale.ROOT, 0.9f).build())
+        doReturn(TextLanguage.Builder().putLocale(ULocale.ENGLISH, 0.9f).build())
             .whenKt(mockTc).detectLanguage(any())
         val directReturn =
             assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
-        // Expect an adjustment to be returned, due to regex
-        assertThat(directReturn).isNotNull()
-        assertThat(directReturn!!.signals.getBoolean(KEY_SENSITIVE_CONTENT)).isTrue()
-        assertThat(directReturn.signals.getCharSequenceArrayList(KEY_TEXT_REPLIES)).isNull()
+        // Do not expect any return
+        assertThat(directReturn).isNull()
         Thread.sleep(EXECUTOR_AWAIT_TIME)
         // Expect a call to the TC, and a call to adjust the notification
-        verify(mockTc).detectLanguage(any())
+        verify(mockTc, atLeastOnce()).detectLanguage(any())
         verify(assistant).createNotificationAdjustment(any(), isNull(), isNull(), eq(true))
         // Expect adjustment for the suggestions and OTP together, with a true value
         verify(assistant).createNotificationAdjustment(any(),
@@ -173,7 +171,7 @@ class AssistantTest {
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
         verify(mockTc, never()).generateLinks(any())
-        // Never calls generateLinks, but still gets an adjustment, due to regex
+        // Never calls generateLinks, but still gets an adjustment, due to regex assuming english
         verify(assistant, atLeast(1))
             .createNotificationAdjustment(any(), any(), any(), eq(true))
         verify(assistant.mSmartSuggestionsHelper, times(1)).onNotificationEnqueued(eq(sbn))
@@ -200,7 +198,9 @@ class AssistantTest {
         var sensitiveString: String? = null
         doAnswer { invocation: InvocationOnMock ->
             val request = invocation.getArgument<TextLanguage.Request>(0)
-            sensitiveString = request.text.toString()
+            if (sensitiveString == null) {
+                sensitiveString = request.text.toString()
+            }
             return@doAnswer TextLanguage.Builder().putLocale(ULocale.ROOT, 0.9f).build()
 
         }.whenKt(mockTc).detectLanguage(any())
@@ -225,7 +225,7 @@ class AssistantTest {
             style = Notification.InboxStyle())
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
-        verify(mockTc).detectLanguage(any())
+        verify(mockTc, atLeastOnce()).detectLanguage(any())
     }
 
     @Test

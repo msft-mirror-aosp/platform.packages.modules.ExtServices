@@ -38,4 +38,7 @@
             class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
         <option name="mainline-module-package-name" value="com.google.android.extservices"/>
     </object>
-</configuration>
+
+   <!-- Needed to set TestDeviceHelper for class rules -->
+   <target_preparer class="com.android.adservices.common.AdServicesHostTestsTargetPreparer"/>
+ </configuration>
