@@ -48,6 +48,8 @@ public class AssistantSettingsTest {
             "device_config delete " + DeviceConfig.NAMESPACE_SYSTEMUI;
     private static final String WRITE_DEVICE_CONFIG_PERMISSION =
             "android.permission.WRITE_DEVICE_CONFIG";
+    private static final String WRITE_ALLOWLISTED_DEVICE_CONFIG_PERMISSION =
+            "android.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG";
 
     private static final String READ_DEVICE_CONFIG_PERMISSION =
             "android.permission.READ_DEVICE_CONFIG";
@@ -67,6 +69,7 @@ public class AssistantSettingsTest {
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(
                         WRITE_DEVICE_CONFIG_PERMISSION,
+                        WRITE_ALLOWLISTED_DEVICE_CONFIG_PERMISSION,
                         READ_DEVICE_CONFIG_PERMISSION);
         mAssistantSettings = new AssistantSettings();
     }
