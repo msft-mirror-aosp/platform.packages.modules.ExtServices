@@ -22,6 +22,7 @@ import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Trace;
@@ -45,6 +46,7 @@ import com.android.textclassifier.notification.SmartSuggestionsHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -66,6 +68,9 @@ public class Assistant extends NotificationAssistantService {
     protected boolean mUseTextClassifier = true;
 
     @VisibleForTesting
+    protected Context mContext;
+
+    @VisibleForTesting
     protected PackageManager mPm;
 
     @VisibleForTesting
@@ -80,7 +85,8 @@ public class Assistant extends NotificationAssistantService {
     protected AssistantSettings.Factory mSettingsFactory = AssistantSettings.FACTORY;
     @VisibleForTesting
     protected AssistantSettings mSettings;
-    private SmsHelper mSmsHelper;
+    @VisibleForTesting
+    protected SmsHelper mSmsHelper;
     @VisibleForTesting
     protected SmartSuggestionsHelper mSmartSuggestionsHelper;
 
@@ -95,6 +101,7 @@ public class Assistant extends NotificationAssistantService {
         super.onCreate();
         // Contexts are correctly hooked up by the creation step, which is required for the observer
         // to be hooked up/initialized.
+        mContext = this;
         mPm = getPackageManager();
         mAm = getSystemService(ActivityManager.class);
         mTcm = getSystemService(TextClassificationManager.class);
@@ -136,6 +143,7 @@ public class Assistant extends NotificationAssistantService {
 
         final boolean shouldCheckForOtp = SdkLevel.isAtLeastV()
                 && Flags.redactSensitiveNotificationsFromUntrustedListeners()
+                && Objects.equals(sbn.getPackageName(), mSmsHelper.getDefaultSmsPackage())
                 && NotificationOtpDetectionHelper.shouldCheckForOtp(sbn.getNotification());
         boolean foundOtpWithRegex = shouldCheckForOtp
                 && NotificationOtpDetectionHelper
