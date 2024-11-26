@@ -22,20 +22,23 @@ import android.app.Notification.CATEGORY_MESSAGE
 import android.app.NotificationChannel
 import android.app.NotificationManager.IMPORTANCE_DEFAULT
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.FEATURE_WATCH
 import android.icu.util.ULocale
 import android.os.Process
 import android.platform.test.flag.junit.SetFlagsRule
+import android.provider.Telephony
 import android.service.notification.Adjustment.KEY_SENSITIVE_CONTENT
+import android.service.notification.Adjustment.KEY_TEXT_REPLIES
 import android.service.notification.Flags
 import android.service.notification.StatusBarNotification
 import android.view.textclassifier.TextClassificationManager
 import android.view.textclassifier.TextClassifier
 import android.view.textclassifier.TextLanguage
 import android.view.textclassifier.TextLinks
-import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.core.app.ApplicationProvider
 import com.android.modules.utils.build.SdkLevel
 import com.android.textclassifier.notification.SmartSuggestions
 import com.android.textclassifier.notification.SmartSuggestionsHelper
@@ -65,13 +68,13 @@ import org.mockito.stubbing.Stubber
 
 @RunWith(JUnit4::class)
 class AssistantTest {
-    private val context = InstrumentationRegistry.getInstrumentation().targetContext!!
-    private lateinit var mockSuggestions: SmartSuggestionsHelper
-    private lateinit var mockTc: TextClassifier
-    private lateinit var assistant: Assistant
-    private lateinit var mockAm: ActivityManager
-    private lateinit var mockPm: PackageManager
-    private val EXECUTOR_AWAIT_TIME = 200L
+    private val context = ApplicationProvider.getApplicationContext<Context>()
+    lateinit var mockSuggestions: SmartSuggestionsHelper
+    lateinit var mockTc: TextClassifier
+    lateinit var assistant: Assistant
+    lateinit var mockPm: PackageManager
+    lateinit var mockAm: ActivityManager
+    val EXECUTOR_AWAIT_TIME = 200L
 
     private fun <T> Stubber.whenKt(mock: T): T = `when`(mock)
 
@@ -89,10 +92,13 @@ class AssistantTest {
         assistant = spy(Assistant())
         mockSuggestions = mock(SmartSuggestionsHelper::class.java)
         mockTc = mock(TextClassifier::class.java)
-        mockPm = mock(PackageManager::class.java)
         mockAm = mock(ActivityManager::class.java)
-        assistant.mPm = mockPm
+        mockPm = mock(PackageManager::class.java)
+        assistant.mContext = context
+        assistant.mSmsHelper = SmsHelper(context)
+        assistant.mSmsHelper.initialize()
         assistant.mAm = mockAm
+        assistant.mPm = mockPm
         assistant.mSmartSuggestionsHelper = mockSuggestions
         doReturn(SmartSuggestions(emptyList(), emptyList()))
                 .whenKt(mockSuggestions).onNotificationEnqueued(any())
@@ -118,9 +124,20 @@ class AssistantTest {
     }
 
     @Test
+    fun onNotificationEnqueued_doesntCheckForOtpIfNotSMS() {
+        val sbn = createSbn(TEXT_WITH_OTP, packageName = "invalid_package_name")
+        doReturn(TextLanguage.Builder().putLocale(ULocale.ENGLISH, 0.9f).build())
+            .whenKt(mockTc).detectLanguage(any())
+        assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
+        Thread.sleep(EXECUTOR_AWAIT_TIME)
+        verify(assistant, never())
+            .createNotificationAdjustment(any(), any(), any(), eq(true))
+    }
+
+    @Test
     fun onNotificationEnqueued_callsTextClassifierForOtpAndSuggestions() {
         val sbn = createSbn(TEXT_WITH_OTP)
-        doReturn(TextLanguage.Builder().putLocale(ULocale.ENGLISH, 0.9f).build())
+        doReturn(TextLanguage.Builder().putLocale(ULocale.ROOT, 0.9f).build())
             .whenKt(mockTc).detectLanguage(any())
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
@@ -136,12 +153,14 @@ class AssistantTest {
     @Test
     fun onNotificationEnqueued_usesBothRegexAndTc() {
         val sbn = createSbn(TEXT_WITH_OTP)
-        doReturn(TextLanguage.Builder().putLocale(ULocale.ENGLISH, 0.9f).build())
+        doReturn(TextLanguage.Builder().putLocale(ULocale.ROOT, 0.9f).build())
             .whenKt(mockTc).detectLanguage(any())
         val directReturn =
             assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
-        // Do not expect any return
-        assertThat(directReturn).isNull()
+        // Expect an adjustment to be returned, due to regex
+        assertThat(directReturn).isNotNull()
+        assertThat(directReturn!!.signals.getBoolean(KEY_SENSITIVE_CONTENT)).isTrue()
+        assertThat(directReturn.signals.getCharSequenceArrayList(KEY_TEXT_REPLIES)).isNull()
         Thread.sleep(EXECUTOR_AWAIT_TIME)
         // Expect a call to the TC, and a call to adjust the notification
         verify(mockTc, atLeastOnce()).detectLanguage(any())
@@ -171,7 +190,7 @@ class AssistantTest {
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
         verify(mockTc, never()).generateLinks(any())
-        // Never calls generateLinks, but still gets an adjustment, due to regex assuming english
+        // Never calls generateLinks, but still gets an adjustment, due to regex
         verify(assistant, atLeast(1))
             .createNotificationAdjustment(any(), any(), any(), eq(true))
         verify(assistant.mSmartSuggestionsHelper, times(1)).onNotificationEnqueued(eq(sbn))
@@ -255,7 +274,8 @@ class AssistantTest {
         title: String = "",
         subtext: String = "",
         category: String = CATEGORY_MESSAGE,
-        style: Notification.Style? = null
+        style: Notification.Style? = null,
+        packageName: String? = Telephony.Sms.getDefaultSmsPackage(context)
     ): StatusBarNotification {
         val intent = Intent(Intent.ACTION_MAIN)
         intent.setFlags(
@@ -274,8 +294,8 @@ class AssistantTest {
         if (style != null) {
             nb.setStyle(style)
         }
-        return StatusBarNotification(context.packageName, context.packageName, 0, "",
-            Process.myUid(), 0, 0, nb.build(), Process.myUserHandle(), System.currentTimeMillis())
+        return StatusBarNotification(packageName, packageName, 0, "", Process.myUid(), 0, 0,
+            nb.build(), Process.myUserHandle(), System.currentTimeMillis())
     }
 
     private fun createTestPendingIntent(): PendingIntent {
