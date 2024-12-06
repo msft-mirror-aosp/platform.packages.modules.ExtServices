@@ -22,8 +22,8 @@ import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
+import android.content.Context;
 import android.content.pm.PackageManager;
-import android.icu.util.ULocale;
 import android.os.Bundle;
 import android.os.Trace;
 import android.os.UserHandle;
@@ -46,6 +46,7 @@ import com.android.textclassifier.notification.SmartSuggestionsHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -67,6 +68,9 @@ public class Assistant extends NotificationAssistantService {
     protected boolean mUseTextClassifier = true;
 
     @VisibleForTesting
+    protected Context mContext;
+
+    @VisibleForTesting
     protected PackageManager mPm;
 
     @VisibleForTesting
@@ -81,7 +85,8 @@ public class Assistant extends NotificationAssistantService {
     protected AssistantSettings.Factory mSettingsFactory = AssistantSettings.FACTORY;
     @VisibleForTesting
     protected AssistantSettings mSettings;
-    private SmsHelper mSmsHelper;
+    @VisibleForTesting
+    protected SmsHelper mSmsHelper;
     @VisibleForTesting
     protected SmartSuggestionsHelper mSmartSuggestionsHelper;
 
@@ -96,6 +101,7 @@ public class Assistant extends NotificationAssistantService {
         super.onCreate();
         // Contexts are correctly hooked up by the creation step, which is required for the observer
         // to be hooked up/initialized.
+        mContext = this;
         mPm = getPackageManager();
         mAm = getSystemService(ActivityManager.class);
         mTcm = getSystemService(TextClassificationManager.class);
@@ -137,30 +143,30 @@ public class Assistant extends NotificationAssistantService {
 
         final boolean shouldCheckForOtp = SdkLevel.isAtLeastV()
                 && Flags.redactSensitiveNotificationsFromUntrustedListeners()
+                && Objects.equals(sbn.getPackageName(), mSmsHelper.getDefaultSmsPackage())
                 && NotificationOtpDetectionHelper.shouldCheckForOtp(sbn.getNotification());
         boolean foundOtpWithRegex = shouldCheckForOtp
                 && NotificationOtpDetectionHelper
-                .containsOtp(sbn.getNotification(), null);
+                .containsOtp(sbn.getNotification(), true, null);
+        Adjustment earlyOtpReturn = null;
+        if (foundOtpWithRegex) {
+            earlyOtpReturn = createNotificationAdjustment(sbn, null, null, true);
+        }
 
-        // If there's a heavy queue backup, assume english
-        if (foundOtpWithRegex && mMachineLearningExecutor.getQueue().size() >= MAX_QUEUED_ML_JOBS) {
-            return createNotificationAdjustment(sbn, null, null, NotificationOtpDetectionHelper
-                    .containsOtp(sbn.getNotification(), null, ULocale.ENGLISH));
+        if (mMachineLearningExecutor.getQueue().size() >= MAX_QUEUED_ML_JOBS) {
+            return earlyOtpReturn;
         }
 
         // Ignoring the result of the future
         Future<?> ignored = mMachineLearningExecutor.submit(() -> {
-            boolean containsOtp = false;
-            if (foundOtpWithRegex) {
+            Boolean containsOtp = null;
+            if (shouldCheckForOtp && mUseTextClassifier) {
                 // If we can use the text classifier, do a second pass, using the TC to detect
                 // languages, and potentially using the TC to remove false positives
                 Trace.beginSection(TAG + "_RegexWithTc");
                 try {
-                    // If we can't use the textClassifier for performance reasons, assume the
-                    // language is english.
-                    ULocale assumedLang = mUseTextClassifier ? null : ULocale.ENGLISH;
                     containsOtp = NotificationOtpDetectionHelper.containsOtp(
-                            sbn.getNotification(), mTcm.getTextClassifier(), assumedLang);
+                            sbn.getNotification(), true, mTcm.getTextClassifier());
 
                 } finally {
                     Trace.endSection();
@@ -168,7 +174,7 @@ public class Assistant extends NotificationAssistantService {
             }
 
             // If we found an otp (and didn't already send an adjustment), send an adjustment early
-            if (containsOtp) {
+            if (Boolean.TRUE.equals(containsOtp) && !foundOtpWithRegex) {
                 adjustNotificationIfNotNull(
                         createNotificationAdjustment(sbn, null, null, true));
             }
@@ -196,7 +202,7 @@ public class Assistant extends NotificationAssistantService {
                     containsOtp));
         });
 
-        return null;
+        return earlyOtpReturn;
     }
 
     // Due to Mockito setup, some methods marked @NonNull can sometimes be called with a
