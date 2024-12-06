@@ -22,12 +22,14 @@ import android.app.Notification.CATEGORY_MESSAGE
 import android.app.NotificationChannel
 import android.app.NotificationManager.IMPORTANCE_DEFAULT
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.FEATURE_WATCH
 import android.icu.util.ULocale
 import android.os.Process
 import android.platform.test.flag.junit.SetFlagsRule
+import android.provider.Telephony
 import android.service.notification.Adjustment.KEY_SENSITIVE_CONTENT
 import android.service.notification.Adjustment.KEY_TEXT_REPLIES
 import android.service.notification.Flags
@@ -36,7 +38,7 @@ import android.view.textclassifier.TextClassificationManager
 import android.view.textclassifier.TextClassifier
 import android.view.textclassifier.TextLanguage
 import android.view.textclassifier.TextLinks
-import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.core.app.ApplicationProvider
 import com.android.modules.utils.build.SdkLevel
 import com.android.textclassifier.notification.SmartSuggestions
 import com.android.textclassifier.notification.SmartSuggestionsHelper
@@ -53,6 +55,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.eq
 import org.mockito.ArgumentMatchers.isNull
 import org.mockito.Mockito.atLeast
+import org.mockito.Mockito.atLeastOnce
 import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
@@ -65,7 +68,7 @@ import org.mockito.stubbing.Stubber
 
 @RunWith(JUnit4::class)
 class AssistantTest {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext!!
+    private val context = ApplicationProvider.getApplicationContext<Context>()
     lateinit var mockSuggestions: SmartSuggestionsHelper
     lateinit var mockTc: TextClassifier
     lateinit var assistant: Assistant
@@ -91,6 +94,9 @@ class AssistantTest {
         mockTc = mock(TextClassifier::class.java)
         mockAm = mock(ActivityManager::class.java)
         mockPm = mock(PackageManager::class.java)
+        assistant.mContext = context
+        assistant.mSmsHelper = SmsHelper(context)
+        assistant.mSmsHelper.initialize()
         assistant.mAm = mockAm
         assistant.mPm = mockPm
         assistant.mSmartSuggestionsHelper = mockSuggestions
@@ -118,13 +124,24 @@ class AssistantTest {
     }
 
     @Test
-    fun onNotificationEnqueued_callsTextClassifierForOtpAndSuggestions() {
-        val sbn = createSbn(TEXT_WITH_OTP)
-        doReturn(TextLanguage.Builder().putLocale(ULocale.ROOT, 0.9f).build())
+    fun onNotificationEnqueued_doesntCheckForOtpIfNotSMS() {
+        val sbn = createSbn(TEXT_WITH_OTP, packageName = "invalid_package_name")
+        doReturn(TextLanguage.Builder().putLocale(ULocale.ENGLISH, 0.9f).build())
             .whenKt(mockTc).detectLanguage(any())
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
-        verify(mockTc).detectLanguage(any())
+        verify(assistant, never())
+            .createNotificationAdjustment(any(), any(), any(), eq(true))
+    }
+
+    @Test
+    fun onNotificationEnqueued_callsTextClassifierForOtpAndSuggestions() {
+        val sbn = createSbn(TEXT_WITH_OTP)
+        doReturn(TextLanguage.Builder().putLocale(ULocale.ENGLISH, 0.9f).build())
+            .whenKt(mockTc).detectLanguage(any())
+        assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
+        Thread.sleep(EXECUTOR_AWAIT_TIME)
+        verify(mockTc, atLeastOnce()).detectLanguage(any())
         verify(assistant.mSmartSuggestionsHelper, times(1)).onNotificationEnqueued(eq(sbn))
         // A false result shouldn't result in an adjustment call for the otp
         verify(assistant).createNotificationAdjustment(any(), isNull(), isNull(), eq(true))
@@ -136,7 +153,7 @@ class AssistantTest {
     @Test
     fun onNotificationEnqueued_usesBothRegexAndTc() {
         val sbn = createSbn(TEXT_WITH_OTP)
-        doReturn(TextLanguage.Builder().putLocale(ULocale.ROOT, 0.9f).build())
+        doReturn(TextLanguage.Builder().putLocale(ULocale.ENGLISH, 0.9f).build())
             .whenKt(mockTc).detectLanguage(any())
         val directReturn =
             assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
@@ -146,7 +163,7 @@ class AssistantTest {
         assertThat(directReturn.signals.getCharSequenceArrayList(KEY_TEXT_REPLIES)).isNull()
         Thread.sleep(EXECUTOR_AWAIT_TIME)
         // Expect a call to the TC, and a call to adjust the notification
-        verify(mockTc).detectLanguage(any())
+        verify(mockTc, atLeastOnce()).detectLanguage(any())
         verify(assistant).createNotificationAdjustment(any(), isNull(), isNull(), eq(true))
         // Expect adjustment for the suggestions and OTP together, with a true value
         verify(assistant).createNotificationAdjustment(any(),
@@ -200,7 +217,9 @@ class AssistantTest {
         var sensitiveString: String? = null
         doAnswer { invocation: InvocationOnMock ->
             val request = invocation.getArgument<TextLanguage.Request>(0)
-            sensitiveString = request.text.toString()
+            if (sensitiveString == null) {
+                sensitiveString = request.text.toString()
+            }
             return@doAnswer TextLanguage.Builder().putLocale(ULocale.ROOT, 0.9f).build()
 
         }.whenKt(mockTc).detectLanguage(any())
@@ -225,7 +244,7 @@ class AssistantTest {
             style = Notification.InboxStyle())
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
-        verify(mockTc).detectLanguage(any())
+        verify(mockTc, atLeastOnce()).detectLanguage(any())
     }
 
     @Test
@@ -255,7 +274,8 @@ class AssistantTest {
         title: String = "",
         subtext: String = "",
         category: String = CATEGORY_MESSAGE,
-        style: Notification.Style? = null
+        style: Notification.Style? = null,
+        packageName: String? = Telephony.Sms.getDefaultSmsPackage(context)
     ): StatusBarNotification {
         val intent = Intent(Intent.ACTION_MAIN)
         intent.setFlags(
@@ -274,8 +294,8 @@ class AssistantTest {
         if (style != null) {
             nb.setStyle(style)
         }
-        return StatusBarNotification(context.packageName, context.packageName, 0, "",
-            Process.myUid(), 0, 0, nb.build(), Process.myUserHandle(), System.currentTimeMillis())
+        return StatusBarNotification(packageName, packageName, 0, "", Process.myUid(), 0, 0,
+            nb.build(), Process.myUserHandle(), System.currentTimeMillis())
     }
 
     private fun createTestPendingIntent(): PendingIntent {
