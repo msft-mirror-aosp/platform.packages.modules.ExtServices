@@ -120,7 +120,7 @@ class AssistantTest {
     @Test
     fun onNotificationEnqueued_callsTextClassifierForOtpAndSuggestions() {
         val sbn = createSbn(TEXT_WITH_OTP)
-        doReturn(TextLanguage.Builder().putLocale(ULocale.ROOT, 0.9f).build())
+        doReturn(TextLanguage.Builder().putLocale(ULocale.ENGLISH, 0.9f).build())
             .whenKt(mockTc).detectLanguage(any())
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
@@ -136,7 +136,7 @@ class AssistantTest {
     @Test
     fun onNotificationEnqueued_usesBothRegexAndTc() {
         val sbn = createSbn(TEXT_WITH_OTP)
-        doReturn(TextLanguage.Builder().putLocale(ULocale.ROOT, 0.9f).build())
+        doReturn(TextLanguage.Builder().putLocale(ULocale.ENGLISH, 0.9f).build())
             .whenKt(mockTc).detectLanguage(any())
         val directReturn =
             assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))

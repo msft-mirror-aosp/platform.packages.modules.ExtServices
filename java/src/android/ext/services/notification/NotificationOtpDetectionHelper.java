@@ -28,9 +28,6 @@ import static android.app.Notification.EXTRA_TEXT_LINES;
 import static android.app.Notification.EXTRA_TITLE;
 import static android.app.Notification.EXTRA_TITLE_BIG;
 import static android.os.Build.VERSION.SDK_INT;
-import static android.view.textclassifier.TextClassifier.TYPE_ADDRESS;
-import static android.view.textclassifier.TextClassifier.TYPE_FLIGHT_NUMBER;
-import static android.view.textclassifier.TextClassifier.TYPE_PHONE;
 
 import static java.lang.String.format;
 
@@ -44,8 +41,9 @@ import android.os.Parcelable;
 import android.util.ArrayMap;
 import android.view.textclassifier.TextClassifier;
 import android.view.textclassifier.TextLanguage;
-import android.view.textclassifier.TextLinks;
 
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
 
 import java.util.ArrayList;
@@ -59,24 +57,27 @@ import java.util.regex.Pattern;
  * Class with helper methods related to detecting OTP codes in notifications.
  * This file needs to only use public android API methods, see b/361149088
  */
+@SuppressLint("ObsoleteSdkInt")
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 public class NotificationOtpDetectionHelper {
 
     // Use an ArrayList because a List.of list will throw NPE when calling "contains(null)"
-    private static final List<String> SENSITIVE_NOTIFICATION_CATEGORIES = new ArrayList<>(
-            Arrays.asList(CATEGORY_MESSAGE, CATEGORY_EMAIL, CATEGORY_SOCIAL));
+    private static final List<String> SENSITIVE_NOTIFICATION_CATEGORIES =
+            Arrays.asList(CATEGORY_MESSAGE, CATEGORY_EMAIL, CATEGORY_SOCIAL);
 
-    private static final List<Class<? extends Notification.Style>> SENSITIVE_STYLES =
-            new ArrayList<>(Arrays.asList(Notification.MessagingStyle.class,
-                    Notification.InboxStyle.class, Notification.BigTextStyle.class));
+    private static final List<String> SENSITIVE_STYLES =
+            Arrays.asList(
+                    Notification.MessagingStyle.class.getName(),
+                    Notification.InboxStyle.class.getName(),
+                    Notification.BigTextStyle.class.getName()
+            );
 
-    private static final List<Class<? extends Notification.Style>> EXCLUDED_STYLES =
-            new ArrayList<>(Arrays.asList(Notification.MediaStyle.class,
-                    Notification.BigPictureStyle.class));
-    static {
-        if (SDK_INT >= Build.VERSION_CODES.S) {
-            EXCLUDED_STYLES.add(Notification.CallStyle.class);
-        }
-    }
+    private static final List<String> EXCLUDED_STYLES =
+            Arrays.asList(
+                    Notification.MediaStyle.class.getName(),
+                    Notification.BigPictureStyle.class.getName(),
+                    Notification.CallStyle.class.getName()
+            );
 
     private static final float TC_THRESHOLD = 0.6f;
 
@@ -282,10 +283,8 @@ public class NotificationOtpDetectionHelper {
                 // Only use the language-specific regex for false positives
                 return languageSpecificMatcher.find();
             }
-            // Else, use TC to check for false positives
-            if (hasFalsePositivesTcCheck(sensitiveText, tc)) {
-                return false;
-            }
+            // Only check for OTPs when there is a language specific matcher
+            return false;
         }
 
         return !allOtpMatchesAreFalsePositives(sensitiveText, FALSE_POSITIVE_SHORTER_REGEX.get(),
@@ -357,26 +356,6 @@ public class NotificationOtpDetectionHelper {
         return null;
     }
 
-    private static boolean hasFalsePositivesTcCheck(String text, TextClassifier tc) {
-        // Use TC to eliminate false positives from a regex match, namely: flight codes, and
-        // addresses
-        List<String> included = new ArrayList<>(Arrays.asList(TYPE_FLIGHT_NUMBER, TYPE_ADDRESS));
-        List<String> excluded = new ArrayList<>(Arrays.asList(TYPE_PHONE));
-        TextClassifier.EntityConfig config =
-                new TextClassifier.EntityConfig.Builder().setIncludedTypes(
-                        included).setExcludedTypes(excluded).build();
-        TextLinks.Request request =
-                new TextLinks.Request.Builder(text).setEntityConfig(config).build();
-        TextLinks links = tc.generateLinks(request);
-        for (TextLinks.TextLink link : links.getLinks()) {
-            if (link.getConfidenceScore(TYPE_FLIGHT_NUMBER) > TC_THRESHOLD
-                    || link.getConfidenceScore(TYPE_ADDRESS) > TC_THRESHOLD) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /**
      * Gets the sections of text in a notification that should be checked for sensitive content.
      * This includes the text, title, subtext, messages, and extra text lines.
@@ -437,13 +416,12 @@ public class NotificationOtpDetectionHelper {
                 || shouldCheckForOtp(notification.publicVersion);
     }
 
-    private static boolean isStyle(Notification notification,
-            Class<? extends Notification.Style> styleClass) {
+    private static boolean isStyle(Notification notification, String styleClassName) {
         if (notification.extras == null) {
             return false;
         }
         String templateClass = notification.extras.getString(Notification.EXTRA_TEMPLATE);
-        return Objects.equals(templateClass, styleClass.getName());
+        return Objects.equals(templateClass, styleClassName);
     }
 
     private NotificationOtpDetectionHelper() { }
