@@ -17,4 +17,31 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="notification_assistant" msgid="9160940242838910547">"‏התראות מותאמות ל-Android"</string>
+  <string-array name="english_otp_context_words">
+    <item msgid="7615778208475066419">"קוד אימות"</item>
+    <item msgid="7174505163902448507">"סיסמה"</item>
+    <item msgid="3917837442156595568">"קוד גישה"</item>
+    <item msgid="6971032950332150936">"אימות דו-שלבי"</item>
+    <item msgid="826248726164877615">"אימות דו-שלבי"</item>
+    <item msgid="2156400793251117724">"התחברות"</item>
+    <item msgid="3621495493711216796">"התחברות לחשבון"</item>
+    <item msgid="4652629344958695406">"התחברות לחשבון"</item>
+    <item msgid="6021138326345874403">"אימות"</item>
+    <item msgid="301989899519648952">"אימות"</item>
+    <item msgid="2409846400635400651">"קוד"</item>
+    <item msgid="3362500960690003002">"סודי"</item>
+    <item msgid="1542192064842556988">"אימות"</item>
+    <item msgid="2052362882225775298">"אימות"</item>
+    <item msgid="4759495520595696444">"אישור"</item>
+    <item msgid="4360404417991731370">"אישור"</item>
+    <item msgid="5135302120938115660">"פעם אחת"</item>
+    <item msgid="405482768547359066">"גישה"</item>
+    <item msgid="7962233525908588330">"אימות"</item>
+    <item msgid="9095545913763732113">"בדיקה"</item>
+    <item msgid="2601700967903477651">"לשימוש חד-פעמי"</item>
+    <item msgid="1775341814323929840">"הרשאה"</item>
+    <item msgid="4159587727958533896">"הרשאה"</item>
+    <item msgid="7199374258785307822">"מספר תעודת זהות אישי"</item>
+    <item msgid="3860872742161492043">"קוד אימות"</item>
+  </string-array>
 </resources>
