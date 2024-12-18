@@ -66,7 +66,7 @@ class NotificationOtpDetectionHelperTest {
     fun verifyResults() {
         val allFailuresMessage = StringBuilder("")
         var numFailures = 0;
-        results.forEach { (expected, actual, failureMessage) ->
+        for ((expected, actual, failureMessage) in results) {
             if (expected != actual) {
                 numFailures += 1
                 allFailuresMessage.append("$failureMessage\n")
@@ -243,7 +243,7 @@ class NotificationOtpDetectionHelperTest {
 
     @Test
     fun testShouldCheckForOtp_regex() {
-        var shouldCheck = NotificationOtpDetectionHelper
+        val shouldCheck = NotificationOtpDetectionHelper
                 .shouldCheckForOtp(createNotification(text = "45454", category = ""))
         assertWithMessage("Regex matches should be checked").that(shouldCheck).isTrue()
     }
@@ -418,26 +418,6 @@ class NotificationOtpDetectionHelperTest {
     }
 
     @Test
-    fun testContainsOtp_commonYearsDontMatch_withoutLanguageSpecificRegex() {
-        val tc = getTestTextClassifier(invalidLocale)
-        val twentyXX = "2009"
-        val twentyOneXX = "2109"
-        val thirtyXX = "3035"
-        val nineteenXX = "1945"
-        val eighteenXX = "1899"
-        val yearSubstring = "20051"
-        addMatcherTestResult(expected = false, twentyXX, textClassifier = tc)
-        // Behavior should be the same for an invalid language, and null TextClassifier
-        addMatcherTestResult(expected = false, twentyXX, textClassifier = null)
-        addMatcherTestResult(expected = true, twentyOneXX, textClassifier = tc)
-        addMatcherTestResult(expected = true, thirtyXX, textClassifier = tc)
-        addMatcherTestResult(expected = false, nineteenXX, textClassifier = tc)
-        addMatcherTestResult(expected = true, eighteenXX, textClassifier = tc)
-        // A substring of a year should not trigger a false positive
-        addMatcherTestResult(expected = true, yearSubstring, textClassifier = tc)
-    }
-
-    @Test
     fun testContainsOtp_englishSpecificRegex() {
         val tc = getTestTextClassifier(ULocale.ENGLISH)
         val englishFalsePositive = "This is a false positive 4543"
@@ -447,6 +427,13 @@ class NotificationOtpDetectionHelperTest {
         val englishContextWordsCase = listOf("LOGIN", "logIn", "LoGiN")
         // Strings with a context word somewhere in the substring
         val englishContextSubstrings = listOf("pins", "gaping", "backspin")
+        val codeInNextSentence = "context word: code. This sentence has the actual value of 434343"
+        val codeInNextSentenceTooFar =
+            "context word: code. ${"f".repeat(60)} This sentence has the actual value of 434343"
+        val codeTwoSentencesAfterContext = "context word: code. One sentence. actual value 34343"
+        val codeInSentenceBeforeContext = "34343 is a number. This number is a code"
+        val codeInSentenceAfterNewline = "your code is \n 34343"
+        val codeTooFarBeforeContext = "34343 ${"f".repeat(60)} code"
 
         addMatcherTestResult(expected = false, englishFalsePositive, textClassifier = tc)
         for (context in englishContextWords) {
@@ -461,6 +448,23 @@ class NotificationOtpDetectionHelperTest {
             val anotherFalsePositive = "$falseContext $englishFalsePositive"
             addMatcherTestResult(expected = false, anotherFalsePositive, textClassifier = tc)
         }
+        addMatcherTestResult(expected = true, codeInNextSentence, textClassifier = tc)
+        addMatcherTestResult(expected = true, codeInSentenceAfterNewline, textClassifier = tc)
+        addMatcherTestResult(expected = false, codeTwoSentencesAfterContext, textClassifier = tc)
+        addMatcherTestResult(expected = false, codeInSentenceBeforeContext, textClassifier = tc)
+        addMatcherTestResult(expected = false, codeInNextSentenceTooFar, textClassifier = tc)
+        addMatcherTestResult(expected = false, codeTooFarBeforeContext, textClassifier = tc)
+    }
+
+    @Test
+    fun testContainsOtp_notificationFieldsCheckedIndividually() {
+        val tc = getTestTextClassifier(ULocale.ENGLISH)
+        // Together, the title and text will match the language-specific regex and the main regex,
+        // but apart, neither are enough
+        val notification = createNotification(text = "code", title = "434343")
+        addMatcherTestResult(expected = true, "code 434343")
+        addResult(expected = false, NotificationOtpDetectionHelper.containsOtp(notification, true,
+            tc), "Expected text of 'code' and title of '434343' not to match")
     }
 
     @Test
@@ -487,13 +491,10 @@ class NotificationOtpDetectionHelperTest {
     }
 
     @Test
-    fun testContainsOtpCode_usesTcForFalsePositivesIfNoLanguageSpecificRegex() {
-        var tc = getTestTextClassifier(invalidLocale, listOf(TextClassifier.TYPE_ADDRESS))
-        val address = "this text doesn't actually matter, but meet me at 6353 Juan Tabo, Apt. 6"
-        addMatcherTestResult(expected = false, address, textClassifier = tc)
-        tc = getTestTextClassifier(invalidLocale, listOf(TextClassifier.TYPE_FLIGHT_NUMBER))
-        val flight = "your flight number is UA1234"
-        addMatcherTestResult(expected = false, flight, textClassifier = tc)
+    fun testContainsOtpCode_falseIfNoLanguageSpecificRegex() {
+        val tc = getTestTextClassifier(invalidLocale)
+        val text = "your one time code is 34343"
+        addMatcherTestResult(expected = false, text, textClassifier = tc)
     }
 
     @Test
