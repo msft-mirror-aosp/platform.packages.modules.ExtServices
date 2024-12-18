@@ -57,8 +57,8 @@ android_library {
     ],
 
     libs: [
-        "framework-configinfrastructure",
-        "framework-connectivity",
+        "framework-configinfrastructure.stubs.module_lib",
+        "framework-connectivity.stubs.module_lib",
     ],
 
     lint: {
@@ -98,6 +98,7 @@ android_app {
         "com.android.extservices",
         "test_com.android.extservices",
     ],
+    updatable: true,
 }
 
 android_app {
@@ -131,4 +132,5 @@ android_app {
         "com.android.extservices",
         "test_com.android.extservices",
     ],
+    updatable: true,
 }
