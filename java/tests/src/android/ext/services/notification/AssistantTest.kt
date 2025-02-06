@@ -89,6 +89,7 @@ class AssistantTest {
     @Before
     fun setUpMocks() {
         assumeTrue(SdkLevel.isAtLeastV())
+        assumeTrue(Telephony.Sms.getDefaultSmsPackage(context) != null)
         assistant = spy(Assistant())
         mockSuggestions = mock(SmartSuggestionsHelper::class.java)
         mockTc = mock(TextClassifier::class.java)
