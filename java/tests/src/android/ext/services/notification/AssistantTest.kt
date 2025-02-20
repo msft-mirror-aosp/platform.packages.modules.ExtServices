@@ -61,6 +61,7 @@ import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.spy
+import org.mockito.Mockito.timeout
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.invocation.InvocationOnMock
@@ -75,6 +76,7 @@ class AssistantTest {
     lateinit var mockPm: PackageManager
     lateinit var mockAm: ActivityManager
     val EXECUTOR_AWAIT_TIME = 200L
+    val MOKITO_VERIFY_TIMEOUT = 500L
 
     private fun <T> Stubber.whenKt(mock: T): T = `when`(mock)
 
@@ -111,6 +113,8 @@ class AssistantTest {
                 Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS
             )
         }
+        doReturn(false).whenKt(mockAm).isLowRamDevice
+        assistant.setUseTextClassifier()
     }
 
     @Test
@@ -143,7 +147,7 @@ class AssistantTest {
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
         verify(mockTc, atLeastOnce()).detectLanguage(any())
-        verify(assistant.mSmartSuggestionsHelper, times(1)).onNotificationEnqueued(eq(sbn))
+        verify(assistant.mSmartSuggestionsHelper, timeout(MOKITO_VERIFY_TIMEOUT).times(1)).onNotificationEnqueued(eq(sbn))
         // A false result shouldn't result in an adjustment call for the otp
         verify(assistant).createNotificationAdjustment(any(), isNull(), isNull(), eq(true))
         // One adjustment for the suggestions and OTP together
@@ -165,9 +169,9 @@ class AssistantTest {
         Thread.sleep(EXECUTOR_AWAIT_TIME)
         // Expect a call to the TC, and a call to adjust the notification
         verify(mockTc, atLeastOnce()).detectLanguage(any())
-        verify(assistant).createNotificationAdjustment(any(), isNull(), isNull(), eq(true))
+        verify(assistant, timeout(MOKITO_VERIFY_TIMEOUT)).createNotificationAdjustment(any(), isNull(), isNull(), eq(true))
         // Expect adjustment for the suggestions and OTP together, with a true value
-        verify(assistant).createNotificationAdjustment(any(),
+        verify(assistant, timeout(MOKITO_VERIFY_TIMEOUT)).createNotificationAdjustment(any(),
             eq(ArrayList<Notification.Action>()), eq(ArrayList<CharSequence>()), eq(true))
     }
 
