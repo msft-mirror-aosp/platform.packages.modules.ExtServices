@@ -9,6 +9,5 @@ dsandler@google.com
 juliacr@google.com
 # TextClassifier
 tonymak@google.com
-licha@google.com
 
 include platform/packages/modules/common:/MODULES_OWNERS  # see go/mainline-owners-policy
