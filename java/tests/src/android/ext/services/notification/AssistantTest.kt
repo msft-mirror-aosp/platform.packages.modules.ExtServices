@@ -28,11 +28,9 @@ import android.content.pm.PackageManager
 import android.content.pm.PackageManager.FEATURE_WATCH
 import android.icu.util.ULocale
 import android.os.Process
-import android.platform.test.flag.junit.SetFlagsRule
 import android.provider.Telephony
 import android.service.notification.Adjustment.KEY_SENSITIVE_CONTENT
 import android.service.notification.Adjustment.KEY_TEXT_REPLIES
-import android.service.notification.Flags
 import android.service.notification.StatusBarNotification
 import android.view.textclassifier.TextClassificationManager
 import android.view.textclassifier.TextClassifier
@@ -80,14 +78,6 @@ class AssistantTest {
 
     private fun <T> Stubber.whenKt(mock: T): T = `when`(mock)
 
-    @get:Rule
-    val setFlagsRule = if (SdkLevel.isAtLeastV()) {
-        SetFlagsRule()
-    } else {
-        // On < V, have a test rule that does nothing
-        TestRule { statement, _ -> statement}
-    }
-
     @Before
     fun setUpMocks() {
         assumeTrue(SdkLevel.isAtLeastV())
@@ -108,24 +98,8 @@ class AssistantTest {
         assistant.mTcm = context.getSystemService(TextClassificationManager::class.java)!!
         assistant.mTcm.setTextClassifier(mockTc)
         doReturn(TextLinks.Builder("").build()).whenKt(mockTc).generateLinks(any())
-        if (SdkLevel.isAtLeastV()) {
-            (setFlagsRule as SetFlagsRule).enableFlags(
-                Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS
-            )
-        }
         doReturn(false).whenKt(mockAm).isLowRamDevice
         assistant.setUseTextClassifier()
-    }
-
-    @Test
-    fun onNotificationEnqueued_doesntCheckForOtpIfFlagDisabled() {
-        (setFlagsRule as SetFlagsRule)
-            .disableFlags(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
-        val sbn = createSbn(TEXT_WITH_OTP)
-        val directReturn =
-            assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
-        // Expect no adjustment returned, despite the regex
-        assertThat(directReturn).isNull()
     }
 
     @Test
