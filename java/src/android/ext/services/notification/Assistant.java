@@ -28,7 +28,6 @@ import android.os.Bundle;
 import android.os.Trace;
 import android.os.UserHandle;
 import android.service.notification.Adjustment;
-import android.service.notification.Flags;
 import android.service.notification.NotificationAssistantService;
 import android.service.notification.NotificationStats;
 import android.service.notification.StatusBarNotification;
@@ -142,7 +141,6 @@ public class Assistant extends NotificationAssistantService {
         }
 
         final boolean shouldCheckForOtp = SdkLevel.isAtLeastV()
-                && Flags.redactSensitiveNotificationsFromUntrustedListeners()
                 && Objects.equals(sbn.getPackageName(), mSmsHelper.getDefaultSmsPackage())
                 && NotificationOtpDetectionHelper.shouldCheckForOtp(sbn.getNotification());
         boolean foundOtpWithRegex = shouldCheckForOtp

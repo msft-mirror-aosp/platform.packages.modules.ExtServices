@@ -28,11 +28,9 @@ import android.content.pm.PackageManager
 import android.content.pm.PackageManager.FEATURE_WATCH
 import android.icu.util.ULocale
 import android.os.Process
-import android.platform.test.flag.junit.SetFlagsRule
 import android.provider.Telephony
 import android.service.notification.Adjustment.KEY_SENSITIVE_CONTENT
 import android.service.notification.Adjustment.KEY_TEXT_REPLIES
-import android.service.notification.Flags
 import android.service.notification.StatusBarNotification
 import android.view.textclassifier.TextClassificationManager
 import android.view.textclassifier.TextClassifier
@@ -61,6 +59,7 @@ import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.spy
+import org.mockito.Mockito.timeout
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.invocation.InvocationOnMock
@@ -75,16 +74,9 @@ class AssistantTest {
     lateinit var mockPm: PackageManager
     lateinit var mockAm: ActivityManager
     val EXECUTOR_AWAIT_TIME = 200L
+    val MOKITO_VERIFY_TIMEOUT = 500L
 
     private fun <T> Stubber.whenKt(mock: T): T = `when`(mock)
-
-    @get:Rule
-    val setFlagsRule = if (SdkLevel.isAtLeastV()) {
-        SetFlagsRule()
-    } else {
-        // On < V, have a test rule that does nothing
-        TestRule { statement, _ -> statement}
-    }
 
     @Before
     fun setUpMocks() {
@@ -106,22 +98,8 @@ class AssistantTest {
         assistant.mTcm = context.getSystemService(TextClassificationManager::class.java)!!
         assistant.mTcm.setTextClassifier(mockTc)
         doReturn(TextLinks.Builder("").build()).whenKt(mockTc).generateLinks(any())
-        if (SdkLevel.isAtLeastV()) {
-            (setFlagsRule as SetFlagsRule).enableFlags(
-                Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS
-            )
-        }
-    }
-
-    @Test
-    fun onNotificationEnqueued_doesntCheckForOtpIfFlagDisabled() {
-        (setFlagsRule as SetFlagsRule)
-            .disableFlags(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
-        val sbn = createSbn(TEXT_WITH_OTP)
-        val directReturn =
-            assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
-        // Expect no adjustment returned, despite the regex
-        assertThat(directReturn).isNull()
+        doReturn(false).whenKt(mockAm).isLowRamDevice
+        assistant.setUseTextClassifier()
     }
 
     @Test
@@ -143,7 +121,7 @@ class AssistantTest {
         assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
         Thread.sleep(EXECUTOR_AWAIT_TIME)
         verify(mockTc, atLeastOnce()).detectLanguage(any())
-        verify(assistant.mSmartSuggestionsHelper, times(1)).onNotificationEnqueued(eq(sbn))
+        verify(assistant.mSmartSuggestionsHelper, timeout(MOKITO_VERIFY_TIMEOUT).times(1)).onNotificationEnqueued(eq(sbn))
         // A false result shouldn't result in an adjustment call for the otp
         verify(assistant).createNotificationAdjustment(any(), isNull(), isNull(), eq(true))
         // One adjustment for the suggestions and OTP together
@@ -165,9 +143,9 @@ class AssistantTest {
         Thread.sleep(EXECUTOR_AWAIT_TIME)
         // Expect a call to the TC, and a call to adjust the notification
         verify(mockTc, atLeastOnce()).detectLanguage(any())
-        verify(assistant).createNotificationAdjustment(any(), isNull(), isNull(), eq(true))
+        verify(assistant, timeout(MOKITO_VERIFY_TIMEOUT)).createNotificationAdjustment(any(), isNull(), isNull(), eq(true))
         // Expect adjustment for the suggestions and OTP together, with a true value
-        verify(assistant).createNotificationAdjustment(any(),
+        verify(assistant, timeout(MOKITO_VERIFY_TIMEOUT)).createNotificationAdjustment(any(),
             eq(ArrayList<Notification.Action>()), eq(ArrayList<CharSequence>()), eq(true))
     }
 
