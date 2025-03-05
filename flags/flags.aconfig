@@ -1,0 +1,9 @@
+package: "com.android.ext.services.flags"
+container: "com.android.ext.services"
+
+flag {
+    name: "text_classifier_for_otp_detection_enabled"
+    namespace: "permissions"
+    description: "Enables text classifier for OTP detection in ExtServices"
+    bug: "388899782"
+}
