@@ -28,7 +28,6 @@ import android.content.Intent
 import android.icu.util.ULocale
 import android.os.Build
 import android.os.Build.VERSION.SDK_INT
-import android.view.textclassifier.TextClassificationManager
 import android.view.textclassifier.TextClassifier
 import android.view.textclassifier.TextLanguage
 import android.view.textclassifier.TextLinks
@@ -419,26 +418,6 @@ class NotificationOtpDetectionHelperTest {
     }
 
     @Test
-    fun testContainsOtp_commonYearsDontMatch_withoutLanguageSpecificRegex() {
-        val tc = getTestTextClassifier(invalidLocale)
-        val twentyXX = "2009"
-        val twentyOneXX = "2109"
-        val thirtyXX = "3035"
-        val nineteenXX = "1945"
-        val eighteenXX = "1899"
-        val yearSubstring = "20051"
-        addMatcherTestResult(expected = false, twentyXX, textClassifier = tc)
-        // Behavior should be the same for an invalid language, and null TextClassifier
-        addMatcherTestResult(expected = false, twentyXX, textClassifier = null)
-        addMatcherTestResult(expected = true, twentyOneXX, textClassifier = tc)
-        addMatcherTestResult(expected = true, thirtyXX, textClassifier = tc)
-        addMatcherTestResult(expected = false, nineteenXX, textClassifier = tc)
-        addMatcherTestResult(expected = true, eighteenXX, textClassifier = tc)
-        // A substring of a year should not trigger a false positive
-        addMatcherTestResult(expected = true, yearSubstring, textClassifier = tc)
-    }
-
-    @Test
     fun testContainsOtp_englishSpecificRegex() {
         val tc = getTestTextClassifier(ULocale.ENGLISH)
         val englishFalsePositive = "This is a false positive 4543"
@@ -512,13 +491,10 @@ class NotificationOtpDetectionHelperTest {
     }
 
     @Test
-    fun testContainsOtpCode_usesTcForFalsePositivesIfNoLanguageSpecificRegex() {
-        var tc = getTestTextClassifier(invalidLocale, listOf(TextClassifier.TYPE_ADDRESS))
-        val address = "this text doesn't actually matter, but meet me at 6353 Juan Tabo, Apt. 6"
-        addMatcherTestResult(expected = false, address, textClassifier = tc)
-        tc = getTestTextClassifier(invalidLocale, listOf(TextClassifier.TYPE_FLIGHT_NUMBER))
-        val flight = "your flight number is UA1234"
-        addMatcherTestResult(expected = false, flight, textClassifier = tc)
+    fun testContainsOtpCode_falseIfNoLanguageSpecificRegex() {
+        val tc = getTestTextClassifier(invalidLocale)
+        val text = "your one time code is 34343"
+        addMatcherTestResult(expected = false, text, textClassifier = tc)
     }
 
     @Test
