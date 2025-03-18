@@ -30,10 +30,18 @@ license {
     ],
 }
 
+genrule {
+    name: "statslog-extservices-java-gen",
+    tools: ["stats-log-api-gen"],
+    cmd: "$(location stats-log-api-gen) --java $(out) --module extservices --javaPackage android.ext.services --javaClass ExtServicesStatsLog",
+    out: ["android/ext/services/ExtServicesStatsLog.java"],
+}
+
 android_library {
     name: "ExtServices-core",
     srcs: [
         "java/src/**/*.java",
+        ":statslog-extservices-java-gen",
     ],
 
     sdk_version: "module_current",
@@ -61,6 +69,7 @@ android_library {
         "framework-platformcrashrecovery.stubs.module_lib",
         "framework-configinfrastructure.stubs.module_lib",
         "framework-connectivity.stubs.module_lib",
+        "framework-statsd.stubs.module_lib",
     ],
 
     lint: {

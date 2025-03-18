@@ -17,6 +17,11 @@
 package android.ext.services.notification;
 
 import static android.content.pm.PackageManager.FEATURE_WATCH;
+import static android.ext.services.ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__NOTIFICATION_ENQUEUED;
+import static android.ext.services.ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__OTP_CHECKED;
+import static android.ext.services.ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__OTP_CHECK_SKIPPED_DUE_TO_LOAD;
+import static android.ext.services.ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__OTP_DETECTED;
+import static android.ext.services.ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__TC_FOR_OTP_DETECTION_ENABLED;
 
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
@@ -24,6 +29,8 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.ext.services.ExtServicesStatsLog;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Trace;
 import android.os.UserHandle;
@@ -34,11 +41,14 @@ import android.service.notification.StatusBarNotification;
 import android.util.ArrayMap;
 import android.util.Log;
 import android.view.textclassifier.TextClassificationManager;
+import android.view.textclassifier.TextClassifier;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
 
+import com.android.ext.services.flags.Flags;
 import com.android.modules.utils.build.SdkLevel;
 import com.android.textclassifier.notification.SmartSuggestions;
 import com.android.textclassifier.notification.SmartSuggestionsHelper;
@@ -64,16 +74,15 @@ public class Assistant extends NotificationAssistantService {
     protected ArrayMap<String, NotificationEntry> mLiveNotifications = new ArrayMap<>();
 
     @VisibleForTesting
-    protected boolean mUseTextClassifier = true;
+    protected boolean mIsWatch;
+    @VisibleForTesting
+    protected boolean mIsLowRamDevice;
 
     @VisibleForTesting
     protected Context mContext;
 
     @VisibleForTesting
     protected PackageManager mPm;
-
-    @VisibleForTesting
-    protected ActivityManager mAm;
 
     protected final ExecutorService mSingleThreadExecutor = Executors.newSingleThreadExecutor();
     // Using newFixedThreadPool because that returns a ThreadPoolExecutor, allowing us to access
@@ -90,7 +99,20 @@ public class Assistant extends NotificationAssistantService {
     protected SmartSuggestionsHelper mSmartSuggestionsHelper;
 
     @VisibleForTesting
-    protected TextClassificationManager mTcm;
+    protected TextClassifier mTc;
+
+    protected static boolean sUseTcForOtpDetection;
+
+    private static final int EVENT_NOTIFICATION_ENQUEUED =
+            NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__NOTIFICATION_ENQUEUED;
+    private static final int EVENT_TC_FOR_OTP_DETECTION_ENABLED =
+            NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__TC_FOR_OTP_DETECTION_ENABLED;
+    private static final int EVENT_OTP_CHECK_SKIPPED_DUE_TO_LOAD =
+            NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__OTP_CHECK_SKIPPED_DUE_TO_LOAD;
+    private static final int EVENT_OTP_CHECKED =
+            NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__OTP_CHECKED;
+    private static final int EVENT_OTP_DETECTED =
+            NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__OTP_DETECTED;
 
     public Assistant() {
     }
@@ -102,18 +124,20 @@ public class Assistant extends NotificationAssistantService {
         // to be hooked up/initialized.
         mContext = this;
         mPm = getPackageManager();
-        mAm = getSystemService(ActivityManager.class);
-        mTcm = getSystemService(TextClassificationManager.class);
         mSettings = mSettingsFactory.createAndRegister();
         mSmartSuggestionsHelper = new SmartSuggestionsHelper(this, mSettings);
         mSmsHelper = new SmsHelper(this);
         mSmsHelper.initialize();
-        setUseTextClassifier();
-    }
+        sUseTcForOtpDetection = useTcForOtpDetection();
+        mIsLowRamDevice = getSystemService(ActivityManager.class).isLowRamDevice();
+        mIsWatch = mPm.hasSystemFeature(FEATURE_WATCH);
 
-    @VisibleForTesting
-    protected void setUseTextClassifier() {
-        mUseTextClassifier = !(mAm.isLowRamDevice() || mPm.hasSystemFeature(FEATURE_WATCH));
+        TextClassificationManager tcm = getSystemService(TextClassificationManager.class);
+        if (sUseTcForOtpDetection) {
+            mTc = tcm.getClassifier(TextClassifier.CLASSIFIER_TYPE_ANDROID_DEFAULT);
+        } else {
+            mTc = tcm.getTextClassifier();
+        }
     }
 
     @Override
@@ -140,6 +164,49 @@ public class Assistant extends NotificationAssistantService {
             return null;
         }
 
+        if (SdkLevel.isAtLeastV()) {
+            reportEvent(EVENT_NOTIFICATION_ENQUEUED);
+        }
+
+        if (!sUseTcForOtpDetection) {
+            return onNotificationEnqueuedLegacy(sbn);
+        }
+        reportEvent(EVENT_TC_FOR_OTP_DETECTION_ENABLED);
+
+        // Ignoring the result of the future
+        Future<?> ignored = mMachineLearningExecutor.submit(() -> {
+            final boolean checkForOtp = SdkLevel.isAtLeastB()
+                    && Objects.equals(sbn.getPackageName(), mSmsHelper.getDefaultSmsPackage())
+                    && NotificationOtpDetectionHelper.shouldCheckForOtp(sbn.getNotification());
+
+            if (checkForOtp) {
+                if (mMachineLearningExecutor.getQueue().size() >= MAX_QUEUED_ML_JOBS) {
+                    reportEvent(EVENT_OTP_CHECK_SKIPPED_DUE_TO_LOAD);
+                } else {
+                    reportEvent(EVENT_OTP_CHECKED);
+                    if (containsOtp(sbn)) {
+                        adjustNotificationIfNotNull(
+                                createNotificationAdjustment(sbn, null, null, true));
+                        reportEvent(EVENT_OTP_DETECTED);
+                    }
+                }
+            }
+
+            SmartSuggestions suggestions = getSmartSuggestion(sbn);
+            adjustNotificationIfNotNull(createNotificationAdjustment(
+                    sbn,
+                    new ArrayList<>(suggestions.getActions()),
+                    new ArrayList<>(suggestions.getReplies()),
+                    null));
+        });
+
+        return null;
+    }
+
+    // This is a legacy implementation intended to be run on V and below.
+    // If below V, only smart suggestions are adjusted.
+    // If V then OTP detection is performed using the local detection implementation.
+    private Adjustment onNotificationEnqueuedLegacy(@NonNull StatusBarNotification sbn) {
         final boolean shouldCheckForOtp = SdkLevel.isAtLeastV()
                 && Objects.equals(sbn.getPackageName(), mSmsHelper.getDefaultSmsPackage())
                 && NotificationOtpDetectionHelper.shouldCheckForOtp(sbn.getNotification());
@@ -158,17 +225,10 @@ public class Assistant extends NotificationAssistantService {
         // Ignoring the result of the future
         Future<?> ignored = mMachineLearningExecutor.submit(() -> {
             Boolean containsOtp = null;
-            if (shouldCheckForOtp && mUseTextClassifier) {
+            if (shouldCheckForOtp && !mIsLowRamDevice && !mIsWatch) {
                 // If we can use the text classifier, do a second pass, using the TC to detect
                 // languages, and potentially using the TC to remove false positives
-                Trace.beginSection(TAG + "_RegexWithTc");
-                try {
-                    containsOtp = NotificationOtpDetectionHelper.containsOtp(
-                            sbn.getNotification(), true, mTcm.getTextClassifier());
-
-                } finally {
-                    Trace.endSection();
-                }
+                containsOtp = containsOtp(sbn);
             }
 
             // If we found an otp (and didn't already send an adjustment), send an adjustment early
@@ -177,21 +237,7 @@ public class Assistant extends NotificationAssistantService {
                         createNotificationAdjustment(sbn, null, null, true));
             }
 
-            SmartSuggestions suggestions;
-            Trace.beginSection(TAG + "_SmartSuggestions");
-            try {
-                suggestions = mSmartSuggestionsHelper.onNotificationEnqueued(sbn);
-            } finally {
-                Trace.endSection();
-            }
-
-            if (DEBUG) {
-                Log.d(TAG, String.format(
-                        "Creating Adjustment for %s, with %d actions, and %d replies.",
-                        sbn.getKey(),
-                        suggestions.getActions().size(),
-                        suggestions.getReplies().size()));
-            }
+            SmartSuggestions suggestions = getSmartSuggestion(sbn);
 
             adjustNotificationIfNotNull(createNotificationAdjustment(
                     sbn,
@@ -201,6 +247,37 @@ public class Assistant extends NotificationAssistantService {
         });
 
         return earlyOtpReturn;
+    }
+
+    private SmartSuggestions getSmartSuggestion(@NonNull StatusBarNotification sbn) {
+        SmartSuggestions suggestions;
+        Trace.beginSection(TAG + "_SmartSuggestions");
+        try {
+            suggestions = mSmartSuggestionsHelper.onNotificationEnqueued(sbn);
+        } finally {
+            Trace.endSection();
+        }
+        if (DEBUG) {
+            Log.d(TAG, String.format(
+                    "Creating Adjustment for %s, with %d actions, and %d replies.",
+                    sbn.getKey(),
+                    suggestions.getActions().size(),
+                    suggestions.getReplies().size()));
+        }
+        return suggestions;
+    }
+
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    private boolean containsOtp(@NonNull StatusBarNotification sbn) {
+        String suffix = mTc != null && sUseTcForOtpDetection ? "_TcForOtp" : "_RegexWithTc";
+        Trace.beginSection(TAG + suffix);
+        try {
+            return NotificationOtpDetectionHelper.containsOtp(
+                    sbn.getNotification(), true, mTc);
+
+        } finally {
+            Trace.endSection();
+        }
     }
 
     // Due to Mockito setup, some methods marked @NonNull can sometimes be called with a
@@ -341,5 +418,18 @@ public class Assistant extends NotificationAssistantService {
 
     private boolean isForCurrentUser(StatusBarNotification sbn) {
         return sbn != null && sbn.getUserId() == UserHandle.myUserId();
+    }
+
+    @VisibleForTesting
+    protected static boolean useTcForOtpDetection() {
+        return SdkLevel.isAtLeastB()
+                && android.permission.flags.Flags.textClassifierChoiceApiEnabled()
+                && android.permission.flags.Flags.enableOtpInTextClassifiers()
+                && Flags.textClassifierForOtpDetectionEnabled();
+    }
+
+    @VisibleForTesting
+    protected void reportEvent(int event) {
+        ExtServicesStatsLog.write(ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS, event);
     }
 }
