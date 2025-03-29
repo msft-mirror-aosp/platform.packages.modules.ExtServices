@@ -38,6 +38,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove" />
     <!-- Need this permission to receive the Boot-Completed broadcast -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.ACCESS_TEXT_CLASSIFIER_BY_TYPE" />
 
     <application
         android:name=".ExtServicesApplication"

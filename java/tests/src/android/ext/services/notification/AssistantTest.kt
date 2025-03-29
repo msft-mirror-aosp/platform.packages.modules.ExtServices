@@ -16,7 +16,6 @@
 
 package android.ext.services.notification
 
-import android.app.ActivityManager
 import android.app.Notification
 import android.app.Notification.CATEGORY_MESSAGE
 import android.app.NotificationChannel
@@ -25,14 +24,13 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.content.pm.PackageManager.FEATURE_WATCH
+import android.ext.services.ExtServicesStatsLog
 import android.icu.util.ULocale
 import android.os.Process
 import android.provider.Telephony
 import android.service.notification.Adjustment.KEY_SENSITIVE_CONTENT
 import android.service.notification.Adjustment.KEY_TEXT_REPLIES
 import android.service.notification.StatusBarNotification
-import android.view.textclassifier.TextClassificationManager
 import android.view.textclassifier.TextClassifier
 import android.view.textclassifier.TextLanguage
 import android.view.textclassifier.TextLinks
@@ -40,13 +38,13 @@ import androidx.test.core.app.ApplicationProvider
 import com.android.modules.utils.build.SdkLevel
 import com.android.textclassifier.notification.SmartSuggestions
 import com.android.textclassifier.notification.SmartSuggestionsHelper
+import com.google.common.collect.ImmutableMap
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
+import org.junit.After
 import org.junit.Assume.assumeTrue
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TestRule
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.mockito.ArgumentMatchers.any
@@ -65,6 +63,7 @@ import org.mockito.Mockito.verify
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Stubber
 
+
 @RunWith(JUnit4::class)
 class AssistantTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
@@ -72,7 +71,6 @@ class AssistantTest {
     lateinit var mockTc: TextClassifier
     lateinit var assistant: Assistant
     lateinit var mockPm: PackageManager
-    lateinit var mockAm: ActivityManager
     val EXECUTOR_AWAIT_TIME = 200L
     val MOKITO_VERIFY_TIMEOUT = 500L
 
@@ -85,21 +83,23 @@ class AssistantTest {
         assistant = spy(Assistant())
         mockSuggestions = mock(SmartSuggestionsHelper::class.java)
         mockTc = mock(TextClassifier::class.java)
-        mockAm = mock(ActivityManager::class.java)
         mockPm = mock(PackageManager::class.java)
         assistant.mContext = context
         assistant.mSmsHelper = SmsHelper(context)
         assistant.mSmsHelper.initialize()
-        assistant.mAm = mockAm
         assistant.mPm = mockPm
         assistant.mSmartSuggestionsHelper = mockSuggestions
         doReturn(SmartSuggestions(emptyList(), emptyList()))
-                .whenKt(mockSuggestions).onNotificationEnqueued(any())
-        assistant.mTcm = context.getSystemService(TextClassificationManager::class.java)!!
-        assistant.mTcm.setTextClassifier(mockTc)
-        doReturn(TextLinks.Builder("").build()).whenKt(mockTc).generateLinks(any())
-        doReturn(false).whenKt(mockAm).isLowRamDevice
-        assistant.setUseTextClassifier()
+            .whenKt(mockSuggestions).onNotificationEnqueued(any())
+        assistant.mTc = mockTc
+        assistant.mIsWatch = false
+        assistant.mIsLowRamDevice = false
+        Assistant.sUseTcForOtpDetection = false
+    }
+
+    @After
+    fun reset() {
+        Assistant.sUseTcForOtpDetection = Assistant.useTcForOtpDetection()
     }
 
     @Test
@@ -161,8 +161,7 @@ class AssistantTest {
     @Test
     fun onNotificationEnqueued_doesntUseTcIfWatch() {
         val sbn = createSbn(TEXT_WITH_OTP)
-        doReturn(true).whenKt(mockPm).hasSystemFeature(eq(FEATURE_WATCH))
-        assistant.setUseTextClassifier()
+        assistant.mIsWatch = true
         // Empty list of detected languages means that the notification language didn't match
         doReturn(TextLanguage.Builder().build())
             .whenKt(mockTc).detectLanguage(any())
@@ -178,8 +177,7 @@ class AssistantTest {
     @Test
     fun onNotificationEnqueued_doesntUseTcIfLowRamDevice() {
         val sbn = createSbn(TEXT_WITH_OTP)
-        doReturn(true).whenKt(mockAm).isLowRamDevice
-        assistant.setUseTextClassifier()
+        assistant.mIsLowRamDevice = true;
         // Empty list of detected languages means that the notification language didn't match
         doReturn(TextLanguage.Builder().build())
             .whenKt(mockTc).detectLanguage(any())
@@ -248,6 +246,78 @@ class AssistantTest {
         assertThat(adjustment3.signals.containsKey(KEY_SENSITIVE_CONTENT)).isFalse()
     }
 
+    @Test
+    fun onNotificationEnqueued_callsTcForOtpDetection() {
+        assumeTrue(SdkLevel.isAtLeastB())
+        Assistant.sUseTcForOtpDetection = true
+        val sbn = createSbn(TEXT_WITH_OTP)
+        doReturn(TextLinks.Builder("")
+            .addLink(0, 0, ImmutableMap.of("otp", 1f))
+            .build()).whenKt(mockTc).generateLinks(any())
+        assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
+
+        Thread.sleep(EXECUTOR_AWAIT_TIME)
+
+        verify(assistant.mSmartSuggestionsHelper, timeout(MOKITO_VERIFY_TIMEOUT).times(1)).onNotificationEnqueued(eq(sbn))
+        verify(mockTc, atLeastOnce()).generateLinks(any())
+        verify(assistant, times(1)).reportEvent(ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__TC_FOR_OTP_DETECTION_ENABLED)
+        verify(assistant, times(1)).reportEvent(ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__NOTIFICATION_ENQUEUED)
+
+        // Adjustment upon OTP detection
+        verify(assistant, times(1)).createNotificationAdjustment(any(), isNull(), isNull(), eq(true))
+        verify(assistant, times(1)).reportEvent(ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__OTP_CHECKED)
+        verify(assistant, times(1)).reportEvent(ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__OTP_DETECTED)
+
+        // Adjustment for smart suggestion
+        verify(assistant).createNotificationAdjustment(any(),
+            eq(ArrayList<Notification.Action>()), eq(ArrayList<CharSequence>()), eq(null))
+    }
+
+    @Test
+    fun onNotificationEnqueued_noAdjustmentForNonOtp() {
+        assumeTrue(SdkLevel.isAtLeastB())
+        Assistant.sUseTcForOtpDetection = true
+        val sbn = createSbn(TEXT_WITH_NO_OTP)
+        doReturn(TextLinks.Builder("").build()).whenKt(mockTc).generateLinks(any())
+        assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
+        Thread.sleep(EXECUTOR_AWAIT_TIME)
+        verify(mockTc, atLeastOnce()).generateLinks(any())
+        verify(assistant.mSmartSuggestionsHelper, timeout(MOKITO_VERIFY_TIMEOUT).times(1)).onNotificationEnqueued(eq(sbn))
+        // Adjustment upon OTP detection
+        verify(assistant, never()).createNotificationAdjustment(any(), isNull(), isNull(), eq(true))
+        // Adjustment for smart suggestion
+        verify(assistant).createNotificationAdjustment(any(),
+            eq(ArrayList<Notification.Action>()), eq(ArrayList<CharSequence>()), eq(null))
+    }
+
+    @Test
+    fun onNotificationEnqueued_usesTcForOtpDetectionInWatch() {
+        assumeTrue(SdkLevel.isAtLeastB())
+        Assistant.sUseTcForOtpDetection = true
+        val sbn = createSbn(TEXT_WITH_OTP)
+        assistant.mIsWatch = true
+        doReturn(TextLinks.Builder("")
+            .addLink(0, 0, ImmutableMap.of("otp", 1f))
+            .build()).whenKt(mockTc).generateLinks(any())
+        assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
+        Thread.sleep(EXECUTOR_AWAIT_TIME)
+        verify(mockTc, atLeastOnce()).generateLinks(any())
+    }
+
+    @Test
+    fun onNotificationEnqueued_usesTcForOtpDetectionInLowRamDevice() {
+        assumeTrue(SdkLevel.isAtLeastB())
+        Assistant.sUseTcForOtpDetection = true
+        val sbn = createSbn(TEXT_WITH_OTP)
+        assistant.mIsLowRamDevice = true;
+        doReturn(TextLinks.Builder("")
+            .addLink(0, 0, ImmutableMap.of("otp", 1f))
+            .build()).whenKt(mockTc).generateLinks(any())
+        assistant.onNotificationEnqueued(sbn, NotificationChannel("0", "", IMPORTANCE_DEFAULT))
+        Thread.sleep(EXECUTOR_AWAIT_TIME)
+        verify(mockTc, atLeastOnce()).generateLinks(any())
+    }
+
     private fun createSbn(
         text: String = "",
         title: String = "",
@@ -291,6 +361,6 @@ class AssistantTest {
 
     companion object {
         const val TEXT_WITH_OTP = "Your login code is 345454"
+        const val TEXT_WITH_NO_OTP = "Your login code is unavailable"
     }
-
 }
