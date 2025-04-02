@@ -131,7 +131,7 @@ class NotificationOtpDetectionHelperTest {
         val sensitive = NotificationOtpDetectionHelper.getTextForDetection(
             createNotification(text = text, title = title, subtext = subtext))
         addResult(expected = true, sensitive.contains(text),"expected sensitive text to contain $text")
-        addResult(expected = true, sensitive.contains(title), "expected sensitive text to contain $title")
+        addResult(expected = false, sensitive.contains(title), "expected sensitive text to contain $title")
         addResult(expected = true, sensitive.contains(subtext), "expected sensitive text to contain $subtext")
     }
 
@@ -153,52 +153,6 @@ class NotificationOtpDetectionHelperTest {
         }
         sensitive = NotificationOtpDetectionHelper.getTextForDetection(nullExtras)
         addResult(expected = true, sensitive != null, "expected to get a nonnull string")
-    }
-
-    @Test
-    fun testGetTextForDetection_messagesIncludedSorted() {
-        val empty = Person.Builder().setName("test name").build()
-        val messageText1 = "message text 1"
-        val messageText2 = "message text 2"
-        val messageText3 = "message text 3"
-        val timestamp1 = 0L
-        val timestamp2 = 1000L
-        val timestamp3 = 50L
-        val message1 =
-            Notification.MessagingStyle.Message(messageText1,
-                timestamp1,
-                empty)
-        val message2 =
-            Notification.MessagingStyle.Message(messageText2,
-                timestamp2,
-                empty)
-        val message3 =
-            Notification.MessagingStyle.Message(messageText3,
-                timestamp3,
-                empty)
-        val style = Notification.MessagingStyle(empty).apply {
-            addMessage(message1)
-            addMessage(message2)
-            addMessage(message3)
-        }
-        val notif = createNotification(style = style)
-        val sensitive = NotificationOtpDetectionHelper.getTextForDetection(notif)
-        addResult(expected = true, sensitive.contains(messageText1), "expected sensitive text to contain $messageText1")
-        addResult(expected = true, sensitive.contains(messageText2), "expected sensitive text to contain $messageText2")
-        addResult(expected = true, sensitive.contains(messageText3), "expected sensitive text to contain $messageText3")
-
-        // MessagingStyle notifications get their main text set automatically to their first
-        // message, so we should skip to the end of that to find the message text
-        val notifText = notif.extras.getCharSequence(EXTRA_TEXT)?.toString() ?: ""
-        val messagesSensitiveStartIdx = sensitive.indexOf(notifText) + notifText.length
-        val sensitiveSub = sensitive.substring(messagesSensitiveStartIdx)
-        val text1Position = sensitiveSub.indexOf(messageText1)
-        val text2Position = sensitiveSub.indexOf(messageText2)
-        val text3Position = sensitiveSub.indexOf(messageText3)
-        // The messages should be sorted by timestamp, newest first, so 2 -> 3 -> 1
-        addResult(expected = true, text2Position < text1Position, "expected the newest message (2) to be first in \"$sensitiveSub\"")
-        addResult(expected = true, text2Position < text3Position, "expected the newest message (2) to be first in \"$sensitiveSub\"")
-        addResult(expected = true, text3Position < text1Position, "expected the middle message (3) to be center in \"$sensitiveSub\"")
     }
 
     @Test

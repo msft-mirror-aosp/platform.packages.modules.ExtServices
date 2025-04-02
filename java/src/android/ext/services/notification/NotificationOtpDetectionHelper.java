@@ -25,7 +25,6 @@ import static android.app.Notification.EXTRA_SUB_TEXT;
 import static android.app.Notification.EXTRA_SUMMARY_TEXT;
 import static android.app.Notification.EXTRA_TEXT;
 import static android.app.Notification.EXTRA_TEXT_LINES;
-import static android.app.Notification.EXTRA_TITLE;
 import static android.app.Notification.EXTRA_TITLE_BIG;
 import static android.os.Build.VERSION.SDK_INT;
 
@@ -53,8 +52,10 @@ import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Class with helper methods related to detecting OTP codes in notifications.
@@ -124,11 +125,11 @@ public class NotificationOtpDetectionHelper {
         }
 
         // Get all the individual fields
-        List<CharSequence> fields = getNotificationTextFields(notification);
+        Set<String> fields = getNotificationTextFields(notification);
 
         if (tc != null && Assistant.sUseTcForOtpDetection) {
-            for (CharSequence field : fields) {
-                if (field != null && containsOtpByTextClassifier(field.toString(), tc)) {
+            for (String field : fields) {
+                if (containsOtpByTextClassifier(field, tc)) {
                     return true;
                 }
             }
@@ -136,10 +137,9 @@ public class NotificationOtpDetectionHelper {
             // Get the language of the text once
             ULocale textLocale = OtpDetectionHelper.getLanguageWithRegex(
                     getTextForDetection(notification), tc);
-            for (CharSequence field : fields) {
+            for (String field : fields) {
                 // Makes use of legacy local logic for OTP detection in V.
-                if (field != null
-                        && OtpDetectionHelper.containsOtp(field.toString(), checkForFalsePositives,
+                if (OtpDetectionHelper.containsOtp(field.toString(), checkForFalsePositives,
                         tc, textLocale)) {
                     return true;
                 }
@@ -184,21 +184,19 @@ public class NotificationOtpDetectionHelper {
         if (notification == null || notification.extras == null || isPreV()) {
             return "";
         }
-        StringBuilder builder = new StringBuilder();
-        for (CharSequence line : getNotificationTextFields(notification)) {
-            builder.append(line != null ? line : "").append(" ");
-        }
-        return builder.length() <= MAX_SENSITIVE_TEXT_LEN ? builder.toString()
-                : builder.substring(0, MAX_SENSITIVE_TEXT_LEN);
+        String joinedString = String.join(" ", getNotificationTextFields(notification));
+        return joinedString.length() <= MAX_SENSITIVE_TEXT_LEN
+                ? joinedString
+                : joinedString.substring(0, MAX_SENSITIVE_TEXT_LEN);
     }
 
-    protected static List<CharSequence> getNotificationTextFields(Notification notification) {
+    protected static Set<String> getNotificationTextFields(Notification notification) {
         if (notification == null || notification.extras == null || isPreV()) {
-            return new ArrayList<>();
+            return new HashSet<>() {
+            };
         }
         ArrayList<CharSequence> fields = new ArrayList<>();
         Bundle extras = notification.extras;
-        fields.add(extras.getCharSequence(EXTRA_TITLE));
         fields.add(extras.getCharSequence(EXTRA_TEXT));
         fields.add(extras.getCharSequence(EXTRA_SUB_TEXT));
         fields.add(extras.getCharSequence(EXTRA_BIG_TEXT));
@@ -210,13 +208,16 @@ public class NotificationOtpDetectionHelper {
         }
         List<Message> messages = Message.getMessagesFromBundleArray(
                 extras.getParcelableArray(EXTRA_MESSAGES, Parcelable.class));
-        // Sort the newest messages (largest timestamp) first
-        messages.sort((MessagingStyle.Message lhs, MessagingStyle.Message rhs) ->
-                Long.compare(rhs.getTimestamp(), lhs.getTimestamp()));
         for (MessagingStyle.Message message : messages) {
             fields.add(message.getText());
         }
-        return fields;
+        Set<String> uniqueFields = new HashSet<>();
+        for (CharSequence field : fields) {
+            if (field != null && !field.isEmpty()) {
+                uniqueFields.add((field.toString()));
+            }
+        }
+        return uniqueFields;
     }
 
     /**
