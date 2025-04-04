@@ -260,13 +260,13 @@ class AssistantTest {
 
         verify(assistant.mSmartSuggestionsHelper, timeout(MOKITO_VERIFY_TIMEOUT).times(1)).onNotificationEnqueued(eq(sbn))
         verify(mockTc, atLeastOnce()).generateLinks(any())
-        verify(assistant, times(1)).reportEvent(ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__TC_FOR_OTP_DETECTION_ENABLED)
-        verify(assistant, times(1)).reportEvent(ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__NOTIFICATION_ENQUEUED)
+        verify(assistant, times(1)).reportEvent(ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_REPORTED__EVENT_TYPE__TC_FOR_OTP_DETECTION_ENABLED)
+        verify(assistant, times(1)).reportEvent(ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_REPORTED__EVENT_TYPE__NOTIFICATION_ENQUEUED)
 
         // Adjustment upon OTP detection
         verify(assistant, times(1)).createNotificationAdjustment(any(), isNull(), isNull(), eq(true))
-        verify(assistant, times(1)).reportEvent(ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__OTP_CHECKED)
-        verify(assistant, times(1)).reportEvent(ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__OTP_DETECTED)
+        verify(assistant, times(1)).reportEvent(ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_REPORTED__EVENT_TYPE__OTP_CHECKED)
+        verify(assistant, times(1)).reportEvent(ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_REPORTED__EVENT_TYPE__OTP_DETECTED)
 
         // Adjustment for smart suggestion
         verify(assistant).createNotificationAdjustment(any(),
