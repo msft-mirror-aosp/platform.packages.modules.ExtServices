@@ -26,7 +26,6 @@ import static android.app.Notification.EXTRA_SUMMARY_TEXT;
 import static android.app.Notification.EXTRA_TEXT;
 import static android.app.Notification.EXTRA_TEXT_LINES;
 import static android.app.Notification.EXTRA_TITLE_BIG;
-import static android.os.Build.VERSION.SDK_INT;
 
 import android.annotation.SuppressLint;
 import android.app.Notification;
@@ -95,10 +94,6 @@ public class NotificationOtpDetectionHelper {
                     .includeTypesFromTextClassifier(false)
                     .build();
 
-    private static boolean isPreV() {
-        return SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM;
-    }
-
     /**
      * Checks if any text fields in a notification might contain an OTP, based on several
      * regular expressions, and potentially using a textClassifier to eliminate false positives.
@@ -120,7 +115,7 @@ public class NotificationOtpDetectionHelper {
      */
     public static boolean containsOtp(Notification notification,
             boolean checkForFalsePositives, @Nullable TextClassifier tc) {
-        if (notification == null || notification.extras == null || isPreV()) {
+        if (notification == null || notification.extras == null || !SdkLevel.isAtLeastV()) {
             return false;
         }
 
@@ -135,11 +130,11 @@ public class NotificationOtpDetectionHelper {
             }
         } else {
             // Get the language of the text once
-            ULocale textLocale = OtpDetectionHelper.getLanguageWithRegex(
+            ULocale textLocale = LegacyOtpDetector.getLanguageWithRegex(
                     getTextForDetection(notification), tc);
             for (String field : fields) {
                 // Makes use of legacy local logic for OTP detection in V.
-                if (OtpDetectionHelper.containsOtp(field.toString(), checkForFalsePositives,
+                if (LegacyOtpDetector.containsOtp(field.toString(), checkForFalsePositives,
                         tc, textLocale)) {
                     return true;
                 }
@@ -181,7 +176,7 @@ public class NotificationOtpDetectionHelper {
      */
     @VisibleForTesting
     protected static String getTextForDetection(Notification notification) {
-        if (notification == null || notification.extras == null || isPreV()) {
+        if (notification == null || notification.extras == null || !SdkLevel.isAtLeastV()) {
             return "";
         }
         String joinedString = String.join(" ", getNotificationTextFields(notification));
@@ -191,7 +186,7 @@ public class NotificationOtpDetectionHelper {
     }
 
     protected static Set<String> getNotificationTextFields(Notification notification) {
-        if (notification == null || notification.extras == null || isPreV()) {
+        if (notification == null || notification.extras == null || !SdkLevel.isAtLeastV()) {
             return new HashSet<>() {
             };
         }
@@ -227,7 +222,7 @@ public class NotificationOtpDetectionHelper {
      * @return true, if further checks for OTP codes should be performed, false otherwise
      */
     public static boolean shouldCheckForOtp(Notification notification) {
-        if (notification == null || isPreV()
+        if (notification == null || !SdkLevel.isAtLeastV()
                 || EXCLUDED_STYLES.stream().anyMatch(s -> isStyle(notification, s))) {
             return false;
         }
