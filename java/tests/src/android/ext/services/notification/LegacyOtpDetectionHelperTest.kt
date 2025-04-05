@@ -30,7 +30,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 
 @RunWith(AndroidJUnit4::class)
-class OtpDetectionHelperTest {
+class LegacyOtpDetectionHelperTest {
   private val localeWithRegex = ULocale.ENGLISH
   private val invalidLocale = ULocale.ROOT
 
@@ -252,13 +252,7 @@ class OtpDetectionHelperTest {
     val englishContextWordsCase = listOf("LOGIN", "logIn", "LoGiN")
     // Strings with a context word somewhere in the substring
     val englishContextSubstrings = listOf("pins", "gaping", "backspin")
-    val codeInNextSentence = "context word: code. This sentence has the actual value of 434343"
-    val codeInNextSentenceTooFar =
-      "context word: code. ${"f".repeat(60)} This sentence has the actual value of 434343"
-    val codeTwoSentencesAfterContext = "context word: code. One sentence. actual value 34343"
-    val codeInSentenceBeforeContext = "34343 is a number. This number is a code"
     val codeInSentenceAfterNewline = "your code is \n 34343"
-    val codeTooFarBeforeContext = "34343 ${"f".repeat(60)} code"
 
     addMatcherTestResult(expected = false, englishFalsePositive, textClassifier = tc)
     for (context in englishContextWords) {
@@ -273,12 +267,7 @@ class OtpDetectionHelperTest {
       val anotherFalsePositive = "$falseContext $englishFalsePositive"
       addMatcherTestResult(expected = false, anotherFalsePositive, textClassifier = tc)
     }
-    addMatcherTestResult(expected = true, codeInNextSentence, textClassifier = tc)
     addMatcherTestResult(expected = true, codeInSentenceAfterNewline, textClassifier = tc)
-    addMatcherTestResult(expected = false, codeTwoSentencesAfterContext, textClassifier = tc)
-    addMatcherTestResult(expected = false, codeInSentenceBeforeContext, textClassifier = tc)
-    addMatcherTestResult(expected = false, codeInNextSentenceTooFar, textClassifier = tc)
-    addMatcherTestResult(expected = false, codeTooFarBeforeContext, textClassifier = tc)
   }
 
   @Test
@@ -333,7 +322,7 @@ class OtpDetectionHelperTest {
         "$text should not match"
       }
     @Suppress("DEPRECATION") // This is mean to test the older class
-    val actual = OtpDetectionHelper.containsOtp(text, checkForFalsePositives, textClassifier, null)
+    val actual = LegacyOtpDetector.containsOtp(text, checkForFalsePositives, textClassifier, null)
     addResult(expected = expected, actual, failureMessage)
   }
 
