@@ -164,7 +164,7 @@ public class NotificationOtpDetectionHelper {
     }
 
     private static void reportOtpDetectionDurationMs(long duration) {
-        ExtServicesStatsLog.write(ExtServicesStatsLog.NOTIFICATION_ASSISTANT_DURATION_STATS,
+        ExtServicesStatsLog.write(ExtServicesStatsLog.NOTIFICATION_ASSISTANT_DURATION_RECEIVED,
                 duration);
     }
 

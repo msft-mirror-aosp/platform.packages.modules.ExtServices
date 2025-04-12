@@ -17,11 +17,11 @@
 package android.ext.services.notification;
 
 import static android.content.pm.PackageManager.FEATURE_WATCH;
-import static android.ext.services.ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__NOTIFICATION_ENQUEUED;
-import static android.ext.services.ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__OTP_CHECKED;
-import static android.ext.services.ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__OTP_CHECK_SKIPPED_DUE_TO_LOAD;
-import static android.ext.services.ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__OTP_DETECTED;
-import static android.ext.services.ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__TC_FOR_OTP_DETECTION_ENABLED;
+import static android.ext.services.ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_REPORTED__EVENT_TYPE__NOTIFICATION_ENQUEUED;
+import static android.ext.services.ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_REPORTED__EVENT_TYPE__OTP_CHECKED;
+import static android.ext.services.ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_REPORTED__EVENT_TYPE__OTP_CHECK_SKIPPED_DUE_TO_LOAD;
+import static android.ext.services.ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_REPORTED__EVENT_TYPE__OTP_DETECTED;
+import static android.ext.services.ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_REPORTED__EVENT_TYPE__TC_FOR_OTP_DETECTION_ENABLED;
 
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
@@ -104,15 +104,15 @@ public class Assistant extends NotificationAssistantService {
     protected static boolean sUseTcForOtpDetection;
 
     private static final int EVENT_NOTIFICATION_ENQUEUED =
-            NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__NOTIFICATION_ENQUEUED;
+            NOTIFICATION_ASSISTANT_EVENT_REPORTED__EVENT_TYPE__NOTIFICATION_ENQUEUED;
     private static final int EVENT_TC_FOR_OTP_DETECTION_ENABLED =
-            NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__TC_FOR_OTP_DETECTION_ENABLED;
+            NOTIFICATION_ASSISTANT_EVENT_REPORTED__EVENT_TYPE__TC_FOR_OTP_DETECTION_ENABLED;
     private static final int EVENT_OTP_CHECK_SKIPPED_DUE_TO_LOAD =
-            NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__OTP_CHECK_SKIPPED_DUE_TO_LOAD;
+            NOTIFICATION_ASSISTANT_EVENT_REPORTED__EVENT_TYPE__OTP_CHECK_SKIPPED_DUE_TO_LOAD;
     private static final int EVENT_OTP_CHECKED =
-            NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__OTP_CHECKED;
+            NOTIFICATION_ASSISTANT_EVENT_REPORTED__EVENT_TYPE__OTP_CHECKED;
     private static final int EVENT_OTP_DETECTED =
-            NOTIFICATION_ASSISTANT_EVENT_STATS__EVENT_TYPE__OTP_DETECTED;
+            NOTIFICATION_ASSISTANT_EVENT_REPORTED__EVENT_TYPE__OTP_DETECTED;
 
     public Assistant() {
     }
@@ -430,6 +430,6 @@ public class Assistant extends NotificationAssistantService {
 
     @VisibleForTesting
     protected void reportEvent(int event) {
-        ExtServicesStatsLog.write(ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_STATS, event);
+        ExtServicesStatsLog.write(ExtServicesStatsLog.NOTIFICATION_ASSISTANT_EVENT_REPORTED, event);
     }
 }
