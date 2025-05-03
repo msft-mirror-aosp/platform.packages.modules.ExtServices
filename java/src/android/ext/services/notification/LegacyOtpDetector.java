@@ -20,11 +20,13 @@ import static java.lang.String.format;
 
 import android.annotation.SuppressLint;
 import android.icu.util.ULocale;
+import android.os.Build;
 import android.util.ArrayMap;
 import android.view.textclassifier.TextClassifier;
 import android.view.textclassifier.TextLanguage;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 import com.android.modules.utils.build.SdkLevel;
 
@@ -41,6 +43,7 @@ import java.util.regex.Pattern;
  */
 @SuppressLint("ObsoleteSdkInt")
 @Deprecated
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 public class LegacyOtpDetector {
     private static final int PATTERN_FLAGS =
             Pattern.DOTALL | Pattern.CASE_INSENSITIVE | Pattern.MULTILINE;
