@@ -21,6 +21,7 @@
 #include <log/log_main.h>
 #include <nativehelper/JNIHelp.h>
 #include <nativehelper/scoped_utf_chars.h>
+#include <algorithm>
 #include <array>
 #include <string>
 

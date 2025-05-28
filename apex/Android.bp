@@ -38,6 +38,10 @@ apex {
     apps: ["ExtServices-sminus"],
     java_libs: ["android.ext.adservices"],
     jni_libs: ["libtflite_support_classifiers_native"],
+    licenses: [
+        "packages_modules_ExtServices_license",
+        "opensourcerequest",
+    ],
 }
 
 apex_defaults {
