@@ -30,6 +30,10 @@ apex {
     manifest: "tplus_apex_manifest.json",
     variant_version: "3",
     min_sdk_version: "33",
+    licenses: [
+        "packages_modules_ExtServices_license",
+        "opensourcerequest",
+    ],
 }
 
 apex {
