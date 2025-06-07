@@ -111,6 +111,10 @@ android_app {
         "test_com.android.extservices",
     ],
     updatable: true,
+    licenses: [
+        "packages_modules_ExtServices_license",
+        "opensourcerequest",
+    ],
 }
 
 android_app {
