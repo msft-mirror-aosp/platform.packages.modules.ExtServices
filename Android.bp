@@ -63,6 +63,7 @@ android_library {
         "androidx.appsearch_appsearch-platform-storage",
         "android.service.notification.flags-aconfig-export-java",
         "extservices-mainline-aconfig-java-lib",
+        "telephony_flags_core_java_exported_lib",
     ],
 
     libs: [

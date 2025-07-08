@@ -17,15 +17,39 @@
 package android.ext.services;
 
 import android.app.Application;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.ext.services.smsretriever.AppHashHelper;
+import android.ext.services.smsretriever.PackageChangeReceiver;
+import android.os.Build;
+
+import androidx.annotation.RequiresApi;
 import androidx.work.Configuration;
+
+import com.android.modules.utils.build.SdkLevel;
+
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * Application class to provide default configurations for the initialization of other modules.
  */
 public final class ExtServicesApplication extends Application implements Configuration.Provider {
 
+    private PackageChangeReceiver mPackageChangeReceiver;
+    private final Executor mBackgroundExecutor = Executors.newSingleThreadExecutor();
+
     public ExtServicesApplication() {
         super();
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        if (SdkLevel.isAtLeastB() && com.android.internal.telephony.flags.Flags.redactOtpSmsApi()) {
+            mBackgroundExecutor.execute(() -> AppHashHelper.load(this));
+            registerPackageChangeReceiver();
+        }
     }
 
     /**
@@ -34,5 +58,14 @@ public final class ExtServicesApplication extends Application implements Configu
     @Override
     public Configuration getWorkManagerConfiguration() {
         return new Configuration.Builder().build();
+    }
+
+    @RequiresApi(Build.VERSION_CODES.BAKLAVA)
+    private void registerPackageChangeReceiver() {
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
+        intentFilter.addDataScheme("package");
+        mPackageChangeReceiver = new PackageChangeReceiver();
+        this.registerReceiver(mPackageChangeReceiver, intentFilter);
     }
 }
