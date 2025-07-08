@@ -22,6 +22,7 @@ import android.content.IntentFilter;
 import android.ext.services.smsretriever.AppHashHelper;
 import android.ext.services.smsretriever.PackageChangeReceiver;
 import android.os.Build;
+import android.os.Trace;
 
 import androidx.annotation.RequiresApi;
 import androidx.work.Configuration;
@@ -47,7 +48,14 @@ public final class ExtServicesApplication extends Application implements Configu
     public void onCreate() {
         super.onCreate();
         if (SdkLevel.isAtLeastB() && com.android.internal.telephony.flags.Flags.redactOtpSmsApi()) {
-            mBackgroundExecutor.execute(() -> AppHashHelper.load(this));
+            mBackgroundExecutor.execute(() -> {
+                try {
+                    Trace.beginSection("loadAllAppHashes");
+                    AppHashHelper.load(this);
+                } finally {
+                    Trace.endSection();
+                }
+            });
             registerPackageChangeReceiver();
         }
     }

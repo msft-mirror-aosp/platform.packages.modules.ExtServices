@@ -21,6 +21,7 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Trace;
 import android.util.Log;
 
 import androidx.annotation.RequiresApi;
@@ -44,33 +45,43 @@ public class PackageChangeReceiver extends BroadcastReceiver {
         }
 
         if (action.equals(Intent.ACTION_PACKAGE_ADDED)) {
-            PackageManager packageManager = context.getPackageManager();
-            String packageName = intent.getData().getSchemeSpecificPart();
-            PackageInfo packageInfo;
             try {
-                packageInfo =
-                        packageManager.getPackageInfo(packageName,
-                                PackageManager.GET_SIGNING_CERTIFICATES);
-            } catch (PackageManager.NameNotFoundException ignored) {
-                return;
-            }
-            // Skip packages that don't contain any executable code.
-            if (packageInfo.applicationInfo != null && (packageInfo.applicationInfo.flags
-                    & android.content.pm.ApplicationInfo.FLAG_HAS_CODE) == 0) {
-                return;
-            }
-            String appHash = AppHashHelper.getAppHash(packageInfo.signingInfo, packageName);
-            if (appHash == null) {
-                Log.w(TAG, "App hash is null for packageName=" + packageName);
-                return;
-            }
-            TextClassifierSmsRetrieverHandler.addHash(appHash);
-            if (DEBUG) {
-                Log.d(TAG, String.format(
-                        "Added app hash for package %s, total hashes: %d",
-                        packageName,
-                        TextClassifierSmsRetrieverHandler.getAppHashCount()));
+                Trace.beginSection("addAppHashOnPackageAdd");
+                addAppHash(context, intent);
+            } finally {
+                Trace.endSection();
             }
         }
     }
+
+    private void addAppHash(Context context, Intent intent) {
+        PackageManager packageManager = context.getPackageManager();
+        String packageName = intent.getData().getSchemeSpecificPart();
+        PackageInfo packageInfo;
+        try {
+            packageInfo =
+                    packageManager.getPackageInfo(packageName,
+                            PackageManager.GET_SIGNING_CERTIFICATES);
+        } catch (PackageManager.NameNotFoundException ignored) {
+            return;
+        }
+        // Skip packages that don't contain any executable code.
+        if (packageInfo.applicationInfo != null && (packageInfo.applicationInfo.flags
+                & android.content.pm.ApplicationInfo.FLAG_HAS_CODE) == 0) {
+            return;
+        }
+        String appHash = AppHashHelper.getAppHash(packageInfo.signingInfo, packageName);
+        if (appHash == null) {
+            Log.w(TAG, "App hash is null for packageName=" + packageName);
+            return;
+        }
+        TextClassifierSmsRetrieverHandler.addHash(appHash);
+        if (DEBUG) {
+            Log.d(TAG, String.format(
+                    "Added app hash for package %s, total hashes: %d",
+                    packageName,
+                    TextClassifierSmsRetrieverHandler.getAppHashCount()));
+        }
+    }
+
 }
