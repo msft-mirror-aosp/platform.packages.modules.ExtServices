@@ -15,6 +15,8 @@
  */
 package android.ext.services.smsretriever;
 
+import static android.os.Build.VERSION_CODES.BAKLAVA;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -31,7 +33,8 @@ import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.content.pm.SigningInfo;
 import android.net.Uri;
-import android.platform.test.annotations.RequiresFlagsEnabled;
+
+import androidx.test.filters.SdkSuppress;
 
 import com.android.modules.utils.build.SdkLevel;
 import com.android.textclassifier.TextClassifierSmsRetrieverHandler;
@@ -46,7 +49,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.util.Collections;
 
 @RunWith(MockitoJUnitRunner.class)
-@RequiresFlagsEnabled(com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS_API)
+@SdkSuppress(minSdkVersion = BAKLAVA)
 public class PackageChangeReceiverTest {
     private static final String TEST_PACKAGE_NAME = "com.example.app";
     private static final String SIGNATURE_STRING = "mysignature";
@@ -68,6 +71,7 @@ public class PackageChangeReceiverTest {
     @Before
     public void setUp() {
         Assume.assumeTrue(SdkLevel.isAtLeastB());
+        Assume.assumeTrue(com.android.internal.telephony.flags.Flags.redactOtpSmsApi());
 
         mReceiver = new PackageChangeReceiver();
 

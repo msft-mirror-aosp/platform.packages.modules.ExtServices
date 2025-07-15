@@ -27,6 +27,7 @@ import android.util.Log;
 import androidx.annotation.RequiresApi;
 
 import com.android.textclassifier.TextClassifierSmsRetrieverHandler;
+import com.android.textclassifier.utils.AppHashHelper;
 
 @RequiresApi(Build.VERSION_CODES.BAKLAVA)
 public class PackageChangeReceiver extends BroadcastReceiver {
