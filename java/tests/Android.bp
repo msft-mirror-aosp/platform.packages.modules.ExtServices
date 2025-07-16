@@ -31,6 +31,7 @@ android_test {
         "truth",
         "testables",
         "testng",
+        "androidx.test.runner",
     ],
     jni_libs: [
         "libdexmakerjvmtiagent",
