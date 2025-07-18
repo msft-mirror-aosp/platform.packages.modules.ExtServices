@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,9 +37,11 @@ import android.net.Uri;
 
 import androidx.test.filters.SdkSuppress;
 
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.modules.utils.build.SdkLevel;
-import com.android.textclassifier.TextClassifierSmsRetrieverHandler;
+import com.android.textclassifier.utils.AppHashHelper;
 
+import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,7 +49,13 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Collections;
+import java.util.List;
 
 @RunWith(MockitoJUnitRunner.class)
 @SdkSuppress(minSdkVersion = BAKLAVA)
@@ -67,25 +76,37 @@ public class PackageChangeReceiverTest {
     private Signature mMockSignature;
 
     private PackageChangeReceiver mReceiver;
+    private File mTempFile;
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
         Assume.assumeTrue(SdkLevel.isAtLeastB());
         Assume.assumeTrue(com.android.internal.telephony.flags.Flags.redactOtpSmsApi());
 
         mReceiver = new PackageChangeReceiver();
+        mTempFile = File.createTempFile("apphashes", ".txt");
 
         when(mMockContext.getPackageManager()).thenReturn(mMockPackageManager);
         when(mMockIntent.getData()).thenReturn(mMockUri);
         when(mMockUri.getSchemeSpecificPart()).thenReturn(TEST_PACKAGE_NAME);
         when(mMockSignature.toCharsString()).thenReturn(SIGNATURE_STRING);
+        AppHashHelper.clearAllHashes();
+    }
 
-        TextClassifierSmsRetrieverHandler.clearAllHashes();
+    @After
+    public void tearDown() {
+        if (mTempFile != null) {
+            mTempFile.delete();
+        }
     }
 
     @Test
     public void onReceive_packageAdded_addsHash() throws Exception {
         when(mMockIntent.getAction()).thenReturn(Intent.ACTION_PACKAGE_ADDED);
+        when(mMockContext.openFileOutput(eq(AppHashHelper.APP_HASHES_FILENAME), anyInt()))
+                .thenReturn(new FileOutputStream(mTempFile));
+        when(mMockContext.openFileInput(eq(AppHashHelper.APP_HASHES_FILENAME)))
+                .thenReturn(new FileInputStream(mTempFile));
 
         SigningInfo signingInfo = new SigningInfo(SigningInfo.VERSION_JAR,
                 Collections.singletonList(mMockSignature), null, null);
@@ -102,16 +123,20 @@ public class PackageChangeReceiverTest {
 
         mReceiver.onReceive(mMockContext, mMockIntent);
 
-        assertEquals(1, TextClassifierSmsRetrieverHandler.getAppHashCount());
-        assertTrue(
-                TextClassifierSmsRetrieverHandler.hasHash(EXPECTED_HASH));
+        assertEquals(1, AppHashHelper.getAppHashes().size());
+        assertTrue(AppHashHelper.hasHash(EXPECTED_HASH));
+        SystemUtil.eventually(() -> {
+            List<String> lines = Files.readAllLines(mTempFile.toPath());
+            assertEquals(1, lines.size());
+            assertEquals(EXPECTED_HASH, lines.get(0));
+        });
     }
 
     @Test
     public void onReceive_nullIntent_doesNothing() {
         mReceiver.onReceive(mMockContext, null);
 
-        assertEquals(0, TextClassifierSmsRetrieverHandler.getAppHashCount());
+        assertEquals(0, AppHashHelper.getAppHashes().size());
     }
 
     @Test
@@ -120,7 +145,7 @@ public class PackageChangeReceiverTest {
 
         mReceiver.onReceive(mMockContext, mMockIntent);
 
-        assertEquals(0, TextClassifierSmsRetrieverHandler.getAppHashCount());
+        assertEquals(0, AppHashHelper.getAppHashes().size());
         verify(mMockPackageManager, never()).getPackageInfo(anyString(), anyInt());
     }
 
@@ -130,7 +155,7 @@ public class PackageChangeReceiverTest {
 
         mReceiver.onReceive(mMockContext, mMockIntent);
 
-        assertEquals(0, TextClassifierSmsRetrieverHandler.getAppHashCount());
+        assertEquals(0, AppHashHelper.getAppHashes().size());
         verify(mMockPackageManager, never()).getPackageInfo(anyString(), anyInt());
     }
 
@@ -140,7 +165,7 @@ public class PackageChangeReceiverTest {
 
         mReceiver.onReceive(mMockContext, mMockIntent);
 
-        assertEquals(0, TextClassifierSmsRetrieverHandler.getAppHashCount());
+        assertEquals(0, AppHashHelper.getAppHashes().size());
     }
 
     @Test
@@ -152,7 +177,7 @@ public class PackageChangeReceiverTest {
 
         mReceiver.onReceive(mMockContext, mMockIntent);
 
-        assertEquals(0, TextClassifierSmsRetrieverHandler.getAppHashCount());
+        assertEquals(0, AppHashHelper.getAppHashes().size());
     }
 
     @Test
@@ -174,7 +199,7 @@ public class PackageChangeReceiverTest {
 
         mReceiver.onReceive(mMockContext, mMockIntent);
 
-        assertEquals(0, TextClassifierSmsRetrieverHandler.getAppHashCount());
+        assertEquals(0, AppHashHelper.getAppHashes().size());
     }
 
     @Test
@@ -196,6 +221,7 @@ public class PackageChangeReceiverTest {
 
         mReceiver.onReceive(mMockContext, mMockIntent);
 
-        assertEquals(0, TextClassifierSmsRetrieverHandler.getAppHashCount());
+        assertEquals(0, AppHashHelper.getAppHashes().size());
+        assertTrue(Files.readAllLines(mTempFile.toPath()).isEmpty());
     }
 }
