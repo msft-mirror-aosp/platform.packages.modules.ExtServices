@@ -15,37 +15,27 @@
  */
 package android.ext.services.smsretriever;
 
+import android.app.Application;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
-import android.os.Trace;
 
-import androidx.annotation.RequiresApi;
+import androidx.annotation.VisibleForTesting;
 
+import com.android.modules.utils.build.SdkLevel;
 import com.android.textclassifier.utils.AppHashHelper;
 
-@RequiresApi(Build.VERSION_CODES.BAKLAVA)
-public class PackageChangeReceiver extends BroadcastReceiver {
+public class BootReceiver extends BroadcastReceiver {
+
+    @VisibleForTesting
+    public static String processName = Application.getProcessName();
+
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (intent == null || intent.getData() == null) {
-            return;
-        }
-
-        String action = intent.getAction();
-        if (action == null) {
-            return;
-        }
-
-        if (action.equals(Intent.ACTION_PACKAGE_ADDED)) {
-            String packageName = intent.getData().getSchemeSpecificPart();
-            try {
-                Trace.beginSection("addAppHashOnPackageAdd");
-                AppHashHelper.addAppHashOnPackageAdd(context, packageName);
-            } finally {
-                Trace.endSection();
-            }
+        if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction()) && SdkLevel.isAtLeastB()
+                && com.android.internal.telephony.flags.Flags.redactOtpSmsApi()
+                && context.getApplicationInfo().packageName.equals(processName)) {
+            AppHashHelper.ensureLoaded(context);
         }
     }
 }

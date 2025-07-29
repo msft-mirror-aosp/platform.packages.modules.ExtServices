@@ -12,5 +12,8 @@ dsandler@google.com
 juliacr@google.com
 # TextClassifier
 tonymak@google.com
+# SMSRetriever
+kiranmr@google.com
+ntmyren@google.com
 
 include platform/packages/modules/common:/MODULES_OWNERS  # see go/mainline-owners-policy
