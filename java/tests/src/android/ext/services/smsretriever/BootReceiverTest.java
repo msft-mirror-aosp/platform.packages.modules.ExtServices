@@ -82,7 +82,7 @@ public class BootReceiverTest {
     @Before
     public void setUp() throws IOException {
         AppHashHelper.resetLoadFromPackageManager();
-        AppHashHelper.clearAllHashes();
+        AppHashHelper.sAppHashCache.clear();
 
         when(mMockContext.getPackageManager()).thenReturn(mMockPackageManager);
         when(mMockSignature.toCharsString()).thenReturn(SIGNATURE_STRING);
@@ -128,12 +128,13 @@ public class BootReceiverTest {
                 assertTrue("LoadedFromPackageManager should be true after ensureLoaded is called",
                         AppHashHelper.isLoadedFromPackageManager())
         );
-        assertTrue(AppHashHelper.hasHash(EXPECTED_HASH));
+        assertTrue(AppHashHelper.sAppHashCache.containsKey(EXPECTED_HASH));
         verify(mMockPackageManager).getInstalledPackages(PackageManager.GET_SIGNING_CERTIFICATES);
 
         List<String> lines = Files.readAllLines(mTempFile.toPath());
         assertEquals(1, lines.size());
-        assertEquals(EXPECTED_HASH, lines.get(0));
+        String expectedLine = EXPECTED_HASH + AppHashHelper.HASH_DELIMITER + TEST_PACKAGE_NAME;
+        assertEquals(expectedLine, lines.get(0));
     }
 
     @Test
