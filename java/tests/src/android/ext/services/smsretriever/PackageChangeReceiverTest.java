@@ -34,16 +34,18 @@ import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.content.pm.SigningInfo;
 import android.net.Uri;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.SystemUtil;
-import com.android.modules.utils.build.SdkLevel;
 import com.android.textclassifier.utils.AppHashHelper;
 
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -59,6 +61,7 @@ import java.util.List;
 
 @RunWith(MockitoJUnitRunner.class)
 @SdkSuppress(minSdkVersion = BAKLAVA)
+@RequiresFlagsEnabled(com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS_API)
 public class PackageChangeReceiverTest {
     private static final String TEST_PACKAGE_NAME = "com.example.app";
     private static final String SIGNATURE_STRING = "mysignature";
@@ -78,11 +81,11 @@ public class PackageChangeReceiverTest {
     private PackageChangeReceiver mReceiver;
     private File mTempFile;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Before
     public void setUp() throws IOException {
-        Assume.assumeTrue(SdkLevel.isAtLeastB());
-        Assume.assumeTrue(com.android.internal.telephony.flags.Flags.redactOtpSmsApi());
-
         mReceiver = new PackageChangeReceiver();
         mTempFile = File.createTempFile("apphashes", ".txt");
 
