@@ -93,7 +93,7 @@ public class PackageChangeReceiverTest {
         when(mMockIntent.getData()).thenReturn(mMockUri);
         when(mMockUri.getSchemeSpecificPart()).thenReturn(TEST_PACKAGE_NAME);
         when(mMockSignature.toCharsString()).thenReturn(SIGNATURE_STRING);
-        AppHashHelper.clearAllHashes();
+        AppHashHelper.sAppHashCache.clear();
     }
 
     @After
@@ -126,12 +126,13 @@ public class PackageChangeReceiverTest {
 
         mReceiver.onReceive(mMockContext, mMockIntent);
 
-        assertEquals(1, AppHashHelper.getAppHashes().size());
-        assertTrue(AppHashHelper.hasHash(EXPECTED_HASH));
+        assertEquals(1, AppHashHelper.sAppHashCache.size());
+        assertTrue(AppHashHelper.sAppHashCache.containsKey(EXPECTED_HASH));
         SystemUtil.eventually(() -> {
             List<String> lines = Files.readAllLines(mTempFile.toPath());
             assertEquals(1, lines.size());
-            assertEquals(EXPECTED_HASH, lines.get(0));
+            String expectedLine = EXPECTED_HASH + AppHashHelper.HASH_DELIMITER + TEST_PACKAGE_NAME;
+            assertEquals(expectedLine, lines.get(0));
         });
     }
 
@@ -139,7 +140,7 @@ public class PackageChangeReceiverTest {
     public void onReceive_nullIntent_doesNothing() {
         mReceiver.onReceive(mMockContext, null);
 
-        assertEquals(0, AppHashHelper.getAppHashes().size());
+        assertEquals(0, AppHashHelper.sAppHashCache.size());
     }
 
     @Test
@@ -148,7 +149,7 @@ public class PackageChangeReceiverTest {
 
         mReceiver.onReceive(mMockContext, mMockIntent);
 
-        assertEquals(0, AppHashHelper.getAppHashes().size());
+        assertEquals(0, AppHashHelper.sAppHashCache.size());
         verify(mMockPackageManager, never()).getPackageInfo(anyString(), anyInt());
     }
 
@@ -158,7 +159,7 @@ public class PackageChangeReceiverTest {
 
         mReceiver.onReceive(mMockContext, mMockIntent);
 
-        assertEquals(0, AppHashHelper.getAppHashes().size());
+        assertEquals(0, AppHashHelper.sAppHashCache.size());
         verify(mMockPackageManager, never()).getPackageInfo(anyString(), anyInt());
     }
 
@@ -168,7 +169,7 @@ public class PackageChangeReceiverTest {
 
         mReceiver.onReceive(mMockContext, mMockIntent);
 
-        assertEquals(0, AppHashHelper.getAppHashes().size());
+        assertEquals(0, AppHashHelper.sAppHashCache.size());
     }
 
     @Test
@@ -180,7 +181,7 @@ public class PackageChangeReceiverTest {
 
         mReceiver.onReceive(mMockContext, mMockIntent);
 
-        assertEquals(0, AppHashHelper.getAppHashes().size());
+        assertEquals(0, AppHashHelper.sAppHashCache.size());
     }
 
     @Test
@@ -202,7 +203,7 @@ public class PackageChangeReceiverTest {
 
         mReceiver.onReceive(mMockContext, mMockIntent);
 
-        assertEquals(0, AppHashHelper.getAppHashes().size());
+        assertEquals(0, AppHashHelper.sAppHashCache.size());
     }
 
     @Test
@@ -224,7 +225,7 @@ public class PackageChangeReceiverTest {
 
         mReceiver.onReceive(mMockContext, mMockIntent);
 
-        assertEquals(0, AppHashHelper.getAppHashes().size());
+        assertEquals(0, AppHashHelper.sAppHashCache.size());
         assertTrue(Files.readAllLines(mTempFile.toPath()).isEmpty());
     }
 }
