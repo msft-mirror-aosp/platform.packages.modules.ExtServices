@@ -25,8 +25,6 @@ import android.os.Build;
 import androidx.annotation.RequiresApi;
 import androidx.work.Configuration;
 
-import com.android.modules.utils.build.SdkLevel;
-
 /**
  * Application class to provide default configurations for the initialization of other modules.
  */
@@ -44,7 +42,7 @@ public final class ExtServicesApplication extends Application implements Configu
         // The receiver is registered only when the corresponding feature flag is enabled and the
         // current process is the main application process. This prevents the receiver from
         // being registered in other processes where it is not needed.
-        if (SdkLevel.isAtLeastB() && com.android.internal.telephony.flags.Flags.redactOtpSmsApi()
+        if (isAtLeast25Q4() && com.android.internal.telephony.flags.Flags.redactOtpSmsApi()
                 && getApplicationInfo().packageName.equals(Application.getProcessName())) {
             registerPackageChangeReceiver();
         }
@@ -65,5 +63,11 @@ public final class ExtServicesApplication extends Application implements Configu
         intentFilter.addDataScheme("package");
         mPackageChangeReceiver = new PackageChangeReceiver();
         this.registerReceiver(mPackageChangeReceiver, intentFilter);
+    }
+
+    private boolean isAtLeast25Q4() {
+        // Since SDK_INT_FULL doesn't exist until 36, we are ensuring v36 first
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA
+                && Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1;
     }
 }
