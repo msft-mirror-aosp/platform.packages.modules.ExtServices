@@ -1,7 +1,6 @@
 # Bug component: 1101073
 bhagavatular@google.com
 akhilga@google.com
-gehuang@google.com
 sawkar@google.com
 # Autofill
 include platform/frameworks/base:/core/java/android/service/autofill/OWNERS
