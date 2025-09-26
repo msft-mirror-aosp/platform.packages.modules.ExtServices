@@ -20,7 +20,7 @@
   <string-array name="english_otp_context_words">
     <item msgid="7615778208475066419">"nip"</item>
     <item msgid="7174505163902448507">"mot de passe"</item>
-    <item msgid="3917837442156595568">"mot de passe"</item>
+    <item msgid="3917837442156595568">"code d\'accès"</item>
     <item msgid="6971032950332150936">"deux facteurs"</item>
     <item msgid="826248726164877615">"à deux facteurs"</item>
     <item msgid="2156400793251117724">"connexion"</item>
