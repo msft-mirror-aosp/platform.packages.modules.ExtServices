@@ -19,10 +19,10 @@ import android.app.Application;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 
 import androidx.annotation.VisibleForTesting;
 
-import com.android.modules.utils.build.SdkLevel;
 import com.android.textclassifier.utils.AppHashHelper;
 
 public class BootReceiver extends BroadcastReceiver {
@@ -32,10 +32,16 @@ public class BootReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction()) && SdkLevel.isAtLeastB()
+        if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction()) && isAtLeast25Q4()
                 && com.android.internal.telephony.flags.Flags.redactOtpSmsApi()
                 && context.getApplicationInfo().packageName.equals(processName)) {
             AppHashHelper.ensureLoaded(context);
         }
+    }
+
+    private boolean isAtLeast25Q4() {
+        // Since SDK_INT_FULL doesn't exist until 36, we are ensuring v36 first
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA
+                && Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1;
     }
 }
