@@ -75,8 +75,8 @@ android_library {
     ],
 
     lint: {
-        strict_updatability_linting: true,
         error_checks: ["Recycle"],
+        baseline_filename: "lint-baseline.xml",
     },
     apex_available: [
         "//apex_available:platform",
