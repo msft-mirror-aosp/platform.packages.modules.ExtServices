@@ -121,8 +121,7 @@ public class PackageChangeReceiverTest {
         packageInfo.applicationInfo.flags = ApplicationInfo.FLAG_HAS_CODE;
 
         when(mMockPackageManager.getPackageInfo(
-                TEST_PACKAGE_NAME,
-                PackageManager.GET_SIGNING_CERTIFICATES | PackageManager.MATCH_ANY_USER))
+                TEST_PACKAGE_NAME, PackageManager.GET_SIGNING_CERTIFICATES))
                 .thenReturn(packageInfo);
 
         mReceiver.onReceive(mMockContext, mMockIntent);
@@ -177,8 +176,7 @@ public class PackageChangeReceiverTest {
     public void onReceive_packageNotFound_doesNothing() throws Exception {
         when(mMockIntent.getAction()).thenReturn(Intent.ACTION_PACKAGE_ADDED);
         when(mMockPackageManager.getPackageInfo(
-                TEST_PACKAGE_NAME,
-                PackageManager.GET_SIGNING_CERTIFICATES | PackageManager.MATCH_ANY_USER))
+                TEST_PACKAGE_NAME, PackageManager.GET_SIGNING_CERTIFICATES))
                 .thenThrow(new PackageManager.NameNotFoundException());
 
         mReceiver.onReceive(mMockContext, mMockIntent);
@@ -200,8 +198,7 @@ public class PackageChangeReceiverTest {
         packageInfo.applicationInfo.flags = 0; // No FLAG_HAS_CODE
 
         when(mMockPackageManager.getPackageInfo(
-                TEST_PACKAGE_NAME,
-                PackageManager.GET_SIGNING_CERTIFICATES | PackageManager.MATCH_ANY_USER))
+                TEST_PACKAGE_NAME, PackageManager.GET_SIGNING_CERTIFICATES))
                 .thenReturn(packageInfo);
 
         mReceiver.onReceive(mMockContext, mMockIntent);
@@ -223,8 +220,7 @@ public class PackageChangeReceiverTest {
         packageInfo.applicationInfo.flags = ApplicationInfo.FLAG_HAS_CODE;
 
         when(mMockPackageManager.getPackageInfo(
-                TEST_PACKAGE_NAME,
-                PackageManager.GET_SIGNING_CERTIFICATES | PackageManager.MATCH_ANY_USER))
+                TEST_PACKAGE_NAME, PackageManager.GET_SIGNING_CERTIFICATES))
                 .thenReturn(packageInfo);
 
         mReceiver.onReceive(mMockContext, mMockIntent);

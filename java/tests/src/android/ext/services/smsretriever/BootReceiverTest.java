@@ -110,8 +110,7 @@ public class BootReceiverTest {
         packageInfo.applicationInfo = new ApplicationInfo();
         packageInfo.applicationInfo.flags = ApplicationInfo.FLAG_HAS_CODE;
 
-        when(mMockPackageManager.getInstalledPackages(
-                PackageManager.GET_SIGNING_CERTIFICATES | PackageManager.MATCH_ANY_USER))
+        when(mMockPackageManager.getInstalledPackages(PackageManager.GET_SIGNING_CERTIFICATES))
                 .thenReturn(Collections.singletonList(packageInfo));
         ApplicationInfo appInfo = new ApplicationInfo();
         appInfo.packageName = "test.package";
@@ -130,8 +129,7 @@ public class BootReceiverTest {
                         AppHashHelper.isLoadedFromPackageManager())
         );
         assertTrue(AppHashHelper.sAppHashCache.containsKey(EXPECTED_HASH));
-        verify(mMockPackageManager).getInstalledPackages(
-                PackageManager.GET_SIGNING_CERTIFICATES | PackageManager.MATCH_ANY_USER);
+        verify(mMockPackageManager).getInstalledPackages(PackageManager.GET_SIGNING_CERTIFICATES);
 
         List<String> lines = Files.readAllLines(mTempFile.toPath());
         assertEquals(1, lines.size());

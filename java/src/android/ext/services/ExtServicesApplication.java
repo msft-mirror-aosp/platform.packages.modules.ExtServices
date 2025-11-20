@@ -16,7 +16,6 @@
 
 package android.ext.services;
 
-import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -57,14 +56,13 @@ public final class ExtServicesApplication extends Application implements Configu
         return new Configuration.Builder().build();
     }
 
-    @SuppressLint("MissingPermission")
     @RequiresApi(Build.VERSION_CODES.BAKLAVA)
     private void registerPackageChangeReceiver() {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
         intentFilter.addDataScheme("package");
         mPackageChangeReceiver = new PackageChangeReceiver();
-        this.registerReceiverForAllUsers(mPackageChangeReceiver, intentFilter, null, null);
+        this.registerReceiver(mPackageChangeReceiver, intentFilter);
     }
 
     private boolean isAtLeast25Q4() {
