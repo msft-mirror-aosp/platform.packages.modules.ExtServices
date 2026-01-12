@@ -41,6 +41,7 @@
     <!-- Need this permission to receive the Boot-Completed broadcast -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.ACCESS_TEXT_CLASSIFIER_BY_TYPE" />
+    <uses-permission android:name="android.permission.QUERY_DOMAIN_VERIFICATION" />
 
     <application
         android:name=".ExtServicesApplication"
