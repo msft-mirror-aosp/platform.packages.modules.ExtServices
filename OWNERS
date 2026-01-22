@@ -1,6 +1,5 @@
 # Bug component: 1101073
 bhagavatular@google.com
-sawkar@google.com
 # Autofill
 include platform/frameworks/base:/core/java/android/service/autofill/OWNERS
 # PackageWatchdog
