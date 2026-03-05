@@ -98,6 +98,7 @@ android_app {
         proguard_compatibility: false,
         proguard_flags_files: ["proguard.proguard"],
         keep_runtime_invisible_annotations: true,
+        ignore_warnings: false,
     },
     privileged: true,
     privapp_allowlist: ":privapp_allowlist_android.ext_tplus.services.xml",
@@ -108,6 +109,9 @@ android_app {
     jni_libs: [
         "libtextclassifier",
         "libextservices_jni",
+    ],
+    libs: [
+        "framework-connectivity-t.stubs.module_lib",
     ],
     use_embedded_native_libs: true,
     apex_available: [
@@ -136,6 +140,7 @@ android_app {
         proguard_compatibility: false,
         proguard_flags_files: ["proguard.proguard"],
         keep_runtime_invisible_annotations: true,
+        ignore_warnings: false,
     },
     privileged: true,
     privapp_allowlist: ":privapp_allowlist_android.ext_sminus.services.xml",
