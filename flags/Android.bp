@@ -28,6 +28,7 @@ aconfig_declarations {
 java_aconfig_library {
     name: "extservices-mainline-aconfig-java-lib",
     aconfig_declarations: "extservices-mainline-aconfig-flags",
+    sdk_version: "module_current",
     min_sdk_version: "30",
     apex_available: [
         "//apex_available:platform",
