@@ -11,6 +11,9 @@
 -dontwarn androidx.paging.PositionalDataSource
 -dontwarn androidx.lifecycle.LiveData
 
+# Referenced by androidx.appsearch but only conditionally used on S+.
+-dontwarn android.app.appsearch.**
+
 #keep enums
 -keepclassmembers enum * {
     public static **[] values();
