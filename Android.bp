@@ -95,7 +95,6 @@ android_app {
     optimize: {
         optimize: true,
         shrink_resources: true,
-        proguard_compatibility: false,
         proguard_flags_files: ["proguard.proguard"],
         keep_runtime_invisible_annotations: true,
         ignore_warnings: false,
@@ -137,7 +136,6 @@ android_app {
     optimize: {
         optimize: true,
         shrink_resources: true,
-        proguard_compatibility: false,
         proguard_flags_files: ["proguard.proguard"],
         keep_runtime_invisible_annotations: true,
         ignore_warnings: false,
